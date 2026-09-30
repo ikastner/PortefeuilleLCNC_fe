@@ -1,0 +1,2957 @@
+↑isRoot: true
+comment: Ecran portefeuille LCNC
+preloadPriority: high
+scriptContent: 
+  - xmlizable: 
+    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+      →: |
+        '/*Begin_c8o_PageImport*/
+        /*End_c8o_PageImport*/
+        /*Begin_c8o_PageDeclaration*/
+        	view: string;
+        	cleActeur: string;
+        	dateFrom: string;
+        	dateTo: string;
+        	dayCount: number;
+        	today: string;
+        	rows: any[];
+        	items: any[];
+        	holidays: any;
+        	typeLabels: any;
+        	typeStyles: any;
+        	gridLabels: any;
+        	droits: string[];
+        	elements: any[];
+        	types: any[];
+        	profils: any[];
+        	porteurs: any[];
+        	roles: any[];
+        	roleDroits: any[];
+        	etapes: any[];
+        	suivi: any[];
+        	coefficients: any[];
+        	scores: any[];
+        	messages: any[];
+        	message: string;
+        	modal: string;
+        	saisie: any;
+        	chargeFrom: string;
+        	chargeTo: string;
+        	selection: any;
+        	commentPortee: string;
+        	commentBody: string;
+        	mentions: string[];
+        	mentionTous: boolean;
+        	canEdit: boolean;
+        	canAdmin: boolean;
+        	boForm: any;
+        	loading: boolean;
+        /*End_c8o_PageDeclaration*/
+        /*Begin_c8o_PageConstructor*/
+        /*End_c8o_PageConstructor*/
+        /*Begin_c8o_PageInitialization*/
+        		this.pfcInit();
+        /*End_c8o_PageInitialization*/
+        /*Begin_c8o_PageFunction*/
+        	pfcInit() {
+        		if (this.view) return;
+        		this.view = "grille";
+        		this.modal = "";
+        		this.rows = [];
+        		this.items = [];
+        		this.holidays = {};
+        		this.droits = [];
+        		this.elements = [];
+        		this.types = [];
+        		this.profils = [];
+        		this.porteurs = [];
+        		this.roles = [];
+        		this.roleDroits = [];
+        		this.etapes = [];
+        		this.suivi = [];
+        		this.coefficients = [];
+        		this.scores = [];
+        		this.messages = [];
+        		this.mentions = [];
+        		this.mentionTous = false;
+        		this.commentBody = "";
+        		this.commentPortee = "JOUR";
+        		this.saisie = {};
+        		this.boForm = {};
+        		this.selection = null;
+        		this.message = "";
+        		this.canEdit = false;
+        		this.canAdmin = false;
+        		this.loading = false;
+        		this.gridLabels = { add: "Affecter", today: "Aujourd" + String.fromCharCode(39) + "hui" };
+        		this.typeLabels = { PROJET: "Projet", OFF: "OFF", ABSENCE: "Absence" };
+        		this.typeStyles = {
+        			PROJET: { bg: "#dbe7ff", color: "#1a428a", border: "#1a428a" },
+        			OFF: { bg: "#eceff3", color: "#495057", border: "#6c757d" },
+        			ABSENCE: { bg: "#fff4e6", color: "#c97a1e", border: "#ed6c02" }
+        		};
+        		try { this.cleActeur = localStorage.getItem("pfcCleActeur") || ""; } catch (e) { this.cleActeur = ""; }
+        		this.fixTrimestre();
+        		this.chargerReferentiel();
+        		this.chargerGrille();
+        	}
+        	refresh() {
+        		try { this.ref.detectChanges(); } catch (e) {}
+        	}
+        	iso(d) {
+        		var m = String(d.getMonth() + 1);
+        		var day = String(d.getDate());
+        		if (m.length < 2) m = "0" + m;
+        		if (day.length < 2) day = "0" + day;
+        		return d.getFullYear() + "-" + m + "-" + day;
+        	}
+        	fixTrimestre() {
+        		var d = new Date();
+        		var q = Math.floor(d.getMonth() / 3);
+        		var start = new Date(d.getFullYear(), q * 3, 1);
+        		var end = new Date(d.getFullYear(), q * 3 + 3, 0);
+        		this.dateFrom = this.iso(start);
+        		this.dateTo = this.iso(end);
+        		this.today = this.iso(d);
+        		this.dayCount = 96;
+        	}
+        	nomActeur() {
+        		var i;
+        		for (i = 0; i < (this.rows || []).length; i++) {
+        			if (String(this.rows[i].id) === String(this.cleActeur)) return this.rows[i].name;
+        		}
+        		return this.cleActeur || "aucun acteur";
+        	}
+        	periodeLabel() {
+        		return (this.dateFrom || "") + " → " + (this.dateTo || "");
+        	}
+        	has(code) {
+        		return (this.droits || []).indexOf(code) >= 0;
+        	}
+        	asList(v) {
+        		if (v == null) return [];
+        		if (Object.prototype.toString.call(v) === "[object Array]") return v;
+        		if (v.row != null) return this.asList(v.row);
+        		return [v];
+        	}
+        	doc(out) {
+        		if (!out) return {};
+        		if (out.document) return out.document;
+        		if (out.transaction) {
+        			var list = this.asList(out.transaction);
+        			var i;
+        			for (i = 0; i < list.length; i++) {
+        				var d = list[i].document || list[i];
+        				if (d && d.error) return d;
+        			}
+        		}
+        		return out;
+        	}
+        	appel(seq, vars): any {
+        		var args = ["PortefeuilleLCNC_be." + seq];
+        		var k;
+        		vars = vars || {};
+        		for (k in vars) {
+        			if (Object.prototype.hasOwnProperty.call(vars, k)) {
+        				args.push(k);
+        				args.push(vars[k] == null ? "" : String(vars[k]));
+        			}
+        		}
+        		var p = this.c8o.callJson.apply(this.c8o, args);
+        		return new Promise(function(ok, ko) {
+        			p.then(function(out) { ok(out); return p; });
+        			if (p.fail) p.fail(function(err) { ko(err); });
+        		});
+        	}
+        	setActor(event) {
+        		var v = "";
+        		if (event && event.target && event.target.value != null) v = String(event.target.value);
+        		else if (event && event.detail && event.detail.value != null) v = String(event.detail.value);
+        		this.cleActeur = v.trim();
+        		try { localStorage.setItem("pfcCleActeur", this.cleActeur); } catch (e) {}
+        		this.chargerGrille();
+        	}
+        	setBo(event, key) {
+        		var v = "";
+        		if (event && event.target && event.target.value != null) v = String(event.target.value);
+        		else if (event && event.detail && event.detail.value != null) v = String(event.detail.value);
+        		if (!this.boForm) this.boForm = {};
+        		this.boForm[key] = v;
+        	}
+        	setComment(event) {
+        		var v = "";
+        		if (event && event.target && event.target.value != null) v = String(event.target.value);
+        		else if (event && event.detail && event.detail.value != null) v = String(event.detail.value);
+        		this.commentBody = v;
+        	}
+        	setNote(event) {
+        		var v = "";
+        		if (event && event.target && event.target.value != null) v = String(event.target.value);
+        		else if (event && event.detail && event.detail.value != null) v = String(event.detail.value);
+        		this.saisie.commentaire = v;
+        	}
+        	ouvrir(vue) {
+        		this.view = vue;
+        		this.modal = "";
+        		if (vue === "grille") this.chargerGrille();
+        		if (vue === "projets" || vue === "lignes" || vue === "roles") this.chargerReferentiel();
+        		if (vue === "suivi") this.chargerSuivi();
+        		if (vue === "mvp") this.chargerMvp();
+        		this.refresh();
+        	}
+        	payload(event) {
+        		if (!event) return {};
+        		var inner = event.event;
+        		if (inner && (inner.rowId || inner.eventId || inner.dateFrom || inner.orderedIds || inner.dateDebut)) return inner;
+        		return event;
+        	}
+        	onVisible(event) {
+        		var p = this.payload(event);
+        		if (!p.dateFrom || !p.dateTo) return;
+        		if (p.dateFrom === this.chargeFrom && p.dateTo === this.chargeTo) return;
+        		this.chargeFrom = p.dateFrom;
+        		this.chargeTo = p.dateTo;
+        		this.chargerGrille();
+        	}
+        	onCreate(event) {
+        		if (!this.canEdit) { this.message = "Droit MODIFIER_AFFECTATION requis."; this.refresh(); return; }
+        		var p = this.payload(event);
+        		this.saisie = { cleLigne: p.rowId, dateFrom: p.dateDebut, dateTo: p.dateFin, codeType: "PROJET", libelleElement: "", periode: "JOURNEE", commentaire: "" };
+        		this.modal = "affect";
+        		this.refresh();
+        	}
+        	onEvent(event) {
+        		var p = this.payload(event);
+        		var found = null;
+        		var i;
+        		for (i = 0; i < this.items.length; i++) {
+        			if (String(this.items[i].id) === String(p.eventId)) found = this.items[i];
+        		}
+        		this.selection = found || { id: p.eventId, start: p.date, period: p.period };
+        		this.modal = "delete";
+        		this.refresh();
+        	}
+        	onOrder(event) {
+        		var p = this.payload(event);
+        		var ids = p.orderedIds || [];
+        		var self = this;
+        		var chain = Promise.resolve();
+        		ids.forEach(function(id, index) {
+        			chain = chain.then(function() {
+        				return new Promise(function(ok) {
+        					self.appel("Jour_Ordonner", { cleActeur: self.cleActeur, idJour: String(id), ordre: String(index) }).then(function() { ok(null); });
+        				});
+        			});
+        		});
+        		chain.then(function() { self.chargerGrille(); });
+        	}
+        	onComment(event) {
+        		var p = this.payload(event);
+        		var found = null;
+        		var i;
+        		for (i = 0; i < this.items.length; i++) {
+        			if (String(this.items[i].id) === String(p.eventId)) found = this.items[i];
+        		}
+        		this.selection = found;
+        		this.commentPortee = "JOUR";
+        		this.commentBody = "";
+        		this.mentions = [];
+        		this.mentionTous = false;
+        		this.modal = "comment";
+        		this.chargerFil();
+        	}
+        	fermer() { this.modal = ""; this.refresh(); }
+        	setType(code) { this.saisie.codeType = code; if (code !== "PROJET") this.saisie.libelleElement = ""; this.refresh(); }
+        	setPeriode(code) { this.saisie.periode = code; this.refresh(); }
+        	choisirProjet(event) {
+        		var lib = event && event.currentTarget ? event.currentTarget.getAttribute("data-libelle") : "";
+        		this.saisie.libelleElement = lib || "";
+        		this.saisie.codeType = "PROJET";
+        		this.refresh();
+        	}
+        	enregistrerAffect() {
+        		var self = this;
+        		var f = this.saisie || {};
+        		this.appel("Jour_Enregistrer", {
+        			cleActeur: this.cleActeur, cleLigne: f.cleLigne, codeType: f.codeType,
+        			libelleElement: f.codeType === "PROJET" ? f.libelleElement : "",
+        			dateFrom: f.dateFrom, dateTo: f.dateTo, periode: f.periode, commentaire: f.commentaire || ""
+        		}).then(function(out) {
+        			if (self.okOf(out)) { self.modal = ""; self.chargerGrille(); }
+        			else self.refresh();
+        		});
+        	}
+        	supprimerPastille() {
+        		var self = this;
+        		var s = this.selection || {};
+        		this.appel("Jour_Supprimer", {
+        			cleActeur: this.cleActeur, cleLigne: s.rowId, jour: s.start, periode: s.period || "JOURNEE"
+        		}).then(function(out) {
+        			if (self.okOf(out)) { self.modal = ""; self.chargerGrille(); }
+        			else self.refresh();
+        		});
+        	}
+        	okOf(out) {
+        		var d = this.doc(out);
+        		var r = d.resultat || d;
+        		if (r.ok == null && d.error) { this.message = String(d.error.message || d.error); return false; }
+        		var ok = r.ok === true || String(r.ok) === "true" || String(r.ok) === "t";
+        		this.message = r.message ? String(r.message) : (ok ? "Enregistre." : "Action refusee.");
+        		return ok;
+        	}
+        	canCommentJour() {
+        		if (!this.selection) return false;
+        		var own = String(this.selection.rowId) === String(this.cleActeur);
+        		if (own) return this.has("COMMENTER_JOUR_SOI") || this.has("COMMENTER_JOUR_AUTRUI");
+        		return this.has("COMMENTER_JOUR_AUTRUI");
+        	}
+        	canSend() {
+        		if (this.commentPortee === "ELEMENT") return this.has("COMMENTER_PROJET");
+        		return this.canCommentJour();
+        	}
+        	ouvrirFilProjet() {
+        		this.commentPortee = "ELEMENT";
+        		this.chargerFil();
+        	}
+        	ouvrirFilJour() {
+        		this.commentPortee = "JOUR";
+        		this.chargerFil();
+        	}
+        	chargerFil() {
+        		var self = this;
+        		var s = this.selection || {};
+        		var projet = s.type === "PROJET";
+        		this.appel("Commentaire_Lire", {
+        			portee: this.commentPortee,
+        			cleLigne: s.rowId || "",
+        			jour: s.start || "",
+        			libelleElement: projet ? (s.label || "") : "",
+        			codeType: projet ? "" : (s.type || "")
+        		}).then(function(out) {
+        			self.messages = self.asList(self.doc(out).messages);
+        			self.refresh();
+        		});
+        	}
+        	ajouterMention(event) {
+        		var cle = event && event.currentTarget ? event.currentTarget.getAttribute("data-cle") : "";
+        		if (!cle) return;
+        		if (this.mentions.indexOf(cle) < 0) this.mentions.push(cle);
+        		this.refresh();
+        	}
+        	basculerTous() { this.mentionTous = !this.mentionTous; this.refresh(); }
+        	envoyerCommentaire() {
+        		if (!this.canSend()) { this.message = "Droit de commentaire insuffisant."; this.refresh(); return; }
+        		var self = this;
+        		var s = this.selection || {};
+        		var projet = s.type === "PROJET" || this.commentPortee === "ELEMENT";
+        		this.appel("Commentaire_Ajouter", {
+        			cleActeur: this.cleActeur,
+        			portee: this.commentPortee,
+        			cleLigne: s.rowId || "",
+        			jour: this.commentPortee === "JOUR" ? (s.start || "") : "",
+        			libelleElement: projet ? (s.label || "") : "",
+        			codeType: projet ? "" : (s.type || ""),
+        			corps: this.commentBody || "",
+        			idParent: "",
+        			mentions: (this.mentions || []).join(","),
+        			tous: this.mentionTous ? "true" : "false"
+        		}).then(function(out) {
+        			if (self.okOf(out)) {
+        				self.commentBody = "";
+        				self.mentions = [];
+        				self.mentionTous = false;
+        				self.chargerFil();
+        				self.chargerGrille();
+        			} else self.refresh();
+        		});
+        	}
+        	chargerGrille() {
+        		var self = this;
+        		this.loading = true;
+        		this.appel("Grille_Lire", { dateFrom: this.chargeFrom || this.dateFrom, dateTo: this.chargeTo || this.dateTo, cleActeur: this.cleActeur }).then(function(out) {
+        			var d = self.doc(out);
+        			if (d.error) {
+        				self.rows = [];
+        				self.items = [];
+        				self.loading = false;
+        				self.message = String((d.error && d.error.message) || d.error);
+        				self.refresh();
+        				return;
+        			}
+        			self.rows = self.asList(d.rows);
+        			self.items = self.asList(d.items);
+        			var feries = self.asList(d.feries);
+        			var map = {};
+        			var i;
+        			for (i = 0; i < feries.length; i++) {
+        				if (feries[i].jour) map[String(feries[i].jour)] = String(feries[i].libelle || "");
+        			}
+        			self.holidays = map;
+        			self.droits = self.asList(d.droits).map(function(x) {
+        				if (typeof x === "string") return x;
+        				return String(x.code_droit || x.codeDroit || x.value || "");
+        			}).filter(function(x) { return x; });
+        			self.canEdit = self.has("MODIFIER_AFFECTATION");
+        			self.canAdmin = self.has("GERER_REFERENTIEL");
+        			self.loading = false;
+        			self.refresh();
+        		}, function(err) {
+        			self.loading = false;
+        			self.message = String((err && err.message) || err);
+        			self.refresh();
+        		});
+        	}
+        	chargerReferentiel() {
+        		var self = this;
+        		this.appel("Referentiel_Lire", {}).then(function(out) {
+        			var d = self.doc(out);
+        			self.profils = self.asList(d.profils);
+        			self.types = self.asList(d.types);
+        			self.elements = self.asList(d.elements);
+        			self.porteurs = self.asList(d.porteurs);
+        			self.etapes = self.asList(d.etapes);
+        			self.roles = self.asList(d.roles);
+        			self.roleDroits = self.asList(d.roleDroits);
+        			var labels = { PROJET: "Projet", OFF: "OFF", ABSENCE: "Absence" };
+        			var styles = {
+        				PROJET: { bg: "#dbe7ff", color: "#1a428a", border: "#1a428a" },
+        				OFF: { bg: "#eceff3", color: "#495057", border: "#6c757d" },
+        				ABSENCE: { bg: "#fff4e6", color: "#c97a1e", border: "#ed6c02" }
+        			};
+        			var i;
+        			for (i = 0; i < self.types.length; i++) {
+        				var t = self.types[i];
+        				if (!t.code) continue;
+        				labels[t.code] = t.libelle || t.code;
+        				if (t.couleurFond) styles[t.code] = { bg: t.couleurFond, color: t.couleurTexte || "#1a428a", border: t.couleurBord || t.couleurFond };
+        			}
+        			self.typeLabels = labels;
+        			self.typeStyles = styles;
+        			self.refresh();
+        		});
+        	}
+        	chargerSuivi() {
+        		var self = this;
+        		this.appel("Suivi_Lire", {}).then(function(out) {
+        			self.suivi = self.asList(self.doc(out).suivi);
+        			self.refresh();
+        		});
+        	}
+        	chargerMvp() {
+        		var self = this;
+        		this.appel("Mvp_Lire", {}).then(function(out) {
+        			var d = self.doc(out);
+        			self.coefficients = self.asList(d.coefficients);
+        			self.scores = self.asList(d.scores);
+        			self.refresh();
+        		});
+        	}
+        	choisirElement(event) {
+        		var code = event && event.currentTarget ? event.currentTarget.getAttribute("data-code") : "";
+        		var found = null;
+        		var i;
+        		for (i = 0; i < this.elements.length; i++) if (this.elements[i].code === code) found = this.elements[i];
+        		var ports = [];
+        		for (i = 0; i < this.porteurs.length; i++) {
+        			if (this.porteurs[i].codeElement === code) ports.push((this.porteurs[i].codeAgent || "") + "|" + (this.porteurs[i].libelle || ""));
+        		}
+        		this.boForm = found ? { code: found.code, libelle: found.libelle, lcNc: found.lcNc, statutCatalogue: found.statutCatalogue, couleur: found.couleur, actif: found.actif, porteurs: ports.join(";") } : { code: code };
+        		this.refresh();
+        	}
+        	sauverElement() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Element_Enregistrer", {
+        			cleActeur: this.cleActeur, code: f.code || "", libelle: f.libelle || "", couleur: f.couleur || "",
+        			actif: f.actif === "false" ? "false" : "true", lcNc: f.lcNc || "", statutCatalogue: f.statutCatalogue || ""
+        		}).then(function(out) { self.okOf(out); self.chargerReferentiel(); });
+        	}
+        	sauverPorteurs() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Porteur_Remplacer", { cleActeur: this.cleActeur, code: f.code || "", porteurs: f.porteurs || "" }).then(function(out) {
+        			self.okOf(out); self.chargerReferentiel();
+        		});
+        	}
+        	sauverProfil() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Profil_Enregistrer", { cleActeur: this.cleActeur, code: f.code || "", libelle: f.libelle || "", ordre: f.ordre || "0" }).then(function(out) {
+        			self.okOf(out); self.chargerReferentiel();
+        		});
+        	}
+        	sauverLigne() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Ligne_Enregistrer", {
+        			cleActeur: this.cleActeur, cle: f.cle || "", cleExterne: f.cleExterne || "", codeProfil: f.codeProfil || "",
+        			couleur: f.couleur || "", ordre: f.ordre || "0", actif: f.actif === "false" ? "false" : "true"
+        		}).then(function(out) { self.okOf(out); self.chargerReferentiel(); self.chargerGrille(); });
+        	}
+        	toggleDroit(code) {
+        		var bag = ((this.boForm && this.boForm.droits) || "").split(",").filter(function(x) { return x; });
+        		var i = bag.indexOf(code);
+        		if (i >= 0) bag.splice(i, 1); else bag.push(code);
+        		if (!this.boForm) this.boForm = {};
+        		this.boForm.droits = bag.join(",");
+        		this.refresh();
+        	}
+        	sauverRole() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Role_Enregistrer", { cleActeur: this.cleActeur, code: f.code || "", libelle: f.libelle || "", droits: f.droits || "" }).then(function(out) {
+        			self.okOf(out); self.chargerReferentiel();
+        		});
+        	}
+        	affecterRole() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("LigneRole_Affecter", { cleActeur: this.cleActeur, cleLigne: f.cleLigne || "", codeRole: f.codeRole || "" }).then(function(out) {
+        			self.okOf(out); self.chargerGrille();
+        		});
+        	}
+        	sauverSuivi() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Suivi_Enregistrer", { cleActeur: this.cleActeur, codeElement: f.codeElement || "", codeEtape: f.codeEtape || "", valeur: f.valeur || "" }).then(function(out) {
+        			self.okOf(out); self.chargerSuivi();
+        		});
+        	}
+        	sauverMvp() {
+        		var self = this;
+        		var f = this.boForm || {};
+        		this.appel("Mvp_Enregistrer", { cleActeur: this.cleActeur, cleLigne: f.cleLigne || "", codeElement: f.codeElement || "", coefficient: f.coefficient || "0" }).then(function(out) {
+        			self.okOf(out); self.chargerMvp();
+        		});
+        	}
+        	chargerFeries() {
+        		var self = this;
+        		var annee = (this.dateFrom || "2026").substring(0, 4);
+        		this.appel("JourFerie_Charger", { annee: annee }).then(function(out) {
+        			self.okOf(out); self.chargerGrille();
+        		});
+        	}
+        /*End_c8o_PageFunction*/'
+segment: plan
+title: Plan de charge
+↓Style [ngx.components.UIStyle-1790692986355]: 
+  styleContent: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+        →: |
+          '
+          .pfc-page { --background: #f4f7fb; }
+          ion-toolbar { --background: #ffffff; --color: #1a428a; }
+          .pfc-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; width: 100%; }
+          .pfc-title { font-weight: 700; color: #1a428a; margin: 0; }
+          .pfc-meta { color: #334155; }
+          .pfc-actor { max-width: 220px; border: 1px solid #6c757d; border-radius: 12px; min-height: 40px; }
+          .pfc-nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; }
+          .pfc-msg { padding: 0 16px 8px; color: #1a428a; min-height: 1.2em; }
+          .pfc-panel { margin: 8px 16px 16px; background: #fff; border-radius: 16px; padding: 12px; }
+          .pfc-modal { position: fixed; inset: 0; background: rgba(15, 35, 70, 0.45); z-index: 10000; display: flex; align-items: flex-start; justify-content: center; padding: 140px 16px 48px; }
+          .pfc-card { background: #fff; color: #1a2744; border-radius: 16px; padding: 16px; width: min(640px, 100%); max-height: 70vh; overflow: auto; }
+          .pfc-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+          .pfc-list { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+          ion-input { border: 1px solid #6c757d; border-radius: 12px; min-height: 44px; margin: 4px 0; --padding-start: 12px; }
+          '
+↓Header [ngx.components.UIDynamicElement-1790692986357]: 
+  beanData: '{"ionBean":"Header"}'
+  tagName: ion-header
+  ↓Toolbar [ngx.components.UIDynamicElement-1790692987211]: 
+    beanData: '{"ionBean":"ToolBar"}'
+    tagName: ion-toolbar
+    ↓Bar [ngx.components.UIDynamicElement-1790692987213]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓TitreBox [ngx.components.UIDynamicElement-1790694268297]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓TitreBoxC [ngx.components.UIAttribute-1790694268299]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-title
+        ↓TitreBoxT [ngx.components.UIText-1790694268301]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Plan de charge
+      ↓QuiBox [ngx.components.UIDynamicElement-1790694269173]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓QuiBoxC [ngx.components.UIAttribute-1790694269175]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-meta
+        ↓QuiBoxT [ngx.components.UIText-1790694269177]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.nomActeur()
+      ↓QuandBox [ngx.components.UIDynamicElement-1790694270049]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓QuandBoxC [ngx.components.UIAttribute-1790694270051]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-meta
+        ↓QuandBoxT [ngx.components.UIText-1790694270053]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.periodeLabel()
+      ↓BarC [ngx.components.UIAttribute-1790692987215]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-bar
+      ↓Acteur [ngx.components.UIDynamicElement-1790692987223]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790692987223",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code agent"
+          }'
+        tagName: ion-input
+        ↓ActeurE [ngx.components.UIControlEvent-1790692987225]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓ActeurEA [ngx.components.UICustomAction-1790692987483]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setActor(event);
+                    resolve(true);
+                    
+↓Content [ngx.components.UIDynamicElement-1790692987485]: 
+  beanData: '{"ionBean":"Content"}'
+  tagName: ion-content
+  ↓ContentC [ngx.components.UIAttribute-1790692987487]: 
+    attrName: class
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:pfc-page
+  ↓Message [ngx.components.UIText-1790692987489]: 
+    textValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.message
+  ↓Nav [ngx.components.UIDynamicElement-1790692987491]: 
+    beanData: '{"ionBean":"DivTag"}'
+    tagName: div
+    ↓NavC [ngx.components.UIAttribute-1790692987493]: 
+      attrName: class
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:pfc-nav
+    ↓GoGrille [ngx.components.UIDynamicElement-1790692987495]: 
+      beanData: |
+        '{
+         "ionBean": "Button",
+         "IonFill": "plain:outline",
+         "IonSize": "plain:small"
+        }'
+      tagName: ion-button
+      ↓GoGrilleC [ngx.components.UIAttribute-1790692987497]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-btn
+      ↓GoGrilleE [ngx.components.UIControlEvent-1790692987499]: 
+        attrName: click
+        eventName: click
+        ↓GoGrilleEA [ngx.components.UICustomAction-1790692987501]: 
+          actionValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+              - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                →: |
+                  page.ouvrir('grille');
+                  resolve(true);
+                  
+      ↓GoGrilleT [ngx.components.UIText-1790692987503]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:Plan de charge
+    ↓IfAdminP [ngx.components.UIControlDirective-1790692987505]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.canAdmin
+      ↓GoProjets [ngx.components.UIDynamicElement-1790692988359]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓GoProjetsC [ngx.components.UIAttribute-1790692988361]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓GoProjetsE [ngx.components.UIControlEvent-1790692988363]: 
+          attrName: click
+          eventName: click
+          ↓GoProjetsEA [ngx.components.UICustomAction-1790692988365]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.ouvrir('projets');
+                    resolve(true);
+                    
+        ↓GoProjetsT [ngx.components.UIText-1790692988367]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Projets
+    ↓IfAdminL [ngx.components.UIControlDirective-1790692988369]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.canAdmin
+      ↓GoLignes [ngx.components.UIDynamicElement-1790692988371]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓GoLignesC [ngx.components.UIAttribute-1790692988373]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓GoLignesE [ngx.components.UIControlEvent-1790692988375]: 
+          attrName: click
+          eventName: click
+          ↓GoLignesEA [ngx.components.UICustomAction-1790692988377]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.ouvrir('lignes');
+                    resolve(true);
+                    
+        ↓GoLignesT [ngx.components.UIText-1790692988379]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Lignes
+    ↓IfAdminR [ngx.components.UIControlDirective-1790692988381]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.canAdmin
+      ↓GoRoles [ngx.components.UIDynamicElement-1790692988383]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓GoRolesC [ngx.components.UIAttribute-1790692988385]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓GoRolesE [ngx.components.UIControlEvent-1790692988387]: 
+          attrName: click
+          eventName: click
+          ↓GoRolesEA [ngx.components.UICustomAction-1790692988389]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.ouvrir('roles');
+                    resolve(true);
+                    
+        ↓GoRolesT [ngx.components.UIText-1790692988391]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Roles
+    ↓IfAdminS [ngx.components.UIControlDirective-1790692988393]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.canAdmin
+      ↓GoSuivi [ngx.components.UIDynamicElement-1790692988395]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓GoSuiviC [ngx.components.UIAttribute-1790692988397]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓GoSuiviE [ngx.components.UIControlEvent-1790692988399]: 
+          attrName: click
+          eventName: click
+          ↓GoSuiviEA [ngx.components.UICustomAction-1790692988401]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.ouvrir('suivi');
+                    resolve(true);
+                    
+        ↓GoSuiviT [ngx.components.UIText-1790692988403]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Suivi
+    ↓IfAdminM [ngx.components.UIControlDirective-1790692988405]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.canAdmin
+      ↓GoMvp [ngx.components.UIDynamicElement-1790692988407]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓GoMvpC [ngx.components.UIAttribute-1790692988409]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓GoMvpE [ngx.components.UIControlEvent-1790692988411]: 
+          attrName: click
+          eventName: click
+          ↓GoMvpEA [ngx.components.UICustomAction-1790692988413]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.ouvrir('mvp');
+                    resolve(true);
+                    
+        ↓GoMvpT [ngx.components.UIText-1790692988415]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:MVP
+    ↓IfAdminF [ngx.components.UIControlDirective-1790692988417]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.canAdmin
+      ↓GoFeries [ngx.components.UIDynamicElement-1790692988419]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓GoFeriesC [ngx.components.UIAttribute-1790692988421]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓GoFeriesE [ngx.components.UIControlEvent-1790692988423]: 
+          attrName: click
+          eventName: click
+          ↓GoFeriesEA [ngx.components.UICustomAction-1790692988425]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.chargerFeries();
+                    resolve(true);
+                    
+        ↓GoFeriesT [ngx.components.UIText-1790692988427]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Jours feries
+  ↓IfGrille [ngx.components.UIControlDirective-1790692988429]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.view === 'grille'
+    ↓GrilleWrap [ngx.components.UIDynamicElement-1790692988431]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓GrilleWrapC [ngx.components.UIAttribute-1790692988433]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-panel
+      ↓Grille [ngx.components.UIUseShared-1790693057848]: 
+        identifier: planningGridV2
+        sharedcomponent: lib_components_ui.Application.NgxApp.PlanningGridV2
+        ↓rows [ngx.components.UIUseVariable-1790693067319]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.rows
+        ↓items [ngx.components.UIUseVariable-1790693080004]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.items
+        ↓startDate [ngx.components.UIUseVariable-1790693080900]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.dateFrom
+        ↓initialDate [ngx.components.UIUseVariable-1790693081796]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.dateFrom
+        ↓today [ngx.components.UIUseVariable-1790693082692]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.today
+        ↓dayCount [ngx.components.UIUseVariable-1790693083588]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.dayCount
+        ↓holidays [ngx.components.UIUseVariable-1790693084484]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.holidays
+        ↓typeLabels [ngx.components.UIUseVariable-1790693085380]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.typeLabels
+        ↓typeStyles [ngx.components.UIUseVariable-1790693086276]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.typeStyles
+        ↓labels [ngx.components.UIUseVariable-1790693087172]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.gridLabels
+        ↓readonly [ngx.components.UIUseVariable-1790693088068]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:!this.canEdit
+        ↓stickyLabel [ngx.components.UIUseVariable-1790693088964]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Collaborateur
+        ↓gridHeight [ngx.components.UIUseVariable-1790693089860]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:72vh
+        ↓skipHolidays [ngx.components.UIUseVariable-1790693090756]: 
+          varValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:false
+        ↓OnVisible [ngx.components.UIControlEvent-1790693091652]: 
+          attrName: (visibleRangeChange)
+          eventName: visibleRangeChange
+          ↓OnVisibleA [ngx.components.UICustomAction-1790693091910]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.onVisible(event);
+                    resolve(true);
+                    
+        ↓OnCreate [ngx.components.UIControlEvent-1790693101239]: 
+          attrName: (createRange)
+          eventName: createRange
+          ↓OnCreateA [ngx.components.UICustomAction-1790693101497]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.onCreate(event);
+                    resolve(true);
+                    
+        ↓OnEvent [ngx.components.UIControlEvent-1790693102393]: 
+          attrName: (eventClick)
+          eventName: eventClick
+          ↓OnEventA [ngx.components.UICustomAction-1790693102651]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.onEvent(event);
+                    resolve(true);
+                    
+        ↓OnOrder [ngx.components.UIControlEvent-1790693103547]: 
+          attrName: (orderChange)
+          eventName: orderChange
+          ↓OnOrderA [ngx.components.UICustomAction-1790693103805]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.onOrder(event);
+                    resolve(true);
+                    
+        ↓OnComment [ngx.components.UIControlEvent-1790693104701]: 
+          attrName: (commentClick)
+          eventName: commentClick
+          ↓OnCommentA [ngx.components.UICustomAction-1790693104959]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.onComment(event);
+                    resolve(true);
+                    
+  ↓IfAffect [ngx.components.UIControlDirective-1790693105831]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.modal === 'affect'
+    ↓AffectOverlay [ngx.components.UIDynamicElement-1790693106685]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓AffectOverlayC [ngx.components.UIAttribute-1790693106687]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-modal
+      ↓AffectCard [ngx.components.UIDynamicElement-1790693106689]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓AffectCardC [ngx.components.UIAttribute-1790693106691]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-card
+        ↓AffectTitle [ngx.components.UIText-1790693106693]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Affectation
+        ↓AffectMeta [ngx.components.UIText-1790693106695]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:(this.saisie.cleLigne || '') + ' ' + (this.saisie.dateFrom || '') + ' → ' + (this.saisie.dateTo || '')
+        ↓Types [ngx.components.UIDynamicElement-1790693106697]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓TypesC [ngx.components.UIAttribute-1790693106699]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-row
+          ↓TProjet [ngx.components.UIDynamicElement-1790693106701]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓TProjetC [ngx.components.UIAttribute-1790693106703]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓TProjetE [ngx.components.UIControlEvent-1790693106705]: 
+              attrName: click
+              eventName: click
+              ↓TProjetEA [ngx.components.UICustomAction-1790693106963]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setType('PROJET');
+                        resolve(true);
+                        
+            ↓TProjetT [ngx.components.UIText-1790693106965]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:PROJET
+          ↓TOff [ngx.components.UIDynamicElement-1790693106967]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓TOffC [ngx.components.UIAttribute-1790693106969]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓TOffE [ngx.components.UIControlEvent-1790693106971]: 
+              attrName: click
+              eventName: click
+              ↓TOffEA [ngx.components.UICustomAction-1790693106973]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setType('OFF');
+                        resolve(true);
+                        
+            ↓TOffT [ngx.components.UIText-1790693106975]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:OFF
+          ↓TAbs [ngx.components.UIDynamicElement-1790693106977]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓TAbsC [ngx.components.UIAttribute-1790693106979]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓TAbsE [ngx.components.UIControlEvent-1790693106981]: 
+              attrName: click
+              eventName: click
+              ↓TAbsEA [ngx.components.UICustomAction-1790693106983]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setType('ABSENCE');
+                        resolve(true);
+                        
+            ↓TAbsT [ngx.components.UIText-1790693106985]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:ABSENCE
+        ↓TypeChoisi [ngx.components.UIText-1790693106987]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:'Type ' + (this.saisie.codeType || '')
+        ↓IfProjet [ngx.components.UIControlDirective-1790693106989]: 
+          directiveName: If
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.saisie && this.saisie.codeType === 'PROJET'
+          ↓ChoisirP [ngx.components.UIText-1790693106991]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:Projet
+          ↓ProjetList [ngx.components.UIDynamicElement-1790693106993]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ProjetListC [ngx.components.UIAttribute-1790693106995]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-list
+            ↓LoopEl [ngx.components.UIControlDirective-1790693106997]: 
+              directiveItemName: el
+              directiveSource: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.elements
+              ↓ElBtn [ngx.components.UIDynamicElement-1790693106999]: 
+                beanData: |
+                  '{
+                   "ionBean": "Button",
+                   "IonFill": "plain:clear",
+                   "IonSize": "plain:small"
+                  }'
+                tagName: ion-button
+                ↓ElBtnD [ngx.components.UIAttribute-1790693107001]: 
+                  attrName: data-libelle
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:el.libelle
+                ↓ElBtnE [ngx.components.UIControlEvent-1790693107003]: 
+                  attrName: click
+                  eventName: click
+                  ↓ElBtnEA [ngx.components.UICustomAction-1790693107005]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            page.choisirProjet(event);
+                            resolve(true);
+                            
+                ↓ElBtnT [ngx.components.UIText-1790693107007]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:el.libelle
+          ↓ProjetChoisi [ngx.components.UIText-1790693107009]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: 'script:''Projet : '' + (this.saisie.libelleElement || '''')'
+        ↓Periodes [ngx.components.UIDynamicElement-1790693107011]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓PeriodesC [ngx.components.UIAttribute-1790693107013]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-row
+          ↓PJ [ngx.components.UIDynamicElement-1790693107015]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓PJC [ngx.components.UIAttribute-1790693107017]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓PJE [ngx.components.UIControlEvent-1790693107019]: 
+              attrName: click
+              eventName: click
+              ↓PJEA [ngx.components.UICustomAction-1790693107021]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setPeriode('JOURNEE');
+                        resolve(true);
+                        
+            ↓PJT [ngx.components.UIText-1790693107023]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Journee
+          ↓PM [ngx.components.UIDynamicElement-1790693107025]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓PMC [ngx.components.UIAttribute-1790693107027]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓PME [ngx.components.UIControlEvent-1790693107029]: 
+              attrName: click
+              eventName: click
+              ↓PMEA [ngx.components.UICustomAction-1790693107031]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setPeriode('MATIN');
+                        resolve(true);
+                        
+            ↓PMT [ngx.components.UIText-1790693107033]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Matin
+          ↓PA [ngx.components.UIDynamicElement-1790693107035]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓PAC [ngx.components.UIAttribute-1790693107037]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓PAE [ngx.components.UIControlEvent-1790693107039]: 
+              attrName: click
+              eventName: click
+              ↓PAEA [ngx.components.UICustomAction-1790693107041]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setPeriode('APREM');
+                        resolve(true);
+                        
+            ↓PAT [ngx.components.UIText-1790693107043]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Apres-midi
+        ↓PerChoix [ngx.components.UIText-1790693107045]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:'Periode ' + (this.saisie.periode || '')
+        ↓Note [ngx.components.UIDynamicElement-1790693107047]: 
+          beanData: |
+            '{
+             "ionBean": "Input",
+             "ControlName": "plain:name1790693107047",
+             "Fill": "plain:outline",
+             "Placeholder": "plain:Note courte"
+            }'
+          tagName: ion-input
+          ↓NoteE [ngx.components.UIControlEvent-1790693107049]: 
+            attrName: (ionInput)
+            eventName: ionInput
+            ↓NoteEA [ngx.components.UICustomAction-1790693107051]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.setNote(event);
+                      resolve(true);
+                      
+        ↓AffectActions [ngx.components.UIDynamicElement-1790693107053]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓AffectActionsC [ngx.components.UIAttribute-1790693107055]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-row
+          ↓SaveAffect [ngx.components.UIDynamicElement-1790693107057]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓SaveAffectC [ngx.components.UIAttribute-1790693107059]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓SaveAffectE [ngx.components.UIControlEvent-1790693107061]: 
+              attrName: click
+              eventName: click
+              ↓SaveAffectEA [ngx.components.UICustomAction-1790693107063]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.enregistrerAffect();
+                        resolve(true);
+                        
+            ↓SaveAffectT [ngx.components.UIText-1790693107065]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Enregistrer
+          ↓CancelAffect [ngx.components.UIDynamicElement-1790693107067]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓CancelAffectC [ngx.components.UIAttribute-1790693107069]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓CancelAffectE [ngx.components.UIControlEvent-1790693107071]: 
+              attrName: click
+              eventName: click
+              ↓CancelAffectEA [ngx.components.UICustomAction-1790693107073]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.fermer();
+                        resolve(true);
+                        
+            ↓CancelAffectT [ngx.components.UIText-1790693107075]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Fermer
+  ↓IfComment [ngx.components.UIControlDirective-1790693107947]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.modal === 'comment'
+    ↓CommentOverlay [ngx.components.UIDynamicElement-1790693108801]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓CommentOverlayC [ngx.components.UIAttribute-1790693108803]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-modal
+      ↓CommentCard [ngx.components.UIDynamicElement-1790693108805]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓CommentCardC [ngx.components.UIAttribute-1790693108807]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-card
+        ↓CommentTitle [ngx.components.UIText-1790693108809]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Discussion
+        ↓FilSwitch [ngx.components.UIDynamicElement-1790693108811]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓FilSwitchC [ngx.components.UIAttribute-1790693108813]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-row
+          ↓FilJour [ngx.components.UIDynamicElement-1790693108815]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓FilJourC [ngx.components.UIAttribute-1790693108817]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓FilJourE [ngx.components.UIControlEvent-1790693108819]: 
+              attrName: click
+              eventName: click
+              ↓FilJourEA [ngx.components.UICustomAction-1790693109077]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.ouvrirFilJour();
+                        resolve(true);
+                        
+            ↓FilJourT [ngx.components.UIText-1790693109079]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Journee
+          ↓FilProjet [ngx.components.UIDynamicElement-1790693109081]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓FilProjetC [ngx.components.UIAttribute-1790693109083]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓FilProjetE [ngx.components.UIControlEvent-1790693109085]: 
+              attrName: click
+              eventName: click
+              ↓FilProjetEA [ngx.components.UICustomAction-1790693109087]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.ouvrirFilProjet();
+                        resolve(true);
+                        
+            ↓FilProjetT [ngx.components.UIText-1790693109089]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Projet
+        ↓MsgList [ngx.components.UIDynamicElement-1790693109091]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓MsgListC [ngx.components.UIAttribute-1790693109093]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-list
+          ↓LoopMsg [ngx.components.UIControlDirective-1790693109095]: 
+            directiveItemName: msg
+            directiveSource: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:this.messages
+            ↓MsgLine [ngx.components.UIText-1790693109097]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: 'script:(msg.auteur || '''') + '' — '' + (msg.corps || '''') + (msg.fromPastille === ''true'' ? '' (pastille)'' : '''')'
+        ↓IfSend [ngx.components.UIControlDirective-1790693109099]: 
+          directiveName: If
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.canSend()
+          ↓Corps [ngx.components.UIDynamicElement-1790693109101]: 
+            beanData: |
+              '{
+               "ionBean": "Input",
+               "ControlName": "plain:name1790693109101",
+               "Fill": "plain:outline",
+               "Placeholder": "plain:Message"
+              }'
+            tagName: ion-input
+            ↓CorpsE [ngx.components.UIControlEvent-1790693109103]: 
+              attrName: (ionInput)
+              eventName: ionInput
+              ↓CorpsEA [ngx.components.UICustomAction-1790693109105]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.setComment(event);
+                        resolve(true);
+                        
+          ↓MentionsLbl [ngx.components.UIText-1790693109107]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:Mentions
+          ↓MentionList [ngx.components.UIDynamicElement-1790693109109]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓MentionListC [ngx.components.UIAttribute-1790693109111]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-list
+            ↓LoopMen [ngx.components.UIControlDirective-1790693109113]: 
+              directiveItemName: pers
+              directiveSource: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.rows
+              ↓MenBtn [ngx.components.UIDynamicElement-1790693109115]: 
+                beanData: |
+                  '{
+                   "ionBean": "Button",
+                   "IonFill": "plain:clear",
+                   "IonSize": "plain:small"
+                  }'
+                tagName: ion-button
+                ↓MenBtnD [ngx.components.UIAttribute-1790693109117]: 
+                  attrName: data-cle
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:pers.id
+                ↓MenBtnE [ngx.components.UIControlEvent-1790693109119]: 
+                  attrName: click
+                  eventName: click
+                  ↓MenBtnEA [ngx.components.UICustomAction-1790693109121]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            page.ajouterMention(event);
+                            resolve(true);
+                            
+                ↓MenBtnT [ngx.components.UIText-1790693109123]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:pers.name
+          ↓TousBtn [ngx.components.UIDynamicElement-1790693109125]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓TousBtnC [ngx.components.UIAttribute-1790693109127]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓TousBtnE [ngx.components.UIControlEvent-1790693109129]: 
+              attrName: click
+              eventName: click
+              ↓TousBtnEA [ngx.components.UICustomAction-1790693109131]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.basculerTous();
+                        resolve(true);
+                        
+            ↓TousBtnT [ngx.components.UIText-1790693109133]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Tout le monde
+          ↓MentionsState [ngx.components.UIText-1790693109135]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: 'script:''Cites : '' + (this.mentions || []).join('', '') + (this.mentionTous ? '' + tout le monde'' : '''')'
+          ↓SendMsg [ngx.components.UIDynamicElement-1790693109137]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓SendMsgC [ngx.components.UIAttribute-1790693109139]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓SendMsgE [ngx.components.UIControlEvent-1790693109141]: 
+              attrName: click
+              eventName: click
+              ↓SendMsgEA [ngx.components.UICustomAction-1790693109143]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.envoyerCommentaire();
+                        resolve(true);
+                        
+            ↓SendMsgT [ngx.components.UIText-1790693109145]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Envoyer
+        ↓CloseComment [ngx.components.UIDynamicElement-1790693109147]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓CloseCommentC [ngx.components.UIAttribute-1790693109149]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓CloseCommentE [ngx.components.UIControlEvent-1790693109151]: 
+            attrName: click
+            eventName: click
+            ↓CloseCommentEA [ngx.components.UICustomAction-1790693109153]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.fermer();
+                      resolve(true);
+                      
+          ↓CloseCommentT [ngx.components.UIText-1790693109155]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:Fermer
+  ↓IfDelete [ngx.components.UIControlDirective-1790693110027]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.modal === 'delete'
+    ↓DeleteOverlay [ngx.components.UIDynamicElement-1790693110881]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓DeleteOverlayC [ngx.components.UIAttribute-1790693110883]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-modal
+      ↓DeleteCard [ngx.components.UIDynamicElement-1790693110885]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓DeleteCardC [ngx.components.UIAttribute-1790693110887]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-card
+        ↓DeleteTitle [ngx.components.UIText-1790693110889]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Pastille
+        ↓DeleteMeta [ngx.components.UIText-1790693110891]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: 'script:(this.selection && this.selection.label) ? (this.selection.label + '' '' + this.selection.start) : '''''
+        ↓IfCanDel [ngx.components.UIControlDirective-1790693110893]: 
+          directiveName: If
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.canEdit
+          ↓DoDelete [ngx.components.UIDynamicElement-1790693110895]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:outline",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓DoDeleteC [ngx.components.UIAttribute-1790693110897]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:pfc-btn
+            ↓DoDeleteE [ngx.components.UIControlEvent-1790693110899]: 
+              attrName: click
+              eventName: click
+              ↓DoDeleteEA [ngx.components.UICustomAction-1790693111157]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.supprimerPastille();
+                        resolve(true);
+                        
+            ↓DoDeleteT [ngx.components.UIText-1790693111159]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Supprimer
+        ↓DoComment [ngx.components.UIDynamicElement-1790693111161]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓DoCommentC [ngx.components.UIAttribute-1790693111163]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓DoCommentE [ngx.components.UIControlEvent-1790693111165]: 
+            attrName: click
+            eventName: click
+            ↓DoCommentEA [ngx.components.UICustomAction-1790693111167]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      'page.onComment({eventId: this.selection && this.selection.id});
+                      resolve(true);
+                      '
+          ↓DoCommentT [ngx.components.UIText-1790693111169]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:Commentaires
+        ↓CloseDelete [ngx.components.UIDynamicElement-1790693111171]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓CloseDeleteC [ngx.components.UIAttribute-1790693111173]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓CloseDeleteE [ngx.components.UIControlEvent-1790693111175]: 
+            attrName: click
+            eventName: click
+            ↓CloseDeleteEA [ngx.components.UICustomAction-1790693111177]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.fermer();
+                      resolve(true);
+                      
+          ↓CloseDeleteT [ngx.components.UIText-1790693111179]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:Fermer
+  ↓IfBoP [ngx.components.UIControlDirective-1790693112051]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.view === 'projets'
+    ↓BoP [ngx.components.UIDynamicElement-1790693112905]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓BoPC [ngx.components.UIAttribute-1790693112907]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-panel
+      ↓BoPT [ngx.components.UIText-1790693112909]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:Projets
+      ↓BoPList [ngx.components.UIDynamicElement-1790693112911]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓BoPListC [ngx.components.UIAttribute-1790693112913]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-list
+        ↓LoopP [ngx.components.UIControlDirective-1790693112915]: 
+          directiveItemName: el
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.elements
+          ↓PBtn [ngx.components.UIDynamicElement-1790693112917]: 
+            beanData: |
+              '{
+               "ionBean": "Button",
+               "IonFill": "plain:clear",
+               "IonSize": "plain:small"
+              }'
+            tagName: ion-button
+            ↓PBtnD [ngx.components.UIAttribute-1790693112919]: 
+              attrName: data-code
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:el.code
+            ↓PBtnE [ngx.components.UIControlEvent-1790693112921]: 
+              attrName: click
+              eventName: click
+              ↓PBtnEA [ngx.components.UICustomAction-1790693113179]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.choisirElement(event);
+                        resolve(true);
+                        
+            ↓PBtnT [ngx.components.UIText-1790693113181]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:el.code + ' — ' + el.libelle
+      ↓PCode [ngx.components.UIDynamicElement-1790693113183]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693113183",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code"
+          }'
+        tagName: ion-input
+        ↓PCodeE [ngx.components.UIControlEvent-1790693113185]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PCodeEA [ngx.components.UICustomAction-1790693113187]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'code');
+                    resolve(true);
+                    
+      ↓PLib [ngx.components.UIDynamicElement-1790693113189]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693113189",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Libelle"
+          }'
+        tagName: ion-input
+        ↓PLibE [ngx.components.UIControlEvent-1790693113191]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PLibEA [ngx.components.UICustomAction-1790693113193]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'libelle');
+                    resolve(true);
+                    
+      ↓PLc [ngx.components.UIDynamicElement-1790693113195]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693113195",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:LC ou NC"
+          }'
+        tagName: ion-input
+        ↓PLcE [ngx.components.UIControlEvent-1790693113197]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PLcEA [ngx.components.UICustomAction-1790693113199]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'lcNc');
+                    resolve(true);
+                    
+      ↓PSt [ngx.components.UIDynamicElement-1790693113201]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693113201",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Statut catalogue"
+          }'
+        tagName: ion-input
+        ↓PStE [ngx.components.UIControlEvent-1790693113203]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PStEA [ngx.components.UICustomAction-1790693113205]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'statutCatalogue');
+                    resolve(true);
+                    
+      ↓PSave [ngx.components.UIDynamicElement-1790693113207]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓PSaveC [ngx.components.UIAttribute-1790693113209]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓PSaveE [ngx.components.UIControlEvent-1790693113211]: 
+          attrName: click
+          eventName: click
+          ↓PSaveEA [ngx.components.UICustomAction-1790693113213]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverElement();
+                    resolve(true);
+                    
+        ↓PSaveT [ngx.components.UIText-1790693113215]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Enregistrer le projet
+      ↓PPor [ngx.components.UIDynamicElement-1790693113217]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693113217",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Porteurs code|libelle;..."
+          }'
+        tagName: ion-input
+        ↓PPorE [ngx.components.UIControlEvent-1790693113219]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PPorEA [ngx.components.UICustomAction-1790693113221]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'porteurs');
+                    resolve(true);
+                    
+      ↓PSavePor [ngx.components.UIDynamicElement-1790693113223]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓PSavePorC [ngx.components.UIAttribute-1790693113225]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓PSavePorE [ngx.components.UIControlEvent-1790693113227]: 
+          attrName: click
+          eventName: click
+          ↓PSavePorEA [ngx.components.UICustomAction-1790693113229]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverPorteurs();
+                    resolve(true);
+                    
+        ↓PSavePorT [ngx.components.UIText-1790693113231]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Remplacer les porteurs
+  ↓IfBoL [ngx.components.UIControlDirective-1790693114103]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.view === 'lignes'
+    ↓BoL [ngx.components.UIDynamicElement-1790693114957]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓BoLC [ngx.components.UIAttribute-1790693114959]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-panel
+      ↓BoLT [ngx.components.UIText-1790693114961]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:Profils et lignes
+      ↓PrCode [ngx.components.UIDynamicElement-1790693114963]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693114963",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code profil"
+          }'
+        tagName: ion-input
+        ↓PrCodeE [ngx.components.UIControlEvent-1790693114965]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PrCodeEA [ngx.components.UICustomAction-1790693115223]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'code');
+                    resolve(true);
+                    
+      ↓PrLib [ngx.components.UIDynamicElement-1790693115225]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693115225",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Libelle profil"
+          }'
+        tagName: ion-input
+        ↓PrLibE [ngx.components.UIControlEvent-1790693115227]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PrLibEA [ngx.components.UICustomAction-1790693115229]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'libelle');
+                    resolve(true);
+                    
+      ↓PrOrd [ngx.components.UIDynamicElement-1790693115231]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693115231",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Ordre profil"
+          }'
+        tagName: ion-input
+        ↓PrOrdE [ngx.components.UIControlEvent-1790693115233]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓PrOrdEA [ngx.components.UICustomAction-1790693115235]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'ordre');
+                    resolve(true);
+                    
+      ↓PrSave [ngx.components.UIDynamicElement-1790693115237]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓PrSaveC [ngx.components.UIAttribute-1790693115239]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓PrSaveE [ngx.components.UIControlEvent-1790693115241]: 
+          attrName: click
+          eventName: click
+          ↓PrSaveEA [ngx.components.UICustomAction-1790693115243]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverProfil();
+                    resolve(true);
+                    
+        ↓PrSaveT [ngx.components.UIText-1790693115245]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Enregistrer le profil
+      ↓LCle [ngx.components.UIDynamicElement-1790693115247]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693115247",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Cle ligne"
+          }'
+        tagName: ion-input
+        ↓LCleE [ngx.components.UIControlEvent-1790693115249]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓LCleEA [ngx.components.UICustomAction-1790693115251]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'cle');
+                    resolve(true);
+                    
+      ↓LExt [ngx.components.UIDynamicElement-1790693115253]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693115253",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code agent"
+          }'
+        tagName: ion-input
+        ↓LExtE [ngx.components.UIControlEvent-1790693115255]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓LExtEA [ngx.components.UICustomAction-1790693115257]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'cleExterne');
+                    resolve(true);
+                    
+      ↓LProf [ngx.components.UIDynamicElement-1790693115259]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693115259",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code profil"
+          }'
+        tagName: ion-input
+        ↓LProfE [ngx.components.UIControlEvent-1790693115261]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓LProfEA [ngx.components.UICustomAction-1790693115263]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'codeProfil');
+                    resolve(true);
+                    
+      ↓LOrd [ngx.components.UIDynamicElement-1790693115265]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693115265",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Ordre"
+          }'
+        tagName: ion-input
+        ↓LOrdE [ngx.components.UIControlEvent-1790693115267]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓LOrdEA [ngx.components.UICustomAction-1790693115269]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'ordre');
+                    resolve(true);
+                    
+      ↓LSave [ngx.components.UIDynamicElement-1790693115271]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓LSaveC [ngx.components.UIAttribute-1790693115273]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓LSaveE [ngx.components.UIControlEvent-1790693115275]: 
+          attrName: click
+          eventName: click
+          ↓LSaveEA [ngx.components.UICustomAction-1790693115277]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverLigne();
+                    resolve(true);
+                    
+        ↓LSaveT [ngx.components.UIText-1790693115279]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Enregistrer la ligne
+  ↓IfBoR [ngx.components.UIControlDirective-1790693116151]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.view === 'roles'
+    ↓BoR [ngx.components.UIDynamicElement-1790693117005]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓BoRC [ngx.components.UIAttribute-1790693117007]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-panel
+      ↓BoRT [ngx.components.UIText-1790693117009]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:Roles
+      ↓DroitBtns [ngx.components.UIDynamicElement-1790693117011]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓DroitBtnsC [ngx.components.UIAttribute-1790693117013]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-row
+        ↓D1 [ngx.components.UIDynamicElement-1790693117015]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓D1C [ngx.components.UIAttribute-1790693117017]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓D1E [ngx.components.UIControlEvent-1790693117019]: 
+            attrName: click
+            eventName: click
+            ↓D1EA [ngx.components.UICustomAction-1790693117277]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.toggleDroit('MODIFIER_AFFECTATION');
+                      resolve(true);
+                      
+          ↓D1T [ngx.components.UIText-1790693117279]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:MODIFIER_AFFECTATION
+        ↓D2 [ngx.components.UIDynamicElement-1790693117281]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓D2C [ngx.components.UIAttribute-1790693117283]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓D2E [ngx.components.UIControlEvent-1790693117285]: 
+            attrName: click
+            eventName: click
+            ↓D2EA [ngx.components.UICustomAction-1790693117287]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.toggleDroit('COMMENTER_JOUR_SOI');
+                      resolve(true);
+                      
+          ↓D2T [ngx.components.UIText-1790693117289]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:COMMENTER_JOUR_SOI
+        ↓D3 [ngx.components.UIDynamicElement-1790693117291]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓D3C [ngx.components.UIAttribute-1790693117293]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓D3E [ngx.components.UIControlEvent-1790693117295]: 
+            attrName: click
+            eventName: click
+            ↓D3EA [ngx.components.UICustomAction-1790693117297]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.toggleDroit('COMMENTER_JOUR_AUTRUI');
+                      resolve(true);
+                      
+          ↓D3T [ngx.components.UIText-1790693117299]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:COMMENTER_JOUR_AUTRUI
+        ↓D4 [ngx.components.UIDynamicElement-1790693117301]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓D4C [ngx.components.UIAttribute-1790693117303]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓D4E [ngx.components.UIControlEvent-1790693117305]: 
+            attrName: click
+            eventName: click
+            ↓D4EA [ngx.components.UICustomAction-1790693117307]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.toggleDroit('COMMENTER_PROJET');
+                      resolve(true);
+                      
+          ↓D4T [ngx.components.UIText-1790693117309]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:COMMENTER_PROJET
+        ↓D5 [ngx.components.UIDynamicElement-1790693117311]: 
+          beanData: |
+            '{
+             "ionBean": "Button",
+             "IonFill": "plain:outline",
+             "IonSize": "plain:small"
+            }'
+          tagName: ion-button
+          ↓D5C [ngx.components.UIAttribute-1790693117313]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:pfc-btn
+          ↓D5E [ngx.components.UIControlEvent-1790693117315]: 
+            attrName: click
+            eventName: click
+            ↓D5EA [ngx.components.UICustomAction-1790693117317]: 
+              actionValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                  - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                    →: |
+                      page.toggleDroit('GERER_REFERENTIEL');
+                      resolve(true);
+                      
+          ↓D5T [ngx.components.UIText-1790693117319]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:GERER_REFERENTIEL
+      ↓DroitsChoix [ngx.components.UIText-1790693117321]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: 'script:''Droits : '' + ((this.boForm && this.boForm.droits) || '''')'
+      ↓RCode [ngx.components.UIDynamicElement-1790693117323]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693117323",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code role"
+          }'
+        tagName: ion-input
+        ↓RCodeE [ngx.components.UIControlEvent-1790693117325]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓RCodeEA [ngx.components.UICustomAction-1790693117327]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'code');
+                    resolve(true);
+                    
+      ↓RLib [ngx.components.UIDynamicElement-1790693117329]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693117329",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Libelle role"
+          }'
+        tagName: ion-input
+        ↓RLibE [ngx.components.UIControlEvent-1790693117331]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓RLibEA [ngx.components.UICustomAction-1790693117333]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'libelle');
+                    resolve(true);
+                    
+      ↓RSave [ngx.components.UIDynamicElement-1790693117335]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓RSaveC [ngx.components.UIAttribute-1790693117337]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓RSaveE [ngx.components.UIControlEvent-1790693117339]: 
+          attrName: click
+          eventName: click
+          ↓RSaveEA [ngx.components.UICustomAction-1790693117341]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverRole();
+                    resolve(true);
+                    
+        ↓RSaveT [ngx.components.UIText-1790693117343]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Enregistrer le role
+      ↓RLCle [ngx.components.UIDynamicElement-1790693117345]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693117345",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Cle de la ligne"
+          }'
+        tagName: ion-input
+        ↓RLCleE [ngx.components.UIControlEvent-1790693117347]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓RLCleEA [ngx.components.UICustomAction-1790693117349]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'cleLigne');
+                    resolve(true);
+                    
+      ↓RLRole [ngx.components.UIDynamicElement-1790693117351]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693117351",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code role"
+          }'
+        tagName: ion-input
+        ↓RLRoleE [ngx.components.UIControlEvent-1790693117353]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓RLRoleEA [ngx.components.UICustomAction-1790693117355]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'codeRole');
+                    resolve(true);
+                    
+      ↓RLSave [ngx.components.UIDynamicElement-1790693117357]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓RLSaveC [ngx.components.UIAttribute-1790693117359]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓RLSaveE [ngx.components.UIControlEvent-1790693117361]: 
+          attrName: click
+          eventName: click
+          ↓RLSaveEA [ngx.components.UICustomAction-1790693117363]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.affecterRole();
+                    resolve(true);
+                    
+        ↓RLSaveT [ngx.components.UIText-1790693117365]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Attribuer le role
+  ↓IfBoS [ngx.components.UIControlDirective-1790693118237]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.view === 'suivi'
+    ↓BoS [ngx.components.UIDynamicElement-1790693119091]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓BoSC [ngx.components.UIAttribute-1790693119093]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-panel
+      ↓BoST [ngx.components.UIText-1790693119095]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:Suivi
+      ↓SuiviList [ngx.components.UIDynamicElement-1790693119097]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓SuiviListC [ngx.components.UIAttribute-1790693119099]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-list
+        ↓LoopS [ngx.components.UIControlDirective-1790693119101]: 
+          directiveItemName: sv
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.suivi
+          ↓SvLine [ngx.components.UIText-1790693119103]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: 'script:(sv.codeElement || '''') + '' / '' + (sv.etape || '''') + '' : '' + (sv.valeur || '''')'
+      ↓SEl [ngx.components.UIDynamicElement-1790693119105]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693119105",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code projet"
+          }'
+        tagName: ion-input
+        ↓SElE [ngx.components.UIControlEvent-1790693119107]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓SElEA [ngx.components.UICustomAction-1790693119365]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'codeElement');
+                    resolve(true);
+                    
+      ↓SEt [ngx.components.UIDynamicElement-1790693119367]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693119367",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code etape"
+          }'
+        tagName: ion-input
+        ↓SEtE [ngx.components.UIControlEvent-1790693119369]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓SEtEA [ngx.components.UICustomAction-1790693119371]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'codeEtape');
+                    resolve(true);
+                    
+      ↓SVa [ngx.components.UIDynamicElement-1790693119373]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693119373",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Valeur"
+          }'
+        tagName: ion-input
+        ↓SVaE [ngx.components.UIControlEvent-1790693119375]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓SVaEA [ngx.components.UICustomAction-1790693119377]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'valeur');
+                    resolve(true);
+                    
+      ↓SSave [ngx.components.UIDynamicElement-1790693119379]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓SSaveC [ngx.components.UIAttribute-1790693119381]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓SSaveE [ngx.components.UIControlEvent-1790693119383]: 
+          attrName: click
+          eventName: click
+          ↓SSaveEA [ngx.components.UICustomAction-1790693119385]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverSuivi();
+                    resolve(true);
+                    
+        ↓SSaveT [ngx.components.UIText-1790693119387]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Enregistrer
+  ↓IfBoM [ngx.components.UIControlDirective-1790693120259]: 
+    directiveName: If
+    directiveSource: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:this.view === 'mvp'
+    ↓BoM [ngx.components.UIDynamicElement-1790693121113]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: div
+      ↓BoMC [ngx.components.UIAttribute-1790693121115]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:pfc-panel
+      ↓BoMT [ngx.components.UIText-1790693121117]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:MVP
+      ↓ScoreList [ngx.components.UIDynamicElement-1790693121119]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓ScoreListC [ngx.components.UIAttribute-1790693121121]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-list
+        ↓LoopSc [ngx.components.UIControlDirective-1790693121123]: 
+          directiveItemName: sc
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.scores
+          ↓ScLine [ngx.components.UIText-1790693121125]: 
+            textValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: 'script:(sc.cleLigne || '''') + '' : '' + (sc.score || '''')'
+      ↓MCle [ngx.components.UIDynamicElement-1790693121127]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693121127",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Cle ligne"
+          }'
+        tagName: ion-input
+        ↓MCleE [ngx.components.UIControlEvent-1790693121129]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓MCleEA [ngx.components.UICustomAction-1790693121387]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'cleLigne');
+                    resolve(true);
+                    
+      ↓MEl [ngx.components.UIDynamicElement-1790693121389]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693121389",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Code projet"
+          }'
+        tagName: ion-input
+        ↓MElE [ngx.components.UIControlEvent-1790693121391]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓MElEA [ngx.components.UICustomAction-1790693121393]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'codeElement');
+                    resolve(true);
+                    
+      ↓MCo [ngx.components.UIDynamicElement-1790693121395]: 
+        beanData: |
+          '{
+           "ionBean": "Input",
+           "ControlName": "plain:name1790693121395",
+           "Fill": "plain:outline",
+           "Placeholder": "plain:Coefficient 0 a 1"
+          }'
+        tagName: ion-input
+        ↓MCoE [ngx.components.UIControlEvent-1790693121397]: 
+          attrName: (ionInput)
+          eventName: ionInput
+          ↓MCoEA [ngx.components.UICustomAction-1790693121399]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.setBo(event, 'coefficient');
+                    resolve(true);
+                    
+      ↓MSave [ngx.components.UIDynamicElement-1790693121401]: 
+        beanData: |
+          '{
+           "ionBean": "Button",
+           "IonFill": "plain:outline",
+           "IonSize": "plain:small"
+          }'
+        tagName: ion-button
+        ↓MSaveC [ngx.components.UIAttribute-1790693121403]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:pfc-btn
+        ↓MSaveE [ngx.components.UIControlEvent-1790693121405]: 
+          attrName: click
+          eventName: click
+          ↓MSaveEA [ngx.components.UICustomAction-1790693121407]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.sauverMvp();
+                    resolve(true);
+                    
+        ↓MSaveT [ngx.components.UIText-1790693121409]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Enregistrer

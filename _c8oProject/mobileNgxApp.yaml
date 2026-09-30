@@ -60,6 +60,7 @@ componentScriptContent:
 tplProjectName: mobilebuilder_tpl_8_4_0_ngx
 ↓Menu [ngx.components.UIDynamicMenu-1790684201258]: 🗏 mobileMenus/Menu.yaml
 ↓Page [ngx.components.PageComponent-1790684201259]: 🗏 mobilePages/Page.yaml
+↓PlanDeCharge [ngx.components.PageComponent-1790692690587]: 🗏 mobilePages/PlanDeCharge.yaml
 ↓Style [ngx.components.UIStyle-1790684201260]: 
   comment: You can add some global application styles here
   styleContent: 

@@ -5,6 +5,10 @@
   corsOrigin: =Origin
   httpSessionTimeout: 60
   ↓void [connectors.SqlConnector]: 🗏 connectors/void.yaml
+  ↓lib_components_ui_reference [references.ProjectSchemaReference]: 
+    projectName: lib_components_ui
+  ↓PortefeuilleLCNC_be_reference [references.ProjectSchemaReference]: 
+    projectName: PortefeuilleLCNC_be
   ↓project1 [references.ProjectSchemaReference]: 
     projectName: mobilebuilder_tpl_8_4_0_ngx=https://github.com/convertigo/c8oprj-mobilebuilder-tpl/archive/mobilebuilder_tpl_8_4_0_ngx.zip
   ↓Application [core.MobileApplication]: 

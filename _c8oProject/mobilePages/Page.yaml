@@ -1,6 +1,6 @@
-↑isRoot: true
-comment: Default home page
+comment: Accueil, redirection vers le plan de charge
 icon: home
+inAutoMenu: false
 preloadPriority: high
 scriptContent: 
   - xmlizable: 
@@ -10,11 +10,15 @@ scriptContent:
         /*Begin_c8o_PageImport*/
         /*End_c8o_PageImport*/
         /*Begin_c8o_PageDeclaration*/
-        	/*End_c8o_PageDeclaration*/
+        /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
-        		/*End_c8o_PageConstructor*/
+        /*End_c8o_PageConstructor*/
+        /*Begin_c8o_PageInitialization*/
+        		var nav = this.getInstance(NavController);
+        		setTimeout(function() { nav.navigateRoot("/plan"); }, 0);
+        /*End_c8o_PageInitialization*/
         /*Begin_c8o_PageFunction*/
-        	/*End_c8o_PageFunction*/
+        /*End_c8o_PageFunction*/
         
 segment: home
 title: Home
