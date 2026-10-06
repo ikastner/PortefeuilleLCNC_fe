@@ -15,7 +15,7 @@ scriptContent:
         /*End_c8o_PageConstructor*/
         /*Begin_c8o_PageInitialization*/
         		var nav = this.getInstance(NavController);
-        		setTimeout(function() { nav.navigateRoot("/plan"); }, 0);
+        		setTimeout(function() { nav.navigateRoot("/tableau-de-bord"); }, 0);
         /*End_c8o_PageInitialization*/
         /*Begin_c8o_PageFunction*/
         /*End_c8o_PageFunction*/

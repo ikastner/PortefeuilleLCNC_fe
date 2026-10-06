@@ -5,6 +5,10 @@
   corsOrigin: =Origin
   httpSessionTimeout: 60
   ↓void [connectors.SqlConnector]: 🗏 connectors/void.yaml
+  ↓lib_common_be_reference [references.ProjectSchemaReference]: 
+    projectName: lib_common_be
+  ↓lib_common_fe_reference [references.ProjectSchemaReference]: 
+    projectName: lib_common_fe
   ↓lib_components_ui_reference [references.ProjectSchemaReference]: 
     projectName: lib_components_ui
   ↓PortefeuilleLCNC_be_reference [references.ProjectSchemaReference]: 

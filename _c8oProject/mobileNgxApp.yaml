@@ -59,8 +59,13 @@ componentScriptContent:
         '
 tplProjectName: mobilebuilder_tpl_8_4_0_ngx
 ↓Menu [ngx.components.UIDynamicMenu-1790684201258]: 🗏 mobileMenus/Menu.yaml
+↓PfaSidebar [ngx.components.UISharedRegularComponent-1795600510400]: 🗏 mobileSharedComponents/PfaSidebar.yaml
 ↓Page [ngx.components.PageComponent-1790684201259]: 🗏 mobilePages/Page.yaml
 ↓PlanDeCharge [ngx.components.PageComponent-1790692690587]: 🗏 mobilePages/PlanDeCharge.yaml
+↓TableauDeBord [ngx.components.PageComponent-1795702000000]: 🗏 mobilePages/TableauDeBord.yaml
+↓Login [ngx.components.PageComponent-1791300000399]: 🗏 mobilePages/Login.yaml
+↓Collaborateurs [ngx.components.PageComponent-1791143574844]: 🗏 mobilePages/Collaborateurs.yaml
+↓Projets [ngx.components.PageComponent-1791188867938]: 🗏 mobilePages/Projets.yaml
 ↓Style [ngx.components.UIStyle-1790684201260]: 
   comment: You can add some global application styles here
   styleContent: 
@@ -214,10 +219,33 @@ tplProjectName: mobilebuilder_tpl_8_4_0_ngx
       }'
     comment: Restores and applies the persisted language preference
 ↓AppGuard [ngx.components.UIAppGuard-1790684201264]: 
-  comment: Central guard used to validate page navigation
-  ↓AuthorizePages [ngx.components.UIDynamicAction-1790684201265]: 
-    beanData: '{"ionBean":"AuthorizePagesAction"}'
-    comment: Applies page authorization rules before route access
+  comment: Verifie la session (lib_common_fe.CheckUserSession) avant chaque page, sinon renvoie vers Login
+  ↓InvokeSharedAction [ngx.components.UIDynamicInvoke-1791300000500]: 
+    beanData: '{"ionBean":"InvokeAction"}'
+    stack: lib_common_fe.Application.NgxApp.CheckUserSession
+    ↓pageNameLogin [ngx.components.UIControlVariable-1791300000501]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:'Login'
+    ↓pageRoleMatrix [ngx.components.UIControlVariable-1791300000502]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:{}
+    ↓pageNotAccess [ngx.components.UIControlVariable-1791300000503]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:'Login'
+    ↓SessionResult [ngx.components.UICustomAction-1791300000504]: 
+      actionValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+          - com.twinsoft.convertigo.beans.common.FormatedContent: 
+            →: |
+              		resolve(props.out);
+              
 ↓LightTheme [ngx.components.UIStyle-1790684201266]: 
   comment: This will define the light theme for the application. This will be selected if the device is in light mode.
   styleContent: 

@@ -1,0 +1,172 @@
+comment: 'Connexion : le code Anaïs doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit. Mot de passe = LDAP. Sans mot de passe (Mode_test), auth__login_test. Le menu rôle ne s''applique que si aucun login n''est saisi.'
+inAutoMenu: false
+scriptContent: 
+  - xmlizable: 
+    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+      →: |
+        '/*Begin_c8o_PageImport*/
+        /*End_c8o_PageImport*/
+        /*Begin_c8o_PageDeclaration*/
+        	pfModeTest: boolean = false;
+        	pfRolesTest: string[] = ["GESTIONNAIRE", "CONTRIBUTEUR", "LECTEUR"];
+        /*End_c8o_PageDeclaration*/
+        /*Begin_c8o_PageConstructor*/
+        /*End_c8o_PageConstructor*/
+        /*Begin_c8o_PageInitialization*/
+        		this.pfChargerModeTest();
+        /*End_c8o_PageInitialization*/
+        /*Begin_c8o_PageFunction*/
+        	pfChargerModeTest() {
+        		var self = this;
+        		var p: any = this.c8o.callJsonObject("lib_common_be.Get_Mode_test", {});
+        		p.then(function(res) {
+        			var d = (res && res.data) || {};
+        			self.pfModeTest = d.modeTest === true || String(d.modeTest) === "true";
+        			try { self.ref.detectChanges(); } catch (e) {}
+        			return null;
+        		});
+        	}
+        	pfConnecter(input): Promise<any> {
+        		var self = this;
+        		var v = input || {};
+        		var login = String(v.login || "").trim();
+        		var testRole = String(v.testRole || "").trim();
+        		var test = this.pfModeTest && !v.password;
+        		if (test) {
+        			return this.pfAppel("PortefeuilleLCNC_be.auth__login_test", { user: login, testRole: login ? "" : testRole }).then(function(res) {
+        				if (res && res.error) return res;
+        				return self.pfAppel("PortefeuilleLCNC_be.auth__role_test", { testRole: "" }).then(function() { return res; });
+        			});
+        		}
+        		return this.pfAppel("lib_common_be.auth__login", { user: login, password: v.password || "", appName: "PORTEFEUILLE", socleRoles: "DEVELOP_INTERNES,DEVELOP_EXTERNES,UTIL_INTERNES,UTIL_EXTERNES,ADMIN-NATDSI" }).then(function(res) {
+        			if (!self.pfModeTest || (res && res.error) || login) return res;
+        			return self.pfAppel("PortefeuilleLCNC_be.auth__role_test", { testRole: testRole }).then(function(r) {
+        				return (r && r.error) ? r : res;
+        			});
+        		});
+        	}
+        	pfAppel(seq, params): Promise<any> {
+        		var self = this;
+        		return new Promise(function(ok) {
+        			var p: any = self.c8o.callJsonObject(seq, params);
+        			p.then(function(res) { ok(res || {}); return null; });
+        			if (p.fail) p.fail(function(err) { ok({ error: { message: String((err && err.message) || err) } }); });
+        		});
+        	}
+        /*End_c8o_PageFunction*/
+        '
+segment: login
+title: Connexion
+↓Content [ngx.components.UIDynamicElement-1791300000400]: 
+  beanData: '{"ionBean":"Content","Padding":"plain:ion-no-padding"}'
+  tagName: ion-content
+  ↓LoginComponent [ngx.components.UIUseShared-1791300000401]: 
+    sharedcomponent: lib_components_ui.Application.NgxApp.LoginComponent
+    ↓appDescription [ngx.components.UIUseVariable-1791300000402]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Suivre le plan de charge des équipes Low Code / No Code, les affectations sur les projets et les commentaires associés.
+    ↓logoSrc [ngx.components.UIUseVariable-1791300000403]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:../img/logo-urssaf.svg
+    ↓appName [ngx.components.UIUseVariable-1791300000404]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Portefeuille LCNC
+    ↓illustrationBackground [ngx.components.UIUseVariable-1791300000405]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:'../img/M2A2H@2x.jpg'
+    ↓testMode [ngx.components.UIUseVariable-1791300000406]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.pfModeTest
+    ↓roleOptions [ngx.components.UIUseVariable-1791300000407]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.pfRolesTest
+    ↓Event [ngx.components.UIControlEvent-1791300000410]: 
+      attrName: (Connexion)
+      eventName: Connexion
+      ↓CallSequence [ngx.components.UICustomAction-1791300000411]: 
+        actionValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+              →: |
+                		const input = (event && event.input) || {};
+                		page.pfConnecter(input).then((res) => resolve(res));
+                
+        ↓IfElse [ngx.components.UIDynamicIf-1791300000420]: 
+          beanData: '{"ionBean":"IfElseAction","condition":"source:{\"filter\":\"Action\",\"project\":\"PortefeuilleLCNC_fe\",\"input\":\"\",\"model\":{\"data\":[{\"priority\":1791300000411,\"rootEvent\":false,\"pageLocals\":false},{\"priority\":1791300000410,\"rootEvent\":true,\"pageLocals\":false}],\"path\":\"?.out?.error\",\"prefix\":\"\",\"suffix\":\" != undefined\",\"custom\":\"\",\"useCustom\":false}}"}'
+          ↓isConnected [ngx.components.UIDynamicAction-1791300000421]: 
+            beanData: |
+              '{
+               "ionBean": "SetGlobalAction",
+               "Property": "plain:isConnected",
+               "Value": "script:false"
+              }'
+          ↓Toast [ngx.components.UIDynamicAction-1791300000422]: 
+            beanData: '{"ionBean":"ToastAction","message":"script:stack[''1791300000411'']?.out?.error?.message"}'
+          ↓Else_Handler [ngx.components.UIActionElseEvent-1791300000423]: 
+            ↓IfElse_RoleCheck [ngx.components.UIDynamicIf-1791300000430]: 
+              beanData: '{"ionBean":"IfElseAction","condition":"script:!!(stack[''1791300000411'']?.out?.user?.codeAgent) && !!(stack[''1791300000411'']?.out?.user?.role) && stack[''1791300000411'']?.out?.user?.role?.length > 0"}'
+              ↓user [ngx.components.UIDynamicAction-1791300000431]: 
+                beanData: |
+                  '{
+                   "ionBean": "SetGlobalAction",
+                   "Property": "plain:user",
+                   "Value": "source:{\"filter\":\"Action\",\"project\":\"PortefeuilleLCNC_fe\",\"input\":\"\",\"model\":{\"data\":[{\"priority\":1791300000411,\"rootEvent\":false,\"pageLocals\":false},{\"priority\":1791300000410,\"rootEvent\":true,\"pageLocals\":false}],\"path\":\"?.out?.user\",\"prefix\":\"\",\"suffix\":\"\",\"custom\":\"\",\"useCustom\":false}}"
+                  }'
+                ↓isConnected [ngx.components.UIDynamicAction-1791300000432]: 
+                  beanData: |
+                    '{
+                     "ionBean": "SetGlobalAction",
+                     "Property": "plain:isConnected",
+                     "Value": "script:true"
+                    }'
+                  ↓NavigatePlan [ngx.components.UICustomAction-1791300000433]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            		page.routerProvider.navigateRoot("TableauDeBord", false, null).then(() => {
+                            			resolve();
+                            		}).catch(() => {
+                            			resolve();
+                            		});
+                            
+              ↓Else_RoleError [ngx.components.UIActionElseEvent-1791300000434]: 
+                ↓isConnected [ngx.components.UIDynamicAction-1791300000435]: 
+                  beanData: |
+                    '{
+                     "ionBean": "SetGlobalAction",
+                     "Property": "plain:isConnected",
+                     "Value": "script:false"
+                    }'
+                ↓ToastRoleError [ngx.components.UIDynamicAction-1791300000436]: 
+                  beanData: '{"ionBean":"ToastAction","message":"script:''Vous n\\''êtes pas autorisé à accéder à cette application.''"}'
+↓PageEvent [ngx.components.UIPageEvent-1791300000440]: 
+  ↓ResetSessionOnLogin [ngx.components.UICustomAction-1791300000441]: 
+    actionValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+          →: |
+            '		page.c8o.log.debug("[MB] Login PageEvent: resetting session data");
+            		if (page.routerProvider && page.routerProvider.sharedObject) {
+            			page.routerProvider.sharedObject.user = null;
+            			page.routerProvider.sharedObject.isConnected = false;
+            		}
+            		try { window.sessionStorage.removeItem("pfc:userName"); window.sessionStorage.removeItem("pfc:userRole"); window.sessionStorage.removeItem("pfc:canAdmin"); } catch (eL) {}
+            		resolve();
+            '
