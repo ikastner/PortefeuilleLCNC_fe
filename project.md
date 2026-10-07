@@ -12,6 +12,7 @@ Convertigo NGX builder Project
 ## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/references/images/ProjectSchemaReference_16x16.png?raw=true "ProjectSchemaReference") lib_common_be
 
 
+see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/public/backend/lib_common_be/tree/8.0.0.0#readme)
 </p></blockquote></details>
 
 <details><summary><b>lib_common_fe</b></summary><blockquote><p>
@@ -20,6 +21,7 @@ Convertigo NGX builder Project
 ## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/references/images/ProjectSchemaReference_16x16.png?raw=true "ProjectSchemaReference") lib_common_fe
 
 
+see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/public/frontend/lib_common_fe/tree/8.4.0.0#readme)
 </p></blockquote></details>
 
 <details><summary><b>lib_components_ui</b></summary><blockquote><p>
@@ -28,6 +30,7 @@ Convertigo NGX builder Project
 ## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/references/images/ProjectSchemaReference_16x16.png?raw=true "ProjectSchemaReference") lib_components_ui
 
 
+see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/restreint/frontend/lib_components_ui/tree/8.4.0.0#readme)
 </p></blockquote></details>
 
 <details><summary><b>PortefeuilleLCNC_be</b></summary><blockquote><p>
@@ -74,12 +77,12 @@ Describes the mobile application global properties
 Collaborateurs
 </p></blockquote></details>
 
-<details><summary><b>Login</b> : Connexion : le code Anaïs doit exister dans les collaborateurs (PLG_Ligne)</summary><blockquote><p>
+<details><summary><b>Login</b> : Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be</summary><blockquote><p>
 
 
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Login
 
-Connexion : le code Anaïs doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit. Mot de passe = LDAP. Sans mot de passe (Mode_test), auth__login_test. Le menu rôle ne s'applique que si aucun login n'est saisi.
+Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be.auth__login. Le code agent doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit.
 </p></blockquote></details>
 
 <details><summary><b>Page</b> : Accueil, redirection vers le plan de charge</summary><blockquote><p>

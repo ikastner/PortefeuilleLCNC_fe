@@ -1,9 +1,10 @@
 ↑convertigo: 8.4.0.m006
 ↓PortefeuilleLCNC_fe [core.Project]: 
   comment: Convertigo NGX builder Project
-  contextTimeout: 59
+  contextTimeout: 800
   corsOrigin: =Origin
-  httpSessionTimeout: 60
+  httpSessionTimeout: 800
+  version: 0.1.0
   ↓void [connectors.SqlConnector]: 🗏 connectors/void.yaml
   ↓lib_common_be_reference [references.ProjectSchemaReference]: 
     projectName: lib_common_be
