@@ -35,15 +35,6 @@ scriptContent:
         			var obs = new MutationObserver(function () { unlockNav(); });
         			obs.observe(sideRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ["disabled"] });
         		}
-        		var logout: any = document.querySelector(".sidebar__logout");
-        		if (logout && !logout.__pfaLogout) {
-        			logout.__pfaLogout = true;
-        			var self: any = this;
-        			logout.addEventListener("click", function () {
-        				var owner: any = self.findPageOwner();
-        				if (owner && owner.deconnecter) owner.deconnecter();
-        			});
-        		}
         		/*End_c8o_CompAfterViewInit*/
         /*Begin_c8o_CompFunction*/
         	choisir(route) {
@@ -709,8 +700,11 @@ scriptContent:
               - com.twinsoft.convertigo.beans.common.FormatedContent: 
                 →: |
                   'var owner: any = this.findPageOwner();
-                  if (owner && owner.deconnecter) owner.deconnecter();
-                  else this.choisir("logout");
+                  if (owner && owner.deconnecter) {
+                  	owner.deconnecter();
+                  } else {
+                  	this.choisir("logout");
+                  }
                   resolve(true);
                   '
       ↓LogoutIco [ngx.components.UIDynamicElement-1795600510195]: 

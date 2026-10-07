@@ -12,7 +12,6 @@ Convertigo NGX builder Project
 ## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/references/images/ProjectSchemaReference_16x16.png?raw=true "ProjectSchemaReference") lib_common_be
 
 
-see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/public/backend/lib_common_be/tree/8.0.0.0#readme)
 </p></blockquote></details>
 
 <details><summary><b>lib_common_fe</b></summary><blockquote><p>
@@ -21,7 +20,6 @@ see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/public/backend/lib_
 ## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/references/images/ProjectSchemaReference_16x16.png?raw=true "ProjectSchemaReference") lib_common_fe
 
 
-see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/public/frontend/lib_common_fe/tree/8.4.0.0#readme)
 </p></blockquote></details>
 
 <details><summary><b>lib_components_ui</b></summary><blockquote><p>
@@ -30,7 +28,6 @@ see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/public/frontend/lib
 ## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/references/images/ProjectSchemaReference_16x16.png?raw=true "ProjectSchemaReference") lib_components_ui
 
 
-see [readme](http://gitlab.altair.recouv/projets/CVTG/01-lib/restreint/frontend/lib_components_ui/tree/8.4.0.0#readme)
 </p></blockquote></details>
 
 <details><summary><b>PortefeuilleLCNC_be</b></summary><blockquote><p>
@@ -83,14 +80,6 @@ Collaborateurs
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Login
 
 Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be.auth__login. Le code agent doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit.
-</p></blockquote></details>
-
-<details><summary><b>Page</b> : Accueil, redirection vers le plan de charge</summary><blockquote><p>
-
-
-### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Page
-
-Accueil, redirection vers le plan de charge
 </p></blockquote></details>
 
 <details><summary><b>PlanDeCharge</b> : Ecran portefeuille LCNC</summary><blockquote><p>

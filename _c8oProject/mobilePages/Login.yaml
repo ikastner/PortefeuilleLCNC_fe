@@ -67,7 +67,6 @@ title: Connexion
                 		const input = (event && event.input) || {};
                 		page.pfConnecter(input).then((res) => resolve(res));
                 
-        isEnabled: false
         ↓IfElse [ngx.components.UIDynamicIf-1791300000420]: 
           beanData: '{"ionBean":"IfElseAction","condition":"source:{\"filter\":\"Action\",\"project\":\"PortefeuilleLCNC_fe\",\"input\":\"\",\"model\":{\"data\":[{\"priority\":1791300000411,\"rootEvent\":false,\"pageLocals\":false},{\"priority\":1791300000410,\"rootEvent\":true,\"pageLocals\":false}],\"path\":\"?.out?.error\",\"prefix\":\"\",\"suffix\":\" != undefined\",\"custom\":\"\",\"useCustom\":false}}"}'
           ↓isConnected [ngx.components.UIDynamicAction-1791300000421]: 
@@ -118,92 +117,6 @@ title: Connexion
                     }'
                 ↓ToastRoleError [ngx.components.UIDynamicAction-1791300000436]: 
                   beanData: '{"ionBean":"ToastAction","message":"script:''Vous n\\''êtes pas autorisé à accéder à cette application.''"}'
-      ↓CaptureCreds [ngx.components.UICustomAction-1791357162524]: 
-        actionValue: 
-          - xmlizable: 
-            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
-            - com.twinsoft.convertigo.beans.common.FormatedContent: 
-              →: |
-                'var q = function(n){ var e = document.querySelector(".login-form input[name=" + JSON.stringify(n) + "]") as HTMLInputElement; return e ? String(e.value == null ? "" : e.value) : ""; };
-                page.local.authLogin = q("login").trim();
-                page.local.authPwd = q("password");
-                resolve();
-                '
-        ↓CallSequence [ngx.components.UIDynamicAction-1791357162527]: 
-          beanData: |
-            '{
-             "ionBean": "CallSequenceAction",
-             "requestable": "plain:lib_common_be.auth__login",
-             "noAutoLogin": "plain:true"
-            }'
-          ↓appName [ngx.components.UIControlVariable-1791357162530]: 
-            varValue: 
-              - xmlizable: 
-                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: script:(stack['root']?.out?.input?.testRole)?stack['root'].out.input.testRole:'GAP'
-          ↓testRole [ngx.components.UIControlVariable-1791357162533]: 
-            varValue: 
-              - xmlizable: 
-                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: source:{"filter":"Action","project":"odam_fe","input":"","model":{"data":[{"priority":1786021000400,"rootEvent":true,"pageLocals":false}],"path":"?.out","prefix":"","suffix":"?.input?.testRole","custom":"","useCustom":false}}
-          ↓socleRoles [ngx.components.UIControlVariable-1791357162536]: 
-            varValue: 
-              - xmlizable: 
-                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: script:(stack['root']?.out?.input?.testRole)?'':'UTIL_INTERNES,UTIL_EXTERNES'
-          ↓IfElse [ngx.components.UIDynamicIf-1791357162539]: 
-            beanData: '{"ionBean":"IfElseAction","condition":"source:{\"filter\":\"Action\",\"project\":\"odam_fe\",\"input\":\"\",\"model\":{\"data\":[{\"priority\":1791357162527,\"rootEvent\":false,\"pageLocals\":false},{\"priority\":1786021000400,\"rootEvent\":true,\"pageLocals\":false}],\"path\":\"?.out?.error\",\"prefix\":\"\",\"suffix\":\" != undefined\",\"custom\":\"\",\"useCustom\":false}}"}'
-            ↓isConnected [ngx.components.UIDynamicAction-1791357162542]: 
-              beanData: |
-                '{
-                 "ionBean": "SetGlobalAction",
-                 "Property": "plain:isConnected",
-                 "Value": "script:false"
-                }'
-            ↓Toast [ngx.components.UIDynamicAction-1791357162545]: 
-              beanData: '{"ionBean":"ToastAction","message":"script:stack[''1791357162527'']?.out?.error?.message"}'
-            ↓Else_Handler [ngx.components.UIActionElseEvent-1791357162548]: 
-              ↓IfElse_RoleCheck [ngx.components.UIDynamicIf-1791357162551]: 
-                beanData: '{"ionBean":"IfElseAction","condition":"script:!!(stack[''root'']?.out?.input?.testRole) || (stack[''1791357162527'']?.out?.user?.role && stack[''1791357162527'']?.out?.user?.role?.length > 0)"}'
-                ↓user [ngx.components.UIDynamicAction-1791357162554]: 
-                  beanData: |
-                    '{
-                     "ionBean": "SetGlobalAction",
-                     "Property": "plain:user",
-                     "Value": "source:{\"filter\":\"Action\",\"project\":\"odam_fe\",\"input\":\"\",\"model\":{\"data\":[{\"priority\":1791357162527,\"rootEvent\":false,\"pageLocals\":false},{\"priority\":1786021000400,\"rootEvent\":true,\"pageLocals\":false}],\"path\":\"?.out?.user\",\"prefix\":\"\",\"suffix\":\"\",\"custom\":\"\",\"useCustom\":false}}"
-                    }'
-                  ↓NavigatePlan [ngx.components.UICustomAction-1791357535264]: 
-                    actionValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
-                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
-                          →: |
-                            		page.routerProvider.navigateRoot("TableauDeBord", false, null).then(() => {
-                            			resolve();
-                            		}).catch(() => {
-                            			resolve();
-                            		});
-                            
-                ↓Else_RoleError [ngx.components.UIActionElseEvent-1791357162560]: 
-                  ↓isConnected [ngx.components.UIDynamicAction-1791357162563]: 
-                    beanData: |
-                      '{
-                       "ionBean": "SetGlobalAction",
-                       "Property": "plain:isConnected",
-                       "Value": "script:false"
-                      }'
-                  ↓ToastRoleError [ngx.components.UIDynamicAction-1791357162566]: 
-                    beanData: '{"ionBean":"ToastAction","message":"script:''Vous n\\''êtes pas autorisé à accéder à cette application.''"}'
-          ↓user [ngx.components.UIControlVariable-1791357162569]: 
-            varValue: 
-              - xmlizable: 
-                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: script:this.local.authLogin
-          ↓password [ngx.components.UIControlVariable-1791357162572]: 
-            varValue: 
-              - xmlizable: 
-                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: script:this.local.authPwd
 ↓PageEvent [ngx.components.UIPageEvent-1791300000440]: 
   ↓ResetSessionOnLogin [ngx.components.UICustomAction-1791300000441]: 
     actionValue: 

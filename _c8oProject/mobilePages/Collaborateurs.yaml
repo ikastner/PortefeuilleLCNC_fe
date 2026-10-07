@@ -698,11 +698,12 @@ scriptContent:
         		else this.routerProvider.navigateRoot("PlanDeCharge", false, null);
         	}
         	deconnecter() {
-        		try { window.sessionStorage.removeItem("pfc:userName"); window.sessionStorage.removeItem("pfc:userRole"); window.sessionStorage.removeItem("pfc:canAdmin"); } catch (eL) {}
-        		var so = this.routerProvider && this.routerProvider.sharedObject;
-        		if (so) { so.user = null; so.isConnected = false; }
-        		this.routerProvider.navigateRoot("Login", false, null);
-        	}
+        			try { window.sessionStorage.removeItem("pfc:userName"); window.sessionStorage.removeItem("pfc:userRole"); window.sessionStorage.removeItem("pfc:canAdmin"); } catch (eL) {}
+        			var so = this.routerProvider && this.routerProvider.sharedObject;
+        			if (so) { so.user = null; so.isConnected = false; }
+        			try { this.c8o.callJson("lib_common_be.auth__logout", "__disableAutologin", "true"); } catch (eO) {}
+        			this.routerProvider.navigateRoot("Login", false, null);
+        		}
         /*End_c8o_PageFunction*/
         '
 segment: collaborateurs

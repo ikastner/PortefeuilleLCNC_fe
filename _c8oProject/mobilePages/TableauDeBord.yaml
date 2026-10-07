@@ -470,20 +470,23 @@ scriptContent:
         		this.routerProvider.navigateRoot("Login", false, null);
         	}
         	deconnecter() {
-        		if (this.pfaLeaving) return;
-        		this.pfaLeaving = true;
-        		var self = this;
-        		try {
-        			["pfc:trimestres", "pfc:vue", "pfc:preset", "pg2:pfc-plan-de-charge", "pfc:userName", "pfc:userRole", "pfc:canAdmin"].forEach(function (k) { window.sessionStorage.removeItem(k); });
-        		} catch (e) {}
-        		var go = function () { self.versLogin(); };
-        		try {
-        			var p = this.c8o.callJson("lib_common_be.auth__logout", "__disableAutologin", "true");
-        			if (p && p.then) p.then(function () { go(); return null; });
-        			else go();
-        			if (p && p.fail) p.fail(function () { go(); return p; });
-        		} catch (e2) { go(); }
-        	}
+        			var self = this;
+        			var go = function () {
+        				self.versLogin();
+        			};
+        			try {
+        				["pfc:trimestres", "pfc:vue", "pfc:preset", "pg2:pfc-plan-de-charge", "pfc:userName", "pfc:userRole", "pfc:canAdmin"].forEach(function (k) { window.sessionStorage.removeItem(k); });
+        			} catch (e) {}
+        			if (!this.pfaLeaving) {
+        				this.pfaLeaving = true;
+        				try {
+        					var p = this.c8o.callJson("lib_common_be.auth__logout", "__disableAutologin", "true");
+        					if (p && p.then) p.then(function () { return null; });
+        				} catch (e2) {}
+        			}
+        			// Toujours quitter l''écran : ne dépend plus de la réponse logout
+        			go();
+        		}
         	libelleRole() {
         		var code = "";
         		var u = null;
