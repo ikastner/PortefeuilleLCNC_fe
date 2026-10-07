@@ -1722,10 +1722,22 @@ scriptContent:
         	}
         	affMajFiche() {
         		this.affProjet = this.affKind === "PROJET";
-        		var el = null;
         		var i, list = this.elements || [];
+        		if (!this.affProjet) {
+        			var tile = null;
+        			var selfF = this;
+        			(this.affTiles || []).forEach(function (t) { if (String(t.code) === String(selfF.affKind)) tile = t; });
+        			if (!tile) {
+        				(this.types || []).forEach(function (t) {
+        					if (String(t.code) === String(selfF.affKind)) tile = { libelle: t.libelle || t.code, couleur: t.couleurFond || t.couleur || "#6C757D" };
+        				});
+        			}
+        			this.affFiche = tile ? { libelle: String(tile.libelle || this.affKind), couleur: tile.couleur || "#6C757D", type: "Hors projet", statut: "", chef: "", chefMissing: false, participants: "", partsMissing: false, code: "", horsProjet: true } : null;
+        			return;
+        		}
+        		var el = null;
         		for (i = 0; i < list.length; i++) if (String(list[i].libelle) === String(this.affLabel)) el = list[i];
-        		if (!this.affProjet || !el) { this.affFiche = null; return; }
+        		if (!el) { this.affFiche = null; return; }
         		var chef = "";
         		var lignes = this.lignes || [];
         		for (i = 0; i < lignes.length; i++) if (String(lignes[i].cle) === String(el.chefProjet || "")) chef = lignes[i].libelle || lignes[i].cle;
@@ -1736,7 +1748,7 @@ scriptContent:
         			for (var j = 0; j < lignes.length; j++) if (String(lignes[j].cle) === String(p.cle || "")) nom = lignes[j].libelle || lignes[j].cle;
         			if (nom) ports.push(nom);
         		});
-        		this.affFiche = { libelle: el.libelle, couleur: el.couleur || "#1A428A", type: this.affLc(el.lcNc), statut: String(el.statutCatalogue || el.statut || ""), chef: chef || "À définir", chefMissing: !chef, participants: ports.length ? ports.join(", ") : "À définir", partsMissing: !ports.length, code: el.code || "" };
+        		this.affFiche = { libelle: el.libelle, couleur: el.couleur || "#1A428A", type: this.affLc(el.lcNc), statut: String(el.statutCatalogue || el.statut || ""), chef: chef || "À définir", chefMissing: !chef, participants: ports.length ? ports.join(", ") : "À définir", partsMissing: !ports.length, code: el.code || "" , horsProjet: false };
         	}
         	affSigle(label) {
         		return String(label || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]/g, "").slice(0, 4).toUpperCase();
@@ -6545,7 +6557,7 @@ title: Tableau de bord
               directiveSource: 
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                  - MobileSmartSourceType: script:this.detailProjet
+                  - MobileSmartSourceType: script:this.detailProjet && this.canAdmin
               ↓DetailProj [ngx.components.UIDynamicElement-1795702100510]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: button
@@ -7378,6 +7390,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:tile.encre
+          ↓AffTilesWrapRoHide [ngx.components.UIAttribute-1791365277278]: 
+            attrName: '[hidden]'
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.affCanEdit
         ↓AffFormC [ngx.components.UIAttribute-1791137814745]: 
           attrName: class
           attrValue: 
@@ -7484,6 +7502,12 @@ title: Tableau de bord
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                   - MobileSmartSourceType: script:!this.affProjet
+          ↓AffPairRoHide [ngx.components.UIAttribute-1791365279126]: 
+            attrName: '[hidden]'
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.affCanEdit
         ↓AffFicheIf [ngx.components.UIControlDirective-1791277610611]: 
           directiveName: If
           directiveSource: 
@@ -7642,6 +7666,12 @@ title: Tableau de bord
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: plain:M5 12h14M12 5l7 7-7 7
+                ↓AffFicheLinkRoHide [ngx.components.UIAttribute-1791365288382]: 
+                  attrName: '[hidden]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:!this.canAdmin
             ↓AffFicheMeta [ngx.components.UIDynamicElement-1791332776667]: 
               beanData: '{"ionBean":"DivTag"}'
               tagName: dl
@@ -7675,6 +7705,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Chef de projet
+                ↓AffFicheChefDtRoHide [ngx.components.UIAttribute-1791365290228]: 
+                  attrName: '[hidden]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:!this.affProjet
               ↓AffFicheChefDd [ngx.components.UIDynamicElement-1791332776683]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: dd
@@ -7689,6 +7725,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.affFiche.chef
+                ↓AffFicheChefDdRoHide [ngx.components.UIAttribute-1791365292076]: 
+                  attrName: '[hidden]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:!this.affProjet
               ↓AffFichePartsDt [ngx.components.UIDynamicElement-1791332776689]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: dt
@@ -7697,6 +7739,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Participants
+                ↓AffFichePartsDtRoHide [ngx.components.UIAttribute-1791365293922]: 
+                  attrName: '[hidden]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:!this.affProjet
               ↓AffFichePartsDd [ngx.components.UIDynamicElement-1791332776693]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: dd
@@ -7711,6 +7759,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.affFiche.participants
+                ↓AffFichePartsDdRoHide [ngx.components.UIAttribute-1791365295770]: 
+                  attrName: '[hidden]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:!this.affProjet
         ↓AffDates [ngx.components.UIDynamicElement-1791277614261]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -7862,6 +7916,12 @@ title: Tableau de bord
                           } catch (e) { console.error(e); }
                           resolve(true);
                           '
+          ↓AffDatesRoHide [ngx.components.UIAttribute-1791365280976]: 
+            attrName: '[hidden]'
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.affCanEdit
         ↓AffSlotL [ngx.components.UIDynamicElement-1791137816421]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: p
@@ -7876,6 +7936,12 @@ title: Tableau de bord
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:Créneau
+          ↓AffSlotLRoHide [ngx.components.UIAttribute-1791365282824]: 
+            attrName: '[hidden]'
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.affCanEdit
         ↓AffPeriods [ngx.components.UIDynamicElement-1791137816427]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -7960,6 +8026,12 @@ title: Tableau de bord
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                   - MobileSmartSourceType: plain:Après-midi
+          ↓AffPeriodsRoHide [ngx.components.UIAttribute-1791365284676]: 
+            attrName: '[hidden]'
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.affCanEdit
         ↓AffPreviewWrap [ngx.components.UIDynamicElement-1791277617965]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -8157,6 +8229,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:cell.row
+          ↓AffPreviewWrapRoHide [ngx.components.UIAttribute-1791365286526]: 
+            attrName: '[hidden]'
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.affCanEdit
         ↓AffCmt [ngx.components.UIDynamicElement-1791277621131]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -9980,15 +10058,17 @@ title: Tableau de bord
           .tdb .dash-row--head .dash-cell-rate{background:#fff !important}
           .tdb .dash-grid--cells .dash-row:not(.dash-row--head){position:relative;z-index:1}
           
-          /* aff-lecteur */
+          /* aff-lecteur : activité + commentaires seulement */
           .pfm-card--aff.is-ro .aff-tiles,
           .pfm-card--aff.is-ro .pfm-pair,
           .pfm-card--aff.is-ro .aff-pair2,
           .pfm-card--aff.is-ro .pfm-periods,
-          .pfm-card--aff.is-ro .aff-preview{pointer-events:none;opacity:.55}
-          .pfm-card--aff.is-ro .aff-type{cursor:default}
+          .pfm-card--aff.is-ro .aff-preview{display:none !important}
           .pfm-card--aff .pfm-btn.is-hidden{display:none !important}
           .pfm-card--aff.is-ro .pfm-actions{justify-content:flex-end}
+          .pfm-card--aff.is-ro .aff-fiche{margin-top:0}
+          .pfm-card--aff.is-ro .aff-cmt,
+          .pfm-card--aff.is-ro .aff-sec{margin-top:4px}
           
           /* badge commentaire : identique maquette */
           .tdb .dash-grid--cells button.dash-cell,.tdb .dash-grid--cells button.dash-seg{position:relative;overflow:visible !important}

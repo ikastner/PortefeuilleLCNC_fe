@@ -1,6 +1,6 @@
 ↑convertigo: 8.4.0.m006
 ↓PortefeuilleLCNC_fe [core.Project]: 
-  comment: Convertigo NGX builder Project
+  comment: Portefeuille LCNC - Application Frontend Angular/Ionic (Plan de charge et affectations)
   contextTimeout: 59
   corsOrigin: =Origin
   httpSessionTimeout: 60
