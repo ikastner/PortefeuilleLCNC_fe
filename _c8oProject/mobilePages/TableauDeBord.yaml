@@ -18,6 +18,12 @@ scriptContent:
         	ready: boolean;
         	message: string;
         	offset: number;
+        	periodFrom: string;
+        	periodTo: string;
+        	gridStart: number;
+        	friseOn: boolean;
+        	friseLabel: string;
+        	dashCols: number;
         	q: string;
         	recherche: any[];
         	collabOpts: any[];
@@ -122,6 +128,14 @@ scriptContent:
         	pfaLeaving: boolean;
         	loading: boolean;
         	cleActeur: string;
+        	_winCache: any;
+        	_skelT: any;
+        	_loadT0: number;
+        	_allDays: any[];
+        	_winDays: any[];
+        	_dayPx: number;
+        	_skipScrollSync: boolean;
+        	_pendingStart: number;
         /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
         /*End_c8o_PageConstructor*/
@@ -199,7 +213,7 @@ scriptContent:
         				tipEl.appendChild(head);
         				tipEl.appendChild(tipNode("p", "dash-tip__date", d.date));
         				var rows = tipNode("div", "dash-tip__rows", null);
-        				[["Collaborateur", d.nom], ["Chef de projet", d.chef], ["Sur la semaine", d.semaine]].forEach(function (r) {
+        				[["Collaborateur", d.nom], ["Chef de projet", d.chef], ["Dans la vue", d.semaine]].forEach(function (r) {
         					if (!r[1]) return;
         					var row = tipNode("div", "dash-tip__row", null);
         					row.appendChild(tipNode("span", "", r[0]));
@@ -305,11 +319,20 @@ scriptContent:
         		}
         		this.view = "dashboard";
         		this.pageTitle = "Tableau de bord";
-        		this.pageSub = "La semaine de l''équipe : ce qu''il faut retenir et où agir.";
+        		this.pageSub = "La p\u00e9riode de l\u2019\u00e9quipe : ce qu\u2019il faut retenir et o\u00f9 agir.";
         		try { window.sessionStorage.setItem("pfc:tdb", "v2"); } catch (eV) {}
         		this.ready = false;
+        		this.armSkeleton();
         		this.message = "";
         		this.offset = 0;
+        		this.gridStart = 0;
+        		this.friseOn = false;
+        		this.friseLabel = "";
+        		this.dashCols = 5;
+        		this.periodFrom = this.iso(this.monday(0));
+        		var finInit = this.monday(0);
+        		finInit.setDate(finInit.getDate() + 4);
+        		this.periodTo = this.iso(finInit);
         		this.q = "";
         		this.recherche = [];
         		this.collabOpts = [];
@@ -334,7 +357,7 @@ scriptContent:
         		this.gridRows = [];
         		this.commentaires = [];
         		this.commentairesVides = true;
-        		this.commentairesMeta = "Aucun cette semaine";
+        		this.commentairesMeta = "Aucun sur la p\u00e9riode";
         		this.commentairesMessage = "";
         		this.headDays = [];
         		this.efforts = [];
@@ -375,7 +398,7 @@ scriptContent:
         		this.profilChips = [{ value: "", label: "Tous" }];
         		this.weekNum = "";
         		this.weekRange = "";
-        		this.weekTitle = "La semaine de l equipe";
+        		this.weekTitle = "La p\u00e9riode de l\u2019\u00e9quipe";
         		this.showBack = false;
         		this.wpOpen = false;
         		this.wpWeeks = [];
@@ -576,6 +599,399 @@ scriptContent:
         		var noms = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         		return noms.map(function (_, i) { var d = new Date(l); d.setDate(l.getDate() + i); return d; });
         	}
+        	parseISO(s) {
+        		var p = String(s || "").split("-");
+        		return new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1);
+        	}
+        	joursOuvres(from, to) {
+        		var out = [];
+        		var cur = new Date(from);
+        		cur.setHours(0, 0, 0, 0);
+        		var fin = new Date(to);
+        		fin.setHours(0, 0, 0, 0);
+        		if (cur > fin) { var tmp = cur; cur = fin; fin = tmp; }
+        		while (cur <= fin) {
+        			var dow = cur.getDay();
+        			if (dow !== 0 && dow !== 6) out.push(new Date(cur));
+        			cur.setDate(cur.getDate() + 1);
+        		}
+        		return out;
+        	}
+        	periodeCourante() {
+        		var from = this.periodFrom ? this.parseISO(this.periodFrom) : this.monday(0);
+        		var to = this.periodTo ? this.parseISO(this.periodTo) : this.weekDays(0)[4];
+        		return { from: from, to: to, days: this.joursOuvres(from, to) };
+        	}
+        	periodePrecedente() {
+        		var p = this.periodeCourante();
+        		var span = (p.to.getTime() - p.from.getTime()) + 86400000;
+        		var from = new Date(p.from.getTime() - span);
+        		var to = new Date(p.from.getTime() - 86400000);
+        		return { from: from, to: to, days: this.joursOuvres(from, to) };
+        	}
+        	libellePeriode(from, to) {
+        		var optsJ = { day: "numeric", month: "short" };
+        		var optsA = { day: "numeric", month: "short", year: "numeric" };
+        		if (this.iso(from) === this.iso(to)) return from.toLocaleDateString("fr-FR", optsA);
+        		if (from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth()) {
+        			return from.getDate() + " \u2013 " + to.toLocaleDateString("fr-FR", optsA);
+        		}
+        		if (from.getFullYear() === to.getFullYear()) {
+        			return from.toLocaleDateString("fr-FR", optsJ) + " \u2013 " + to.toLocaleDateString("fr-FR", optsA);
+        		}
+        		return from.toLocaleDateString("fr-FR", optsA) + " \u2013 " + to.toLocaleDateString("fr-FR", optsA);
+        	}
+        	fenetreVisible(nDays) {
+        		var w = 1100;
+        		try {
+        			var el = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        			if (el && el.clientWidth) w = el.clientWidth;
+        		} catch (eW) {}
+        		var fit = Math.floor((w - 200 - 104) / 100);
+        		var n = Math.min(nDays, Math.max(7, fit > 0 ? fit : 7));
+        		if (nDays < 7) n = nDays;
+        		return Math.max(n, 1);
+        	}
+        	nomJourCourt(d) {
+        		return ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][d.getDay()];
+        	}
+        	setPeriode(from, to) {
+        		var a = new Date(from); a.setHours(0, 0, 0, 0);
+        		var b = new Date(to); b.setHours(0, 0, 0, 0);
+        		if (a > b) { var x = a; a = b; b = x; }
+        		this.periodFrom = this.iso(a);
+        		this.periodTo = this.iso(b);
+        		this.gridStart = 0;
+        		this.focusDay = null;
+        		this.focusEl = "";
+        		this._winCache = {};
+        		this.armSkeleton();
+        		if (this.ionViewDidEnter) this.ionViewDidEnter();
+        		else this.chargerSemaine();
+        	}
+        	decalerPeriode(dir) {
+        		var p = this.periodeCourante();
+        		var span = (p.to.getTime() - p.from.getTime()) + 86400000;
+        		this.setPeriode(new Date(p.from.getTime() + dir * span), new Date(p.to.getTime() + dir * span));
+        	}
+        	armSkeleton() {
+        		var self = this;
+        		clearTimeout(this._skelT);
+        		this._loadT0 = Date.now();
+        		this._skelT = setTimeout(function () {
+        			if (self.ready) return;
+        			var wrap = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        			if (wrap) wrap.classList.add("is-skel");
+        		}, 250);
+        	}
+        	fenetreKey(start, win) {
+        		var q = (this.recherche || []).map(function (it) { return it && it.value != null ? String(it.value) : ""; }).join(",");
+        		return start + ":" + win + ":" + (this.profil || "") + ":" + q;
+        	}
+        	commitFenetre(start) {
+        		var all = this._allDays || this.periodeCourante().days;
+        		var win = this.fenetreVisible(all.length);
+        		var maxStart = Math.max(0, all.length - win);
+        		this.gridStart = Math.min(Math.max(0, start), maxStart);
+        		this.focusDay = null;
+        		var key = this.fenetreKey(this.gridStart, win);
+        		this._winCache = this._winCache || {};
+        		if (!this._winCache[key]) {
+        			var slice = all.slice(this.gridStart, this.gridStart + win);
+        			this._winCache[key] = this.analyser(slice, this.items || [], this.hol || {}, true);
+        		}
+        		this.reconstruire();
+        	}
+        	prechargerVoisins() {
+        		var self = this;
+        		var all = this._allDays || [];
+        		var win = this.fenetreVisible(all.length || 1);
+        		var maxStart = Math.max(0, all.length - win);
+        		[this.gridStart - win, this.gridStart + win].forEach(function (s) {
+        			s = Math.min(Math.max(0, s), maxStart);
+        			var key = self.fenetreKey(s, win);
+        			self._winCache = self._winCache || {};
+        			if (self._winCache[key]) return;
+        			setTimeout(function () {
+        				if (self._winCache[key]) return;
+        				var slice = all.slice(s, s + win);
+        				self._winCache[key] = self.analyser(slice, self.items || [], self.hol || {}, true);
+        				self.evictCache();
+        			}, 0);
+        		});
+        	}
+        	appliquerFrise() {
+        		var self = this;
+        		var wrap = document.querySelector(".tdb .dash-grid-wrap") as any;
+        		if (!wrap || !wrap.parentElement) return;
+        		clearTimeout(this._skelT);
+        		wrap.classList.remove("is-skel");
+        		var host = wrap.parentElement.querySelector(".dash-frise-nav") as any;
+        		if (!this.friseOn) {
+        			if (host) host.style.display = "none";
+        			this.monterScroll();
+        			return;
+        		}
+        		if (!host) {
+        			host = document.createElement("div") as any;
+        			host.className = "dash-frise-nav";
+        			host.innerHTML = "<strong>Frise</strong><span class=\"dash-frise-nav__range\"></span><button type=\"button\" class=\"dash-week__btn\" data-dir=\"-1\" aria-label=\"Jours pr\u00e9c\u00e9dents\">\u2039</button><div class=\"dash-frise-scrub\" role=\"slider\" tabindex=\"0\"><span class=\"dash-frise-scrub__track\"></span><span class=\"dash-frise-scrub__thumb\"></span></div><button type=\"button\" class=\"dash-week__btn\" data-dir=\"1\" aria-label=\"Jours suivants\">\u203a</button><button type=\"button\" class=\"dash-week__today\" data-today=\"1\">Aujourd\u2019hui</button>";
+        			wrap.parentElement.insertBefore(host, wrap);
+        			var idle: any = 0;
+        			var dragging = false;
+        			var thumb = host.querySelector(".dash-frise-scrub__thumb") as HTMLElement;
+        			var scrub = host.querySelector(".dash-frise-scrub") as HTMLElement;
+        			var range = host.querySelector(".dash-frise-nav__range") as HTMLElement;
+        			var paint = function (start) {
+        				var all = self._allDays || [];
+        				var win = self.fenetreVisible(all.length || 1);
+        				var maxS = Math.max(0, all.length - win);
+        				start = Math.min(Math.max(0, start), maxS);
+        				var slice = all.slice(start, start + win);
+        				if (range && slice.length) range.textContent = self.libellePeriode(slice[0], slice[slice.length - 1]);
+        				if (thumb && all.length) {
+        					thumb.style.left = (start / all.length * 100) + "%";
+        					thumb.style.width = Math.max(6, win / all.length * 100) + "%";
+        				}
+        				return start;
+        			};
+        			var plan = function (start) {
+        				start = paint(start);
+        				clearTimeout(idle);
+        				idle = setTimeout(function () { self.commitFenetre(start); }, 120);
+        			};
+        			host.addEventListener("click", function (ev) {
+        				var t = ev.target as HTMLElement;
+        				var btn = t && t.closest ? t.closest("button") as HTMLElement : null;
+        				if (!btn) return;
+        				if (btn.getAttribute("data-today")) {
+        					var all = self._allDays || [];
+        					var iso = self.iso(new Date());
+        					var idx = -1;
+        					for (var i = 0; i < all.length; i++) if (self.iso(all[i]) === iso) idx = i;
+        					var win = self.fenetreVisible(all.length || 1);
+        					self.commitFenetre(idx < 0 ? 0 : idx - Math.floor(win / 2));
+        					return;
+        				}
+        				var dir = Number(btn.getAttribute("data-dir") || 0);
+        				if (!dir) return;
+        				var win2 = self.fenetreVisible((self._allDays || []).length || 1);
+        				self.commitFenetre((self.gridStart || 0) + dir * win2);
+        			});
+        			var ratio = function (e) {
+        				var r = scrub.getBoundingClientRect();
+        				return Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(r.width, 1)));
+        			};
+        			var fromRatio = function (rt) {
+        				var all = self._allDays || [];
+        				var win = self.fenetreVisible(all.length || 1);
+        				if (all.length <= win) return 0;
+        				return Math.round(rt * all.length - win / 2);
+        			};
+        			scrub.addEventListener("pointerdown", function (e) {
+        				dragging = true;
+        				scrub.classList.add("is-dragging");
+        				scrub.setPointerCapture && scrub.setPointerCapture((e as any).pointerId);
+        				plan(fromRatio(ratio(e)));
+        				e.preventDefault();
+        			});
+        			window.addEventListener("pointermove", function (e) {
+        				if (!dragging) return;
+        				plan(fromRatio(ratio(e)));
+        			});
+        			window.addEventListener("pointerup", function (e) {
+        				if (!dragging) return;
+        				dragging = false;
+        				scrub.classList.remove("is-dragging");
+        				clearTimeout(idle);
+        				self.commitFenetre(fromRatio(ratio(e)));
+        			});
+        			scrub.addEventListener("keydown", function (e: any) {
+        				var all = self._allDays || [];
+        				var win = self.fenetreVisible(all.length || 1);
+        				var maxS = Math.max(0, all.length - win);
+        				var s = self.gridStart || 0;
+        				if (e.key === "ArrowLeft") s -= 1;
+        				else if (e.key === "ArrowRight") s += 1;
+        				else if (e.key === "Home") s = 0;
+        				else if (e.key === "End") s = maxS;
+        				else if (e.key === "PageUp") s -= win;
+        				else if (e.key === "PageDown") s += win;
+        				else return;
+        				e.preventDefault();
+        				self.commitFenetre(s);
+        			});
+        			host._paint = paint;
+        		}
+        		host.style.display = "";
+        		if (host._paint) host._paint(this.gridStart || 0);
+        		this.monterScroll();
+        	}
+        	monterScroll() {
+        		var self = this;
+        		var wrap = document.querySelector(".tdb .dash-grid-wrap") as any;
+        		var grid = wrap ? wrap.querySelector(".dash-grid") as any : null;
+        		if (!wrap || !grid) return;
+        		var all = this._allDays || [];
+        		var win = (this._winDays && this._winDays.length) || 1;
+        		if (!this.friseOn || all.length <= win) {
+        			wrap.classList.remove("dash-grid-wrap--virt");
+        			var old = wrap.querySelector(".dash-grid-sizer");
+        			if (old && old.parentElement) old.parentElement.removeChild(old);
+        			grid.style.position = "";
+        			grid.style.left = "";
+        			grid.style.top = "";
+        			grid.style.width = "";
+        			return;
+        		}
+        		wrap.classList.add("dash-grid-wrap--virt");
+        		var sizer = wrap.querySelector(".dash-grid-sizer") as any;
+        		if (!sizer) {
+        			sizer = document.createElement("div") as any;
+        			sizer.className = "dash-grid-sizer";
+        			sizer.setAttribute("aria-hidden", "true");
+        			wrap.insertBefore(sizer, wrap.firstChild);
+        		}
+        		var dayW = Math.max(72, (wrap.clientWidth - 200 - 104) / Math.max(win, 1));
+        		this._dayPx = dayW;
+        		sizer.style.width = (200 + all.length * dayW + 104) + "px";
+        		sizer.style.height = Math.max(grid.scrollHeight, wrap.clientHeight, 320) + "px";
+        		grid.style.position = "absolute";
+        		grid.style.top = "0";
+        		grid.style.width = (wrap.clientWidth || 900) + "px";
+        		if (!wrap._virtBound) {
+        			wrap._virtBound = true;
+        			var fromUs = false;
+        			var idle: any = 0;
+        			var raf = 0;
+        			wrap.addEventListener("scroll", function () {
+        				if (fromUs || !self.friseOn) return;
+        				if (raf) return;
+        				raf = requestAnimationFrame(function () {
+        					raf = 0;
+        					var all2 = self._allDays || [];
+        					var win2 = self.fenetreVisible(all2.length || 1);
+        					var px = self._dayPx || 100;
+        					var start = Math.round(wrap.scrollLeft / px);
+        					var maxS = Math.max(0, all2.length - win2);
+        					start = Math.min(Math.max(0, start), maxS);
+        					var g = wrap.querySelector(".dash-grid") as HTMLElement;
+        					if (g) g.style.left = ((self.gridStart || 0) * px) + "px";
+        					var host = wrap.parentElement ? wrap.parentElement.querySelector(".dash-frise-nav") as any : null;
+        					if (host && host._paint) host._paint(start);
+        					if (start === (self.gridStart || 0)) return;
+        					clearTimeout(idle);
+        					idle = setTimeout(function () {
+        						self._skipScrollSync = true;
+        						self.commitFenetre(start);
+        					}, 120);
+        				});
+        			});
+        			wrap._syncScroll = function (start) {
+        				fromUs = true;
+        				var px = self._dayPx || 100;
+        				wrap.scrollLeft = start * px;
+        				var g = wrap.querySelector(".dash-grid") as HTMLElement;
+        				if (g) g.style.left = wrap.scrollLeft + "px";
+        				fromUs = false;
+        			};
+        			if (typeof (window as any).ResizeObserver !== "undefined" && !wrap._ro) {
+        				var lastW = wrap.clientWidth;
+        				wrap._ro = new (window as any).ResizeObserver(function () {
+        					if (Math.abs(wrap.clientWidth - lastW) < 8) return;
+        					lastW = wrap.clientWidth;
+        					if (self.friseOn) self.reconstruire();
+        				});
+        				wrap._ro.observe(wrap);
+        			}
+        		}
+        		if (this._skipScrollSync) {
+        			this._skipScrollSync = false;
+        			grid.style.left = wrap.scrollLeft + "px";
+        		} else if (wrap._syncScroll) {
+        			wrap._syncScroll(this.gridStart || 0);
+        		}
+        	}
+        	presetsPeriode() {
+        		var now = new Date();
+        		now.setHours(0, 0, 0, 0);
+        		var l = this.monday(0);
+        		var ven = new Date(l);
+        		ven.setDate(l.getDate() + 4);
+        		var debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
+        		var finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        		var debut2 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        		var trim = Math.floor(now.getMonth() / 3) * 3;
+        		return [
+        			{ label: "Cette semaine", from: l, to: ven },
+        			{ label: "Ce mois", from: debutMois, to: finMois },
+        			{ label: "2 mois", from: debut2, to: finMois },
+        			{ label: "Ce trimestre", from: new Date(now.getFullYear(), trim, 1), to: new Date(now.getFullYear(), trim + 3, 0) },
+        			{ label: "Cette ann\u00e9e", from: new Date(now.getFullYear(), 0, 1), to: new Date(now.getFullYear(), 11, 31) }
+        		];
+        	}
+        	monterPeriode() {
+        		var pop = document.querySelector(".dash-wp") as HTMLElement;
+        		if (!pop || pop.querySelector(".dash-period-picker")) return;
+        		var self = this;
+        		var box = document.createElement("div");
+        		box.className = "dash-period-picker";
+        		var presets = this.presetsPeriode();
+        		var html = "<p class=\"dash-period-picker__title\">Choisir une p\u00e9riode</p><div class=\"dash-period-picker__presets\">";
+        		presets.forEach(function (p, i) {
+        			var on = self.iso(p.from) === self.periodFrom && self.iso(p.to) === self.periodTo;
+        			html += "<button type=\"button\" data-preset=\"" + i + "\" class=\"dash-period-picker__preset" + (on ? " is-current" : "") + "\">" + p.label + "</button>";
+        		});
+        		html += "</div><div class=\"dash-period-picker__custom\"><label>Du <input type=\"date\" data-from value=\"" + (self.periodFrom || "") + "\"></label><label>Au <input type=\"date\" data-to value=\"" + (self.periodTo || "") + "\"></label><button type=\"button\" class=\"btn\" data-apply>Appliquer</button></div>";
+        		box.innerHTML = html;
+        		pop.insertBefore(box, pop.firstChild);
+        		box.addEventListener("click", function (ev) {
+        			var t = ev.target as HTMLElement;
+        			var b = t && t.closest ? t.closest("button") as HTMLElement : null;
+        			if (!b || !box.contains(b)) return;
+        			ev.stopPropagation();
+        			if (b.getAttribute("data-apply") != null) {
+        				var fEl = box.querySelector("[data-from]") as HTMLInputElement;
+        				var tEl = box.querySelector("[data-to]") as HTMLInputElement;
+        				if (!fEl.value || !tEl.value) return;
+        				self.wpOpen = false;
+        				self.setPeriode(self.parseISO(fEl.value), self.parseISO(tEl.value));
+        				return;
+        			}
+        			var idx = b.getAttribute("data-preset");
+        			if (idx == null) return;
+        			var p = self.presetsPeriode()[Number(idx)];
+        			if (!p) return;
+        			self.wpOpen = false;
+        			self.setPeriode(p.from, p.to);
+        		});
+        	}
+        	evictCache() {
+        		var cache = this._winCache || {};
+        		var keys = Object.keys(cache);
+        		var keep = this.fenetreKey(this.gridStart || 0, this.dashCols || 5);
+        		while (keys.length > 5) {
+        			var drop = keys[0] === keep ? keys[1] : keys[0];
+        			if (!drop) break;
+        			delete cache[drop];
+        			keys = Object.keys(cache);
+        		}
+        	}
+        	joursApercu() {
+        		var iso = this.affStart || this.periodFrom;
+        		var d = iso ? this.parseISO(iso) : this.monday(0);
+        		var dow = d.getDay();
+        		var lundi = new Date(d);
+        		lundi.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+        		var out = [];
+        		var i;
+        		for (i = 0; i < 5; i++) {
+        			var x = new Date(lundi);
+        			x.setDate(lundi.getDate() + i);
+        			out.push(x);
+        		}
+        		return out;
+        	}
         	numSemaine(d) {
         		var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         		t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
@@ -684,6 +1100,7 @@ scriptContent:
         			self.message = String((err && err.message) || err);
         			self.ready = true;
         			self.loading = false;
+        			clearTimeout(self._skelT);
         			self.rafraichir();
         		});
         	}
@@ -719,10 +1136,10 @@ scriptContent:
         	}
         	chargerSemaine() {
         		var self = this;
-        		var days = this.weekDays(this.offset || 0);
-        		var prev = this.weekDays((this.offset || 0) - 1);
+        		var cur = this.periodeCourante();
+        		var prev = this.periodePrecedente();
         		var cle = this.cleActeur || "";
-        		this.appel("Grille_Lire", { dateFrom: this.iso(days[0]), dateTo: this.iso(days[4]), cleActeur: cle }).then(function (out) {
+        		this.appel("Grille_Lire", { dateFrom: this.iso(cur.from), dateTo: this.iso(cur.to), cleActeur: cle }).then(function (out) {
         			var d = self.doc(out);
         			if (d.acteur) self.cleActeur = String(d.acteur);
         			self.items = self.asList(d.items);
@@ -733,7 +1150,7 @@ scriptContent:
         				return String(x.code_droit || x.codeDroit || x.value || "");
         			}).filter(function (x) { return x; });
         			self.canAdmin = self.has("GERER_REFERENTIEL");
-        			self.appel("Grille_Lire", { dateFrom: self.iso(prev[0]), dateTo: self.iso(prev[4]), cleActeur: self.cleActeur || cle }).then(function (out2) {
+        			self.appel("Grille_Lire", { dateFrom: self.iso(prev.from), dateTo: self.iso(prev.to), cleActeur: self.cleActeur || cle }).then(function (out2) {
         				var d2 = self.doc(out2);
         				self.prevItems = self.asList(d2.items);
         				self.holPrev = {};
@@ -748,6 +1165,7 @@ scriptContent:
         			self.message = String((err && err.message) || err);
         			self.ready = true;
         			self.loading = false;
+        			clearTimeout(self._skelT);
         			self.rafraichir();
         		});
         	}
@@ -869,41 +1287,61 @@ scriptContent:
         	}
         
         	chipsOf(slots, kinds) {
-        		var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         		var out = [];
+        		var nDays = Math.floor((slots || []).length / 2);
         		var d;
-        		for (d = 0; d < 5; d++) {
+        		for (d = 0; d < nDays; d++) {
         			var m = slots[d * 2] || { kind: "" };
         			var a = slots[d * 2 + 1] || { kind: "" };
         			if (m.kind === "ferie") continue;
         			var mk = kinds.indexOf(m.kind) >= 0 ? m.kind : "";
         			var ak = kinds.indexOf(a.kind) >= 0 ? a.kind : "";
-        			var court = JOURS[d].slice(0, 3);
+        			var court = "J" + (d + 1);
         			if (mk && ak && mk === ak) out.push({ kind: mk, label: court });
         			else {
         				if (mk) out.push({ kind: mk, label: court + " matin" });
         				if (ak) out.push({ kind: ak, label: court + " apm" });
         			}
         		}
-        		if (out.length === 5 && out.every(function (c) { return c.label.length === 3 && c.kind === out[0].kind; })) {
-        			return [{ cls: "dash-chip is-" + out[0].kind, label: "Toute la semaine" }];
+        		if (out.length >= 3 && out.length === nDays && out.every(function (c) { return c.kind === out[0].kind && c.label.indexOf(" ") < 0; })) {
+        			return [{ cls: "dash-chip is-" + out[0].kind, label: "Toute la p\u00e9riode" }];
         		}
+        		if (out.length > 8) return [{ cls: "dash-chip is-" + out[0].kind, label: this.plur(out.length, "cr\u00e9neau") }];
         		return out.map(function (c) { return { cls: "dash-chip is-" + c.kind, label: c.label }; });
         	}
         	reconstruire() {
         		var self = this;
-        		var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
         		var LIB = { absence: "Absence", formation: "Formation", libre: "Libre", ferie: "Ferie", repos: "Repos" };
-        		var days = this.weekDays(this.offset || 0);
-        		var cur = this.analyser(days, this.items || [], this.hol || {}, true);
-        		var prev = this.analyser(this.weekDays((this.offset || 0) - 1), this.prevItems || [], this.holPrev || {}, true);
-        		var off = this.offset || 0;
-        		this.weekNum = "S" + this.numSemaine(days[0]);
-        		this.weekRange = days[0].getDate() + " – " + days[4].getDate() + " " + days[4].toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
-        		this.weekTitle = off === 0 ? "La semaine de l\u2019\u00e9quipe en un coup d\u2019\u0153il" : off === 1 ? "La semaine prochaine" : off === -1 ? "La semaine derni\u00e8re" : ("Semaine du " + days[0].toLocaleDateString("fr-FR", { day: "numeric", month: "long" }));
-        		this.showBack = off !== 0;
+        		var plage = this.periodeCourante();
+        		var allDays = plage.days.length ? plage.days : this.weekDays(0);
+        		var prevP = this.periodePrecedente();
+        		var cur = this.analyser(allDays, this.items || [], this.hol || {}, true);
+        		var prev = this.analyser(prevP.days, this.prevItems || [], this.holPrev || {}, true);
+        		var win = this.fenetreVisible(allDays.length);
+        		var maxStart = Math.max(0, allDays.length - win);
+        		this.gridStart = Math.min(Math.max(0, this.gridStart || 0), maxStart);
+        		var days = allDays.slice(this.gridStart, this.gridStart + win);
+        		this._allDays = allDays;
+        		this._winDays = days;
+        		this.dashCols = days.length;
+        		try {
+        			document.documentElement.style.setProperty("--dash-n", String(days.length));
+        			document.documentElement.style.setProperty("--dash-rate", String(2 + days.length));
+        		} catch (eC) {}
+        		this._winCache = this._winCache || {};
+        		var cacheKey = this.fenetreKey(this.gridStart, win);
+        		var curGrid = this._winCache[cacheKey] || this.analyser(days, this.items || [], this.hol || {}, true);
+        		this._winCache[cacheKey] = curGrid;
+        		this.evictCache();
+        		this.weekNum = (allDays.length > 1 ? allDays.length + " j" : "1 j");
+        		this.weekRange = this.libellePeriode(plage.from, plage.to);
+        		this.friseLabel = this.weekRange;
+        		this.friseOn = allDays.length > win;
+        		this.weekTitle = "La p\u00e9riode de l\u2019\u00e9quipe en un coup d\u2019\u0153il";
+        		var todayIn = allDays.some(function (d) { return self.iso(d) === self.iso(new Date()); });
+        		this.showBack = !todayIn;
         		var todayIso = this.iso(new Date());
-        		var sig = [off, cur.taux, cur.projet, cur.libre, cur.absence, cur.formation, cur.repos, cur.personnes.length].join("|");
+        		var sig = [this.periodFrom, this.periodTo, this.gridStart, cur.taux, cur.projet, cur.libre, cur.absence, cur.formation, cur.repos, cur.personnes.length].join("|");
         		cur.jours.forEach(function (d) { sig += "|" + [d.projet, d.libre, d.absence, d.formation, d.repos, d.ferie ? 1 : 0].join(","); });
         		if (sig !== this.semaineSig) {
         			this.semaineSig = sig;
@@ -912,7 +1350,7 @@ scriptContent:
         				icon: "gauge",
         				before: "L\u2019\u00e9quipe est affect\u00e9e \u00e0 ",
         				strong: cur.taux + " %",
-        				after: dt ? (" (" + (dt > 0 ? "+" : "\u2212") + Math.abs(dt) + " pts par rapport \u00e0 la semaine pr\u00e9c\u00e9dente).") : ", comme la semaine pr\u00e9c\u00e9dente.",
+        				after: dt ? (" (" + (dt > 0 ? "+" : "\u2212") + Math.abs(dt) + " pts par rapport \u00e0 la p\u00e9riode pr\u00e9c\u00e9dente).") : ", comme la p\u00e9riode pr\u00e9c\u00e9dente.",
         				clickable: false,
         				act: "",
         				key: "",
@@ -924,32 +1362,36 @@ scriptContent:
         			var topEl = topCode ? this.elementOf(topCode) : null;
         			if (topEl) insights.push({ icon: "folder", before: "", strong: topEl.libelle || top.label || topCode, after: " concentre le plus d\u2019effort : " + this.fmtJ(top.demi) + " sur " + this.plur(Object.keys(top.gens || {}).length, "personne") + ".", clickable: true, act: "projet", key: topCode, day: "" });
         			var libresJ = cur.jours.map(function (d, i) { return { i: i, v: d.libre, ferie: d.ferie }; }).filter(function (d) { return !d.ferie; }).sort(function (a, b) { return b.v - a.v; });
-        			if (libresJ.length && libresJ[0].v) {
-        				var jour = JOURS[libresJ[0].i].toLowerCase();
-        				insights.push({ icon: "calendar", before: "", strong: this.fmtJ(cur.libre), mid: " restent à planifier, surtout le ", strong2: jour, after: " (" + this.fmtJ(libresJ[0].v) + ").", clickable: true, act: "jour", key: "", day: String(libresJ[0].i) });
-        			} else insights.push({ icon: "check", before: "Toute l\u2019\u00e9quipe est planifi\u00e9e sur la semaine.", strong: "", after: "", clickable: false, act: "", key: "", day: "" });
+        			if (libresJ.length && libresJ[0].v && allDays[libresJ[0].i]) {
+        				var jd = allDays[libresJ[0].i];
+        				var jour = self.nomJourCourt(jd).toLowerCase() + " " + jd.getDate();
+        				insights.push({ icon: "calendar", before: "", strong: this.fmtJ(cur.libre), mid: " restent \u00e0 planifier, surtout le ", strong2: jour, after: " (" + this.fmtJ(libresJ[0].v) + ").", clickable: true, act: "jour", key: "", day: String(libresJ[0].i) });
+        			} else insights.push({ icon: "check", before: "Toute l\u2019\u00e9quipe est planifi\u00e9e sur la p\u00e9riode.", strong: "", after: "", clickable: false, act: "", key: "", day: "" });
         			var absents = cur.personnes.filter(function (p) { return p.absent; });
         			if (absents.length) {
         				var full = absents.filter(function (p) { return p.ouvrees && p.absent >= p.ouvrees; });
-        				insights.push({ icon: "user", before: "", strong: this.plur(absents.length, "personne"), after: " en absence ou en formation cette semaine" + (full.length ? ", dont " + full.map(function (p) { return p.ligne.libelle || p.ligne.cle; }).join(", ") + " toute la semaine" : "") + ".", clickable: false, act: "", key: "", day: "" });
+        				insights.push({ icon: "user", before: "", strong: this.plur(absents.length, "personne"), after: " en absence ou en formation sur la p\u00e9riode" + (full.length ? ", dont " + full.map(function (p) { return p.ligne.libelle || p.ligne.cle; }).join(", ") + " sur toute la p\u00e9riode" : "") + ".", clickable: false, act: "", key: "", day: "" });
         			}
         			this.insights = insights;
-        			var totalHalves = cur.personnes.length * 2 || 1;
+        			var totalHalves = (cur.personnes.length * 2) || 1;
         			function slice(cls, v) {
         				if (!v) return null;
         				var pct = v / totalHalves * 100;
         				if (pct > 0 && pct < 4) pct = 4;
         				return { cls: cls, h: pct + "%" };
         			}
-        			this.capDays = cur.jours.map(function (d, i) {
+        			var stepCap = allDays.length > 31 ? Math.ceil(allDays.length / 31) : 1;
+        			this.capDays = allDays.filter(function (_, i) { return i % stepCap === 0; }).map(function (day, idx) {
+        				var i = idx * stepCap;
+        				var d = cur.jours[i] || { projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, ferie: false };
         				var pctP = Math.round(d.projet / totalHalves * 100);
         				var slices = d.ferie ? [{ cls: "is-ferie", h: "100%" }] : [slice("is-formation", d.formation), slice("is-absence", d.absence), slice("is-libre", d.libre), slice("is-repos", d.repos), slice("is-projet", d.projet)].filter(Boolean);
         				return {
         					i: String(i),
         					pct: d.ferie ? "Ferie" : (pctP + " %"),
-        					short: JOURS[i].slice(0, 3),
-        					num: String(days[i].getDate()),
-        					today: self.iso(days[i]) === todayIso,
+        					short: self.nomJourCourt(day),
+        					num: String(day.getDate()),
+        					today: self.iso(day) === todayIso,
         					focus: self.focusDay === i,
         					slices: slices
         				};
@@ -969,22 +1411,22 @@ scriptContent:
         				kpi("Absences / formations", this.fmtJ(absNow), (absNow - absPrev) / 2, false, " j")
         			];
         		} else if (this.capDays && this.capDays.length) {
-        			this.capDays.forEach(function (d, i) { d.focus = self.focusDay === i; });
+        			this.capDays.forEach(function (d) { d.focus = self.focusDay === Number(d.i); });
         		}
         		this.collabCount = this.plur(cur.personnes.length, "collaborateur");
         		this.headDays = days.map(function (d, i) {
         			var today = self.iso(d) === todayIso;
         			return {
-        				col: self.axeVertical ? String(2 + i) : ((2 + i * 2) + " / span 2"),
-        				label: JOURS[i].slice(0, 3) + " " + d.getDate(),
-        				sub: today ? "Aujourd\u2019hui" : (cur.jours[i].ferieLabel || ""),
+        				col: String(2 + i),
+        				label: self.nomJourCourt(d) + " " + d.getDate(),
+        				sub: today ? "Aujourd\u2019hui" : ((curGrid.jours[i] && curGrid.jours[i].ferieLabel) || d.toLocaleDateString("fr-FR", { month: "short" })),
         				today: today,
-        				focus: self.focusDay === i
+        				focus: self.focusDay === self.gridStart + i
         			};
         		});
         		var rows = [];
         		var groupe = null;
-        		cur.personnes.forEach(function (p) {
+        		curGrid.personnes.forEach(function (p) {
         			var l = p.ligne;
         			var gname = l.profil || l.codeProfil || "Sans profil";
         			if (gname !== groupe) {
@@ -997,7 +1439,7 @@ scriptContent:
         				var elc = s.kind === "projet" ? self.elementOf(s.element) : null;
         				var jour = Math.floor(i / 2);
         				var match = !!(self.focusEl && s.element === self.focusEl);
-        				var inDay = self.focusDay === jour;
+        				var inDay = self.focusDay === self.gridStart + jour;
         				var today = self.iso(days[jour]) === todayIso;
         				var note = !!(s.commentaire || s.count);
         				var paint = s.kind === "nature" ? self.typeStyle(s.type) : null;
@@ -1020,12 +1462,12 @@ scriptContent:
         					hint: (s.kind === "ferie" || s.kind === "repos") ? "" : ((s.kind || "libre") === "libre" ? "Cliquer pour affecter" : "Cliquer pour modifier ou commenter")
         				};
         				return {
-        					cls: "dash-cell dash-cell--" + (s.kind || "libre") + (match ? " is-match" : "") + (inDay ? " is-day" : "") + (today ? " is-today" : "") + (note ? " has-comment" : "") + (self.axeVertical ? (i % 2 ? " is-pm" : " is-am") : ""),
+        					cls: "dash-cell dash-cell--" + (s.kind || "libre") + (match ? " is-match" : "") + (inDay ? " is-day" : "") + (today ? " is-today" : "") + (note ? " has-comment" : "") + (i % 2 ? " is-pm" : " is-am"),
         					label: elc ? (elc.libelle || s.label || "Projet") : (s.label || LIB[s.kind] || "Libre"),
         					note: note,
         					titre: "",
-        					col: self.axeVertical ? String(2 + Math.floor(i / 2)) : String(2 + i),
-        					row: self.axeVertical ? String((i % 2) + 1) : "",
+        					col: String(2 + Math.floor(i / 2)),
+        					row: String((i % 2) + 1),
         					bg: elc && elc.couleur ? self.alpha(elc.couleur, 0.18) : (paint ? paint.bg : ""),
         					border: elc && elc.couleur ? self.alpha(elc.couleur, 0.45) : (paint ? paint.border : ""),
         					color: paint ? paint.color : "",
@@ -1102,8 +1544,8 @@ scriptContent:
         		comments.sort(function (a, b) { return a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : String(a.nom).localeCompare(String(b.nom), "fr"); });
         		this.commentaires = comments;
         		this.commentairesVides = !comments.length;
-        		this.commentairesMeta = comments.length ? this.plur(comments.length, "commentaire") + " cette semaine" : "Aucun cette semaine";
-        		this.commentairesMessage = this.focusEl ? "Aucun commentaire sur ce projet cette semaine." : "Aucun commentaire sur les affectations de cette semaine.";
+        		this.commentairesMeta = comments.length ? this.plur(comments.length, "commentaire") + " sur la p\u00e9riode" : "Aucun sur la p\u00e9riode";
+        		this.commentairesMessage = this.focusEl ? "Aucun commentaire sur ce projet sur la p\u00e9riode." : "Aucun commentaire sur les affectations de la p\u00e9riode.";
         		this.gridEmpty = !cur.personnes.length;
         		var effortRows = Object.keys(cur.projets).map(function (c) {
         			var el = self.elementOf(c);
@@ -1115,8 +1557,8 @@ scriptContent:
         			return { code: r.code, label: r.label, couleur: r.couleur, gens: r.gens, val: self.fmtJ(r.demi), pct: Math.round(r.demi / effortTotal * 100) + " %", locked: r.locked };
         		});
         		this.effortEmpty = !this.efforts.length;
-        		this.stripJours = days.map(function (d, i) {
-        			return { label: JOURS[i].slice(0, 3), today: self.iso(d) === todayIso };
+        		this.stripJours = days.map(function (d) {
+        			return { label: self.nomJourCourt(d), today: self.iso(d) === todayIso };
         		});
         		var dispo = cur.personnes.filter(function (p) { return p.libre; }).sort(function (a, b) { return b.libre - a.libre || String(a.ligne.libelle || "").localeCompare(String(b.ligne.libelle || ""), "fr"); });
         		this.dispos = dispo.map(function (p) {
@@ -1130,7 +1572,7 @@ scriptContent:
         			return { cle: p.ligne.cle, nom: p.ligne.libelle || p.ligne.cle, initiales: self.initiales(p.ligne.libelle || p.ligne.cle), couleur: p.ligne.couleur || "#1A428A", val: self.fmtJ(p.absent), chips: self.chipsOf(p.slots, ["absence", "formation"]) };
         		});
         		this.absEmpty = !this.absences.length;
-        		this.absMeta = this.plur(absRows.length, "personne") + (semaine ? " · " + semaine + " toute la semaine" : "");
+        		this.absMeta = this.plur(absRows.length, "personne") + (semaine ? " \u00b7 " + semaine + " toute la p\u00e9riode" : "");
         		var actifs = (this.lignes || []).filter(function (l) { return self.onFlag(l.actif == null ? "true" : l.actif); });
         		var els = (this.elements || []).filter(function (e) { return self.onFlag(e.actif == null ? "true" : e.actif); });
         		function countParticipant(code) {
@@ -1161,14 +1603,15 @@ scriptContent:
         		var fel = this.focusEl ? this.elementOf(this.focusEl) : null;
         		this.focusProjetLabel = this.focusEl ? ("Projet : " + (fel ? fel.libelle : this.focusEl)) : "";
         		this.focusJourOn = this.focusDay != null;
-        		this.focusJourLabel = this.focusDay != null ? JOURS[this.focusDay] : "";
+        		this.focusJourLabel = (this.focusDay != null && this._allDays && this._allDays[this.focusDay]) ? (this.nomJourCourt(this._allDays[this.focusDay]) + " " + this._allDays[this.focusDay].getDate()) : "";
         		this.ready = true;
         		this.loading = false;
         		this.message = "";
         		this.syncChrome();
         		this.rafraichir();
+        		this.prechargerVoisins();
         		var selfC = this;
-        		setTimeout(function () { selfC.calerCommentaires(); }, 0);
+        		setTimeout(function () { selfC.appliquerFrise(); selfC.calerCommentaires(); }, 0);
         	}
         	noeud(event) {
         		var n = event && (event.currentTarget || event.target);
@@ -1182,12 +1625,14 @@ scriptContent:
         		var w = 288;
         		this.wpTop = (r ? r.bottom + 6 : 120) + "px";
         		this.wpLeft = (r ? Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) : 24) + "px";
-        		var d = this.weekDays(this.offset || 0)[0];
+        		var d = this.periodFrom ? this.parseISO(this.periodFrom) : this.monday(0);
         		this.wpY = d.getFullYear();
         		this.wpM = d.getMonth();
         		this.wpConstruire();
         		this.wpOpen = true;
         		this.rafraichir();
+        		var selfWp = this;
+        		setTimeout(function () { selfWp.monterPeriode(); }, 40);
         	}
         	wpNav(delta) {
         		var m = this.wpM + delta;
@@ -1203,7 +1648,6 @@ scriptContent:
         		var cur = new Date(debut);
         		cur.setDate(debut.getDate() + (dow === 0 ? -6 : 1 - dow));
         		var ref = this.monday(0).getTime();
-        		var actuel = this.offset || 0;
         		var out = [];
         		while (cur <= fin) {
         			var ven = new Date(cur);
@@ -1212,7 +1656,7 @@ scriptContent:
         				var off = Math.round((cur.getTime() - ref) / 604800000);
         				var finTxt = ven.getDate() + " " + ven.toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
         				var range = cur.getMonth() === ven.getMonth() ? cur.getDate() + " \u2013 " + finTxt : cur.getDate() + " " + cur.toLocaleDateString("fr-FR", { month: "short" }) + " \u2013 " + finTxt;
-        				out.push({ off: off, num: "S" + this.numSemaine(cur), range: range, current: off === actuel, today: off === 0 });
+        				out.push({ off: off, num: "S" + this.numSemaine(cur), range: range, current: this.iso(cur) === this.periodFrom && this.iso(ven) === this.periodTo, today: off === 0 });
         			}
         			cur.setDate(cur.getDate() + 7);
         		}
@@ -1224,22 +1668,25 @@ scriptContent:
         		var n = this.noeud(event);
         		var off = Number(n && n.getAttribute ? n.getAttribute("data-off") : NaN);
         		this.wpOpen = false;
-        		if (isNaN(off) || off === (this.offset || 0)) { this.rafraichir(); return; }
-        		this.semaine(off - (this.offset || 0));
+        		if (isNaN(off)) { this.rafraichir(); return; }
+        		var lundi = this.monday(off);
+        		var ven = new Date(lundi);
+        		ven.setDate(lundi.getDate() + 4);
+        		this.setPeriode(lundi, ven);
         	}
         	wpFermer() {
         		this.wpOpen = false;
         		this.rafraichir();
         	}
         	semaine(delta) {
-        		if (delta === 0) this.offset = 0;
-        		else this.offset = (this.offset || 0) + delta;
-        		this.focusDay = null;
-        		this.focusEl = "";
-        		this.detailOn = false;
-        		this.ready = false;
-        		this.rafraichir();
-        		this.ionViewDidEnter();
+        		if (delta === 0) {
+        			var l = this.monday(0);
+        			var f = new Date(l);
+        			f.setDate(l.getDate() + 4);
+        			this.setPeriode(l, f);
+        			return;
+        		}
+        		this.decalerPeriode(delta);
         	}
         	setProfil(event) {
         		var v = event && event.value != null ? event.value : "";
@@ -1261,6 +1708,11 @@ scriptContent:
         		var day = Number(n && n.getAttribute ? n.getAttribute("data-day") : -1);
         		if (isNaN(day) || day < 0) return;
         		this.focusDay = this.focusDay === day ? null : day;
+        		if (this.focusDay != null) {
+        			var allN = (this._allDays || []).length || 1;
+        			var winF = this.fenetreVisible(allN);
+        			if (day < (this.gridStart || 0) || day >= (this.gridStart || 0) + winF) this.gridStart = day - Math.floor(winF / 2);
+        		}
         		this.reconstruire();
         	}
         	focusProjet(event) {
@@ -1416,7 +1868,7 @@ scriptContent:
         		});
         		this.affTiles = tiles;
         		this.affProjet = this.affKind === "PROJET";
-        		var days = this.weekDays(this.offset || 0);
+        		var days = this.joursApercu();
         		this.affJourOpts = days.map(function (d) {
         			return { label: self.affLong(self.iso(d)), value: self.iso(d) };
         		});
@@ -1655,7 +2107,7 @@ scriptContent:
         		var start = Number(n.getAttribute("data-start") || 0);
         		var len = Number(n.getAttribute("data-len") || 1);
         		var el = kind === "projet" ? this.elementOf(code) : null;
-        		var days = this.weekDays(this.offset || 0);
+        		var days = this._winDays && this._winDays.length ? this._winDays : this.periodeCourante().days;
         		var from = Math.floor(start / 2);
         		var to = Math.floor((start + len - 1) / 2);
         		if (!days[from]) return;
@@ -1755,7 +2207,7 @@ scriptContent:
         	}
         	affPeindreApercu() {
         		var self = this;
-        		var days = this.weekDays(this.offset || 0);
+        		var days = this.joursApercu();
         		var periode = this.affPeriodDb(this.affPeriod);
         		var from = String(this.affStart || "");
         		var to = String(this.affEnd || from);
@@ -1970,7 +2422,7 @@ scriptContent:
         			this.cells = true;
         			this.view = "dashboard";
         			this.pageTitle = "Tableau de bord";
-        			this.pageSub = "La semaine de l''équipe : ce qu''il faut retenir et où agir.";
+        			this.pageSub = "La p\u00e9riode de l\u2019\u00e9quipe : ce qu\u2019il faut retenir et o\u00f9 agir.";
         			try { window.sessionStorage.setItem("pfc:tdb", "v2"); } catch (eT) {}
         			this.reconstruire();
         			return;
@@ -2367,7 +2819,7 @@ title: Tableau de bord
           attrValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:Chargement de la semaine
+              - MobileSmartSourceType: plain:Chargement de la période
         ↓SkelSr [ngx.components.UIDynamicElement-1795702201006]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: span
@@ -2381,7 +2833,7 @@ title: Tableau de bord
             textValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: plain:Chargement de la semaine
+                - MobileSmartSourceType: plain:Chargement de la période
         ↓SkelHero [ngx.components.UIDynamicElement-1795702201036]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: section
@@ -3007,7 +3459,7 @@ title: Tableau de bord
           attrValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:Synthèse de la semaine
+              - MobileSmartSourceType: plain:Synthèse de la période
         ↓HeroL [ngx.components.UIDynamicElement-1795702100121]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -3040,7 +3492,7 @@ title: Tableau de bord
                 attrValue: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: plain:Semaine précédente
+                    - MobileSmartSourceType: plain:Période précédente
               ↓PrevType [ngx.components.UIAttribute-1795702100049]: 
                 attrName: type
                 attrValue: 
@@ -3161,13 +3613,13 @@ title: Tableau de bord
                 attrValue: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: plain:Choisir une semaine
+                    - MobileSmartSourceType: plain:Choisir une période
               ↓WeekLabTi [ngx.components.UIAttribute-1791331063953]: 
                 attrName: title
                 attrValue: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: plain:Choisir une semaine
+                    - MobileSmartSourceType: plain:Choisir une période
               ↓WeekLabHp [ngx.components.UIAttribute-1791331063955]: 
                 attrName: aria-haspopup
                 attrValue: 
@@ -3272,7 +3724,7 @@ title: Tableau de bord
                 attrValue: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: plain:Semaine suivante
+                    - MobileSmartSourceType: plain:Période suivante
               ↓NextType [ngx.components.UIAttribute-1795702100074]: 
                 attrName: type
                 attrValue: 
@@ -4794,7 +5246,7 @@ title: Tableau de bord
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: 'plain: vs semaine préc.'
+                      - MobileSmartSourceType: 'plain: vs période préc.'
       ↓Layout [ngx.components.UIDynamicElement-1795702100487]: 
         beanData: '{"ionBean":"DivTag"}'
         tagName: div
@@ -5046,7 +5498,7 @@ title: Tableau de bord
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: 'script:''dash-grid'' + (this.cells ? '' dash-grid--cells'' : '''') + (this.axeVertical ? '' dash-grid--vertical'' : '''') + (this.focusEl ? '' has-focus-el'' : '''') + (this.focusDay != null ? '' has-focus-day'' : '''')'
+                      - MobileSmartSourceType: 'script:''dash-grid dash-grid--vertical'' + (this.cells ? '' dash-grid--cells'' : '''') + (this.focusEl ? '' has-focus-el'' : '''') + (this.focusDay != null ? '' has-focus-day'' : '''')'
                 ↓Head [ngx.components.UIDynamicElement-1795702100257]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: div
@@ -5768,7 +6220,7 @@ title: Tableau de bord
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:Aucune affectation projet cette semaine.
+                      - MobileSmartSourceType: plain:Aucune affectation projet sur la période.
             ↓EffortOn [ngx.components.UIControlDirective-1795702100372]: 
               directiveName: If
               directiveSource: 
@@ -6177,7 +6629,7 @@ title: Tableau de bord
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:Toute l’équipe est présente cette semaine.
+                      - MobileSmartSourceType: plain:Toute l’équipe est présente sur la période.
             ↓AbsOn [ngx.components.UIControlDirective-1795702100464]: 
               directiveName: If
               directiveSource: 
@@ -6695,7 +7147,7 @@ title: Tableau de bord
           attrValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:Choisir une semaine
+              - MobileSmartSourceType: plain:Choisir une période
         ↓WpPopT [ngx.components.UIAttribute-1791331068409]: 
           attrName: '[style.top]'
           attrValue: 
@@ -10019,12 +10471,12 @@ title: Tableau de bord
           .dash-axe{display:inline-flex;gap:2px;padding:3px;border:1px solid #D5DDEA;border-radius:999px;background:#F4F7FB}
           .dash-axe button{height:32px;padding:0 12px;border:0;border-radius:999px;background:transparent;font:500 13px Roboto,sans-serif;color:#3D4D6A;cursor:pointer}
           .dash-axe button[aria-pressed="true"]{background:#fff;color:#0F2B5B;font-weight:600;box-shadow:0 1px 2px rgba(15,43,91,.12)}
-          .tdb .dash-grid--vertical .dash-row:not(.dash-row--head){grid-template-columns:200px repeat(5,minmax(0,1fr)) 104px;grid-template-rows:40px 40px}
-          .tdb .dash-grid--vertical .dash-row--head{grid-template-columns:200px repeat(5,minmax(0,1fr)) 104px;grid-template-rows:52px}
+          .tdb .dash-grid--vertical .dash-row:not(.dash-row--head){grid-template-columns:200px repeat(var(--dash-n, 5),minmax(0,1fr)) 104px;grid-template-rows:40px 40px}
+          .tdb .dash-grid--vertical .dash-row--head{grid-template-columns:200px repeat(var(--dash-n, 5),minmax(0,1fr)) 104px;grid-template-rows:52px}
           .tdb .dash-grid--vertical .dash-row:not(.dash-row--head)>.dash-cell-name,
           .tdb .dash-grid--vertical .dash-row:not(.dash-row--head)>.dash-cell-rate{grid-row:1 / span 2}
-          .tdb .dash-grid--vertical .dash-cell-rate{grid-column:7}
-          .tdb .dash-grid--vertical .dash-row--head .dash-cell-rate{grid-column:7;grid-row:1}
+          .tdb .dash-grid--vertical .dash-cell-rate{grid-column:var(--dash-rate, 7)}
+          .tdb .dash-grid--vertical .dash-row--head .dash-cell-rate{grid-column:var(--dash-rate, 7);grid-row:1}
           .tdb .dash-grid--vertical .dash-cell{align-self:stretch;height:auto;margin:3px 4px}
           
           .tdb .dash-grid--vertical .dash-row:not(.dash-row--head){grid-template-rows:30px 30px}
@@ -10080,7 +10532,7 @@ title: Tableau de bord
           .tdb .dash-grid{ min-width: 0 !important; }
           .tdb .dash-grid:not(.dash-grid--vertical) .dash-row{ grid-template-columns: minmax(132px, 200px) repeat(10, minmax(0, 1fr)) minmax(60px, 104px); }
           .tdb .dash-grid--vertical .dash-row:not(.dash-row--head),
-          .tdb .dash-grid--vertical .dash-row--head{ grid-template-columns: minmax(132px, 200px) repeat(5, minmax(0, 1fr)) minmax(60px, 104px) !important; }
+          .tdb .dash-grid--vertical .dash-row--head{ grid-template-columns: minmax(132px, 200px) repeat(var(--dash-n, 5), minmax(0, 1fr)) minmax(60px, 104px) !important; }
           @media (max-width: 1360px){
             .tdb .dash-layout{ grid-template-columns: minmax(0, 1fr); }
             .tdb .dash-aside{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
@@ -10121,6 +10573,27 @@ title: Tableau de bord
           .aff-fiche__meta dt{color:#6C757D}
           .aff-fiche__meta dd{margin:0;color:#1A2332}
           .aff-fiche__meta dd.is-missing{color:#8A5A00;font-weight:600}
+          .dash-frise-nav{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid #E6E9EC;background:#fff}
+          .dash-frise-nav strong{font-size:13px;color:#122F62}
+          .dash-frise-nav__range{font-size:12.5px;font-weight:600;color:#1A2332;min-width:9rem;white-space:nowrap}
+          .dash-frise-scrub{position:relative;flex:1;height:36px;cursor:grab;touch-action:none}
+          .dash-frise-scrub.is-dragging{cursor:grabbing}
+          .dash-frise-scrub__track{position:absolute;left:0;right:0;top:50%;height:6px;margin-top:-3px;border-radius:999px;background:#E6E9EC}
+          .dash-frise-scrub__thumb{position:absolute;top:50%;height:14px;margin-top:-7px;border-radius:999px;background:#1A428A;box-shadow:0 0 0 3px rgba(26,66,138,.15)}
+          .dash-grid-wrap.is-skel .dash-cell{visibility:hidden}
+          .dash-grid-wrap.is-skel .dash-dayhead strong,.dash-grid-wrap.is-skel .dash-dayhead span{color:transparent;background:#E6E9EC;border-radius:6px}
+          .tdb .dash-grid-wrap.dash-grid-wrap--virt{position:relative;overflow-x:auto !important;overflow-y:hidden !important}
+          .dash-grid-wrap--virt.is-skel{cursor:progress}
+          .dash-grid-sizer{pointer-events:none;min-height:320px}
+          .dash-grid-wrap--virt .dash-grid{min-width:0;box-sizing:border-box;background:#fff}
+          .dash-period-picker{display:flex;flex-direction:column;gap:10px;padding:12px 12px 4px;border-bottom:1px solid #E6E9EC}
+          .dash-period-picker__title{margin:0;font-size:13px;font-weight:700;color:#122F62}
+          .dash-period-picker__presets{display:flex;flex-wrap:wrap;gap:6px}
+          .dash-period-picker__preset{border:1px solid #E6E9EC;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;color:#1A2332}
+          .dash-period-picker__preset.is-current{border-color:#1A428A;color:#1A428A;font-weight:700}
+          .dash-period-picker__custom{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+          .dash-period-picker__custom label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#5C6B7A}
+          .dash-period-picker__custom input{border:1px solid #E6E9EC;border-radius:8px;padding:6px 8px;font-size:13px}
           '
 ↓PageEvent [ngx.components.UIPageEvent-1791141759900]: 
   ↓LireReferentiel [ngx.components.UIDynamicAction-1791141771686]: 
@@ -10138,12 +10611,12 @@ title: Tableau de bord
         varValue: 
           - xmlizable: 
             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-            - MobileSmartSourceType: script:this.iso(this.weekDays(this.offset || 0)[0])
+            - MobileSmartSourceType: script:this.periodFrom || this.iso(this.weekDays(this.offset || 0)[0])
       ↓dateTo [ngx.components.UIControlVariable-1791141772860]: 
         varValue: 
           - xmlizable: 
             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-            - MobileSmartSourceType: script:this.iso(this.weekDays(this.offset || 0)[4])
+            - MobileSmartSourceType: script:this.periodTo || this.iso(this.weekDays(this.offset || 0)[4])
       ↓cleActeur [ngx.components.UIControlVariable-1791141772862]: 
         varValue: 
           - xmlizable: 
@@ -10162,12 +10635,12 @@ title: Tableau de bord
           varValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: script:this.iso(this.weekDays((this.offset || 0) - 1)[0])
+              - MobileSmartSourceType: script:this.iso(this.periodePrecedente().from)
         ↓dateTo [ngx.components.UIControlVariable-1791141774036]: 
           varValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: script:this.iso(this.weekDays((this.offset || 0) - 1)[4])
+              - MobileSmartSourceType: script:this.iso(this.periodePrecedente().to)
         ↓cleActeur [ngx.components.UIControlVariable-1791141774038]: 
           varValue: 
             - xmlizable: 
