@@ -12,6 +12,16 @@ scriptContent:
         /*Begin_c8o_PageConstructor*/
         /*End_c8o_PageConstructor*/
         /*Begin_c8o_PageInitialization*/
+        		if (!document.getElementById("pfa-fonts")) {
+        			var fonts = this.c8o.endpointConvertigo + "/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/fonts/";
+        			var face = function (famille, poids, fichier) {
+        				return ''@font-face { font-family: "'' + famille + ''"; font-style: normal; font-weight: '' + poids + ''; font-display: swap; src: url("'' + fonts + fichier + ''") format("woff2"); }'';
+        			};
+        			var style = document.createElement("style");
+        			style.id = "pfa-fonts";
+        			style.textContent = face("Montserrat", 700, "montserrat-latin-700-normal.woff2") + face("Montserrat", 400, "montserrat-latin-400-normal.woff2") + face("Roboto", 400, "roboto-latin-400-normal.woff2");
+        			document.head.appendChild(style);
+        		}
         /*End_c8o_PageInitialization*/
         /*Begin_c8o_PageFunction*/
         	pfConnecter(input): Promise<any> {
@@ -132,3 +142,22 @@ title: Connexion
             		try { window.sessionStorage.removeItem("pfc:userName"); window.sessionStorage.removeItem("pfc:userRole"); window.sessionStorage.removeItem("pfc:canAdmin"); } catch (eL) {}
             		resolve();
             '
+↓PageStyle [ngx.components.UIStyle-1791367368135]: 
+  styleContent: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+        →: |
+          '/* Login : même police titre que le Tableau de bord */
+          .login-page .main-title,
+          .login-page .subtitle,
+          .login-page .welcome-section h2 {
+            font-family: Montserrat, "Segoe UI", system-ui, sans-serif !important;
+          }
+          .login-page .main-title {
+            font-weight: 700 !important;
+          }
+          .login-page .subtitle {
+            font-weight: 700 !important;
+          }
+          '

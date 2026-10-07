@@ -138,8 +138,6 @@ scriptContent:
         		this.pfaUserName = this.nomBarre();
         		this.pfaUserRole = "";
         		try { this.pfaUserRole = window.sessionStorage.getItem("pfc:userRole") || ""; } catch (eR) {}
-        		if (!this.pfaUserRole) this.pfaUserRole = this.libelleRole();
-        		try { window.sessionStorage.setItem("pfc:userRole", this.pfaUserRole); } catch (eRole) {}
         		this.badgeProjets = 0;
         		this.badgeLignes = 0;
         		try {
@@ -232,7 +230,7 @@ scriptContent:
         		if (code === "LECTEUR") return "Lecteur";
         		if (code === "CONTRIBUTEUR") return "Contributeur";
         		if (this.canAdmin) return "Gestionnaire";
-        		return code ? code : "Contributeur";
+        		return code ? code : "";
         	}
         	nomBarre() {
         		function propre(v) {
@@ -272,7 +270,9 @@ scriptContent:
         	syncChrome() {
         		this.pfaUserName = this.nomBarre();
         		this.pfaUserRole = this.libelleRole();
-        		try { window.sessionStorage.setItem("pfc:userRole", this.pfaUserRole); } catch (eRole) {}
+        		if (this.pfaUserRole) {
+        			try { window.sessionStorage.setItem("pfc:userRole", this.pfaUserRole); } catch (eRole) {}
+        		}
         		var self = this;
         		var projets = 0;
         		var seen = {};
