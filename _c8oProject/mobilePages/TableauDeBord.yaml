@@ -1,5 +1,5 @@
 ↑isRoot: true
-comment: Tableau de bord de la semaine, en balises Convertigo
+comment: Tableau de bord période libre (from/to, presets), KPIs pleine période, grille empilée fenêtrée et frise (idle 120 ms, cache ±1).
 inAutoMenu: false
 preloadPriority: high
 scriptContent: 
