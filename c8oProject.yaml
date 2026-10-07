@@ -4,7 +4,7 @@
   contextTimeout: 800
   corsOrigin: =Origin
   httpSessionTimeout: 800
-  version: 0.1.1
+  version: 0.1.0
   ↓void [connectors.SqlConnector]: 🗏 connectors/void.yaml
   ↓get_version [sequences.GenericSequence]: 🗏 sequences/get_version.yaml
   ↓lib_common_be_reference [references.ProjectSchemaReference]: 
