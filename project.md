@@ -1,7 +1,7 @@
 
 # ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/core/images/project_color_16x16.png?raw=true "Project") PortefeuilleLCNC_fe
 
-Convertigo NGX builder Project
+Portefeuille LCNC - Application Frontend Angular/Ionic (Plan de charge et affectations)
 
 <details><summary><span style="color:DarkGoldenRod"><i>References</i></span></summary><blockquote><p>
 
@@ -54,6 +54,14 @@ Placeholder SQL connector for template projects
 
 Placeholder transaction that intentionally cancels execution
 </p></blockquote></details>
+</p></blockquote></details>
+
+<details><summary><span style="color:DarkGoldenRod"><i>Sequences</i></span></summary><blockquote><p>
+
+
+## ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/sequences/images/genericsequence_color_16x16.png?raw=true "GenericSequence") Generic_Sequence
+
+
 </p></blockquote></details>
 
 <details><summary><span style="color:DarkGoldenRod"><i>Mobile Application</i></span></summary><blockquote><p>

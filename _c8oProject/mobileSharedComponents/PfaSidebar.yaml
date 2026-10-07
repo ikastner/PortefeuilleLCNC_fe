@@ -3,7 +3,10 @@ scriptContent:
     - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
     - com.twinsoft.convertigo.beans.common.FormatedContent: 
       →: |
-        '/*Begin_c8o_CompInitialization*/
+        '/*Begin_c8o_CompDeclaration*/
+        	appVersion: string = "";
+        /*End_c8o_CompDeclaration*/
+        /*Begin_c8o_CompInitialization*/
         		this.folded = false;
         		if (!document.getElementById("pfa-fonts")) {
         			var fonts = this.c8o.endpointConvertigo + "/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/fonts/";
@@ -35,6 +38,7 @@ scriptContent:
         			var obs = new MutationObserver(function () { unlockNav(); });
         			obs.observe(sideRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ["disabled"] });
         		}
+        		this.chargerVersion();
         		/*End_c8o_CompAfterViewInit*/
         /*Begin_c8o_CompFunction*/
         	choisir(route) {
@@ -77,6 +81,21 @@ scriptContent:
         		var a = (parts[0] || "?").charAt(0);
         		var b = parts.length > 1 ? parts[1].charAt(0) : (parts[0] || "?").charAt(1);
         		return (a + (b || "")).toUpperCase();
+        	}
+        	chargerVersion() {
+        		var self = this;
+        		try {
+        			var p: any = this.c8o.callJsonObject("PortefeuilleLCNC_fe.get_version", {});
+        			p.then(function (res) {
+        				var d = (res && res.document) ? res.document : (res || {});
+        				var v = d.version;
+        				if (v == null && d.data) v = d.data.version;
+        				self.appVersion = String(v == null ? "" : v).trim();
+        				try { self.ref.detectChanges(); } catch (e) {}
+        				return null;
+        			});
+        			if (p.fail) p.fail(function () { return p; });
+        		} catch (e2) {}
         	}
         	/*End_c8o_CompFunction*/
         '
@@ -675,6 +694,26 @@ scriptContent:
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
               - MobileSmartSourceType: script:this.userRole
+      ↓UserVersion [ngx.components.UIDynamicElement-1791366662532]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓UserVersionC [ngx.components.UIAttribute-1791366673428]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:sidebar__user-version
+        ↓UserVersionHide [ngx.components.UIAttribute-1791366674998]: 
+          attrName: '[hidden]'
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:!this.appVersion
+        ↓UserVersionT [ngx.components.UIText-1791366676568]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:'v' + this.appVersion
     ↓Logout [ngx.components.UIDynamicElement-1795600510190]: 
       beanData: '{"ionBean":"DivTag"}'
       tagName: button
@@ -690,10 +729,23 @@ scriptContent:
           - xmlizable: 
             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
             - MobileSmartSourceType: plain:Se deconnecter
-      ↓LogoutE [ngx.components.UIControlEvent-1795600510193]: 
-        attrName: click 
-        eventName: click 
-        ↓LogoutA [ngx.components.UICustomAction-1795600510194]: 
+      ↓LogoutIco [ngx.components.UIDynamicElement-1795600510195]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: span
+        ↓LogoutIcoC [ngx.components.UIAttribute-1795600510196]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:nav-ico nav-ico--logout
+      ↓LogoutType [ngx.components.UIAttribute-1791366336564]: 
+        attrName: type
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:button
+      ↓LogoutE [ngx.components.UIControlEvent-1791366366865]: 
+        ↓LogoutA [ngx.components.UICustomAction-1791366367399]: 
           actionValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -707,15 +759,6 @@ scriptContent:
                   }
                   resolve(true);
                   '
-      ↓LogoutIco [ngx.components.UIDynamicElement-1795600510195]: 
-        beanData: '{"ionBean":"DivTag"}'
-        tagName: span
-        ↓LogoutIcoC [ngx.components.UIAttribute-1795600510196]: 
-          attrName: class
-          attrValue: 
-            - xmlizable: 
-              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:nav-ico nav-ico--logout
 ↓Style [ngx.components.UIStyle-1795600510200]: 
   styleContent: 
     - xmlizable: 
@@ -915,6 +958,15 @@ scriptContent:
             margin-right: auto;
           }
           .sidebar.is-settled .sidebar__logout { margin-left: 0; }
+          
+          .sidebar__user-version {
+            margin-top: 2px;
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255,255,255,.55);
+            letter-spacing: .02em;
+          }
+          .sidebar.is-settled .sidebar__user-version { display: none; }
           '
 ↓active [ngx.components.UICompVariable-1795600510300]: 
   value: '''grille'''

@@ -1,0 +1,15 @@
+accessibility: Hidden
+comment: Renvoie la version Convertigo du projet front (propriété Version).
+↓version [steps.JsonFieldStep-1791366617545]: 
+  key: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+      - SmartType: 
+        - ↑mode: PLAIN
+        - →→: version
+  value: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.steps.SmartType
+      - SmartType: 
+        - ↑mode: JS
+        - →→: String(context.project.getVersion())
