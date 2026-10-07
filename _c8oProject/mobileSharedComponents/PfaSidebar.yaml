@@ -5,6 +5,16 @@ scriptContent:
       →: |
         '/*Begin_c8o_CompInitialization*/
         		this.folded = false;
+        		if (!document.getElementById("pfa-fonts")) {
+        			var fonts = this.c8o.endpointConvertigo + "/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/fonts/";
+        			var face = function (famille, poids, fichier) {
+        				return ''@font-face { font-family: "'' + famille + ''"; font-style: normal; font-weight: '' + poids + ''; font-display: swap; src: url("'' + fonts + fichier + ''") format("woff2"); }'';
+        			};
+        			var style = document.createElement("style");
+        			style.id = "pfa-fonts";
+        			style.textContent = face("Montserrat", 700, "montserrat-latin-700-normal.woff2") + face("Roboto", 400, "roboto-latin-400-normal.woff2");
+        			document.head.appendChild(style);
+        		}
         		document.documentElement.style.setProperty("--pfa-side", "264px");
         		/*End_c8o_CompInitialization*/
         /*Begin_c8o_CompAfterViewInit*/
@@ -460,6 +470,7 @@ scriptContent:
                 - MobileSmartSourceType: plain:Roles et droits
       ↓Sec3 [ngx.components.UIDynamicElement-1795600510091]: 
         beanData: '{"ionBean":"DivTag"}'
+        isEnabled: false
         tagName: div
         ↓Sec3C [ngx.components.UIAttribute-1795600510092]: 
           attrName: class
@@ -474,6 +485,7 @@ scriptContent:
               - MobileSmartSourceType: plain:Pilotage projets
       ↓BtnSuivi [ngx.components.UIDynamicElement-1795600510100]: 
         beanData: '{"ionBean":"Button","IonFill":"plain:clear"}'
+        isEnabled: false
         tagName: button
         ↓BtnSuiviClass [ngx.components.UIAttribute-1795600510105]: 
           attrName: class
@@ -522,6 +534,7 @@ scriptContent:
                 - MobileSmartSourceType: plain:Suivi des projets
       ↓BtnMvp [ngx.components.UIDynamicElement-1795600510110]: 
         beanData: '{"ionBean":"Button","IonFill":"plain:clear"}'
+        isEnabled: false
         tagName: button
         ↓BtnMvpClass [ngx.components.UIAttribute-1795600510115]: 
           attrName: class
@@ -570,6 +583,7 @@ scriptContent:
                 - MobileSmartSourceType: plain:MVP
       ↓BtnFeries [ngx.components.UIDynamicElement-1795600510120]: 
         beanData: '{"ionBean":"Button","IonFill":"plain:clear"}'
+        isEnabled: false
         tagName: button
         ↓BtnFeriesClass [ngx.components.UIAttribute-1795600510125]: 
           attrName: class
@@ -714,21 +728,7 @@ scriptContent:
       - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
       - com.twinsoft.convertigo.beans.common.FormatedContent: 
         →: |
-          '@font-face {
-            font-family: "Montserrat";
-            font-style: normal;
-            font-weight: 700;
-            font-display: swap;
-            src: url("http://localhost:18080/convertigo/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/fonts/montserrat-latin-700-normal.woff2") format("woff2");
-          }
-          @font-face {
-            font-family: "Roboto";
-            font-style: normal;
-            font-weight: 400;
-            font-display: swap;
-            src: url("http://localhost:18080/convertigo/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/fonts/roboto-latin-400-normal.woff2") format("woff2");
-          }
-          :host { display: contents; }
+          ':host { display: contents; }
           .sidebar {
             position: fixed;
             z-index: 50;

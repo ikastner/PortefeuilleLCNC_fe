@@ -27,7 +27,7 @@ scriptContent:
         	lignes: any[];
         	elements: any[];
         	profils: any[];
-        	porteurs: any[];
+        	participants: any[];
         	droits: any[];
         	canAdmin: boolean;
         	items: any[];
@@ -44,6 +44,7 @@ scriptContent:
         	commentairesMeta: string;
         	commentairesMessage: string;
         	calagePret: boolean;
+        	tipData: any;
         	headDays: any[];
         	efforts: any[];
         	effortStack: any[];
@@ -86,6 +87,13 @@ scriptContent:
         	weekRange: string;
         	weekTitle: string;
         	showBack: boolean;
+        	wpOpen: boolean;
+        	wpY: number;
+        	wpM: number;
+        	wpTop: string;
+        	wpLeft: string;
+        	wpMoisLabel: string;
+        	wpWeeks: any[];
         	collabCount: string;
         	effortEmpty: boolean;
         	dispoEmpty: boolean;
@@ -123,25 +131,177 @@ scriptContent:
         /*Begin_c8o_PageFunction*/
         	initTableau() {
         		this.cells = true;
-        		try { this.axeVertical = window.sessionStorage.getItem("pfc:axe") === "v"; } catch (eAxe) { this.axeVertical = false; }
+        		this.axeVertical = true;
         		if (!this.calagePret) {
         			this.calagePret = true;
         			var selfR = this;
+        			{
+        				var tipCss = (document.getElementById("dash-tip-css") || document.createElement("style")) as HTMLStyleElement;
+        				tipCss.id = "dash-tip-css";
+        				tipCss.textContent = ".dash-tip,.dash-tip *{box-sizing:border-box}"
+        					+ ".dash-tip{position:fixed;z-index:3000;width:260px;padding:12px 14px;border:1px solid #E6E9EC;border-radius:12px;background:#fff;color:#1A2332;box-shadow:0 12px 32px rgba(26,35,50,.16);font-family:Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:13px;font-weight:400;line-height:1.45;letter-spacing:normal;text-align:left;-webkit-font-smoothing:antialiased;pointer-events:none;animation:dash-tip-in 180ms ease-out}"
+        					+ ".dash-tip[hidden]{display:none}"
+        					+ ".dash-tip p{margin:0}"
+        					+ ".dash-tip strong{font-weight:700}"
+        					+ ".dash-tip::after{content:'''';position:absolute;top:100%;left:var(--arrow,50%);width:10px;height:10px;margin:-5px 0 0 -5px;border:solid #E6E9EC;border-width:0 1px 1px 0;background:#fff;transform:rotate(45deg)}"
+        					+ ".dash-tip.is-below::after{top:0;border-width:1px 0 0 1px}"
+        					+ ".dash-tip__head{display:flex;align-items:flex-start;gap:10px}"
+        					+ ".dash-tip__head strong{display:block;font-size:14px}"
+        					+ ".dash-tip__head small{display:block;margin-top:2px;font-size:12px;color:#6C757D}"
+        					+ ".dash-tip__dot{flex:none;width:10px;height:10px;margin-top:4px;border-radius:999px;background:#1A428A}"
+        					+ ".dash-tip__dot.is-libre{background:transparent;border:1px dashed #CDD3D9}"
+        					+ ".dash-tip__dot.is-ferie,.dash-tip__dot.is-repos{background:#E6E9EC}"
+        					+ ".dash-tip .dash-tip__date{margin:10px 0 8px;padding-bottom:8px;border-bottom:1px solid #F8F9FA;font-weight:600}"
+        					+ ".dash-tip__rows{display:grid;gap:4px}"
+        					+ ".dash-tip__row{display:flex;justify-content:space-between;gap:12px}"
+        					+ ".dash-tip__row span{color:#6C757D}"
+        					+ ".dash-tip__row strong{font-weight:600;text-align:right}"
+        					+ ".dash-tip .dash-tip__note{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:#F8F9FA;line-height:1.4}"
+        					+ ".dash-tip .dash-tip__note-head{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:#1A428A}"
+        					+ ".dash-tip .dash-tip__note-txt{margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}"
+        					+ ".dash-tip__note svg{flex:none}"
+        					+ ".dash-tip .dash-tip__hint{margin:10px 0 0;font-size:12px;color:#6C757D}"
+        					+ "@keyframes dash-tip-in{from{opacity:0;transform:translateY(4px)}}"
+        					+ "@media (prefers-reduced-motion:reduce){.dash-tip{animation:none}}";
+        				document.head.appendChild(tipCss);
+        			}
+        			var tipEl = document.getElementById("dash-tip") as HTMLElement;
+        			if (!tipEl) {
+        				tipEl = document.createElement("div");
+        				tipEl.id = "dash-tip";
+        				tipEl.className = "dash-tip";
+        				tipEl.setAttribute("role", "tooltip");
+        				tipEl.hidden = true;
+        				document.body.appendChild(tipEl);
+        			}
+        			var tipTimer: any = 0;
+        			var tipNode = function (tag, cls, txt) {
+        				var n = document.createElement(tag);
+        				if (cls) n.className = cls;
+        				if (txt != null) n.textContent = txt;
+        				return n;
+        			};
+        			var tipCacher = function () {
+        				clearTimeout(tipTimer);
+        				tipTimer = 0;
+        				tipEl.hidden = true;
+        			};
+        			var tipMontrer = function (b, d) {
+        				tipEl.textContent = "";
+        				var head = tipNode("div", "dash-tip__head", null);
+        				var dot = tipNode("span", "dash-tip__dot" + (d.couleur ? "" : " is-" + d.kind), null);
+        				if (d.couleur) dot.style.background = d.couleur;
+        				var titre = tipNode("div", "", null);
+        				titre.appendChild(tipNode("strong", "", d.lib));
+        				titre.appendChild(tipNode("small", "", d.meta));
+        				head.appendChild(dot);
+        				head.appendChild(titre);
+        				tipEl.appendChild(head);
+        				tipEl.appendChild(tipNode("p", "dash-tip__date", d.date));
+        				var rows = tipNode("div", "dash-tip__rows", null);
+        				[["Collaborateur", d.nom], ["Chef de projet", d.chef], ["Sur la semaine", d.semaine]].forEach(function (r) {
+        					if (!r[1]) return;
+        					var row = tipNode("div", "dash-tip__row", null);
+        					row.appendChild(tipNode("span", "", r[0]));
+        					row.appendChild(tipNode("strong", "", r[1]));
+        					rows.appendChild(row);
+        				});
+        				tipEl.appendChild(rows);
+        				if (d.note) {
+        					var note = tipNode("div", "dash-tip__note", null);
+        					var nh = tipNode("p", "dash-tip__note-head", null);
+        					nh.innerHTML = ''<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'';
+        					nh.appendChild(tipNode("strong", "", d.note));
+        					note.appendChild(nh);
+        					if (d.premier) note.appendChild(tipNode("p", "dash-tip__note-txt", d.premier));
+        					tipEl.appendChild(note);
+        				}
+        				if (d.hint) tipEl.appendChild(tipNode("p", "dash-tip__hint", d.hint));
+        				tipEl.hidden = false;
+        				var r = b.getBoundingClientRect(), t = tipEl.getBoundingClientRect();
+        				var top = r.top - t.height - 10, below = top < 8;
+        				if (below) top = r.bottom + 10;
+        				var left = Math.max(8, Math.min(r.left + r.width / 2 - t.width / 2, window.innerWidth - t.width - 8));
+        				tipEl.classList.toggle("is-below", below);
+        				tipEl.style.top = top + "px";
+        				tipEl.style.left = left + "px";
+        				tipEl.style.setProperty("--arrow", (r.left + r.width / 2 - left) + "px");
+        			};
+        			var tipCase = function (ev) {
+        				var t = ev.target as HTMLElement;
+        				var b = t && t.closest ? t.closest(".tdb .dash-grid--cells button.dash-cell") as HTMLElement : null;
+        				if (!b) return null;
+        				var d = selfR.tipData && selfR.tipData[b.getAttribute("data-cle") + "|" + b.getAttribute("data-start")];
+        				return d ? { b: b, d: d } : null;
+        			};
+        			var tipProgrammer = function (ev, delai) {
+        				var c = tipCase(ev);
+        				if (!c) return;
+        				clearTimeout(tipTimer);
+        				tipTimer = setTimeout(function () { if (document.body.contains(c.b)) tipMontrer(c.b, c.d); }, delai);
+        			};
+        			document.addEventListener("mouseover", function (ev) {
+        				var c = tipCase(ev);
+        				var from = (ev as MouseEvent).relatedTarget as HTMLElement;
+        				if (c && from && c.b.contains(from)) return;
+        				if (c) tipProgrammer(ev, 250);
+        			});
+        			document.addEventListener("mouseout", function (ev) {
+        				var c = tipCase(ev);
+        				var to = (ev as MouseEvent).relatedTarget as HTMLElement;
+        				if (c && !(to && c.b.contains(to))) tipCacher();
+        			});
+        			document.addEventListener("focusin", function (ev) { if (tipCase(ev)) tipProgrammer(ev, 120); });
+        			document.addEventListener("focusout", function (ev) { if (tipCase(ev)) tipCacher(); });
+        			document.addEventListener("click", function (ev) { if (tipCase(ev)) tipCacher(); }, true);
+        			document.addEventListener("scroll", tipCacher, true);
+        			window.addEventListener("resize", tipCacher);
         			var calerEntete = function () {
+        				var main = document.querySelector(".tdb .dash-main") as HTMLElement;
         				var bar = document.querySelector(".tdb .dash-main .dash-toolbar") as HTMLElement;
-        				if (!bar) return;
+        				var content = document.querySelector("ion-content.pfc-page") as HTMLElement;
+        				if (!main || !bar) return;
+        				if (!document.getElementById("qfq-veil")) {
+        					var veil = document.createElement("div");
+        					veil.id = "qfq-veil";
+        					veil.setAttribute("aria-hidden", "true");
+        					document.body.appendChild(veil);
+        				}
+        				if (!main.querySelector(".qfq-sentinel")) {
+        					var sent = document.createElement("div");
+        					sent.className = "qfq-sentinel";
+        					sent.setAttribute("aria-hidden", "true");
+        					main.insertBefore(sent, main.firstChild);
+        				}
         				document.documentElement.style.setProperty("--qfq-bar", bar.offsetHeight + "px");
+        				var br = bar.getBoundingClientRect();
+        				var stuck = Math.round(br.top - main.getBoundingClientRect().top) > 2;
+        				bar.classList.toggle("is-stuck", stuck);
+        				main.classList.toggle("is-stuck", stuck);
+        				document.documentElement.classList.toggle("qfq-stuck", stuck);
+        				var cover = document.getElementById("qfq-veil") as HTMLElement;
+        				cover.style.display = "none";
+        			};
+        			var suivreScroll = function () {
+        				var content = document.querySelector("ion-content.pfc-page") as any;
+        				if (content) {
+        					content.scrollEvents = true;
+        					if (!content._qfqScroll) {
+        						content._qfqScroll = true;
+        						content.addEventListener("ionScroll", calerEntete);
+        					}
+        					var inner = content.shadowRoot ? content.shadowRoot.querySelector(".inner-scroll") : null;
+        					if (inner && !inner._qfqScroll) {
+        						inner._qfqScroll = true;
+        						inner.addEventListener("scroll", calerEntete, { passive: true });
+        					}
+        				}
         			};
         			window.addEventListener("resize", function () { selfR.calerCommentaires(); calerEntete(); });
-        			if (window.ResizeObserver) {
-        				setTimeout(function () {
-        					var bar = document.querySelector(".tdb .dash-main .dash-toolbar");
-        					if (bar) new ResizeObserver(calerEntete).observe(bar);
-        					calerEntete();
-        				}, 0);
-        			}
-        			setTimeout(calerEntete, 60);
-        			setTimeout(calerEntete, 400);
+        			window.addEventListener("scroll", calerEntete, true);
+        			setTimeout(function () { suivreScroll(); calerEntete(); }, 0);
+        			setTimeout(function () { suivreScroll(); calerEntete(); }, 80);
+        			setTimeout(function () { suivreScroll(); calerEntete(); }, 400);
         		}
         		this.view = "dashboard";
         		this.pageTitle = "Tableau de bord";
@@ -159,7 +319,7 @@ scriptContent:
         		this.lignes = [];
         		this.elements = [];
         		this.profils = [];
-        		this.porteurs = [];
+        		this.participants = [];
         		this.droits = [];
         		this.canAdmin = false;
         		try { this.canAdmin = window.sessionStorage.getItem("pfc:canAdmin") === "1"; } catch (eA) {}
@@ -217,6 +377,8 @@ scriptContent:
         		this.weekRange = "";
         		this.weekTitle = "La semaine de l equipe";
         		this.showBack = false;
+        		this.wpOpen = false;
+        		this.wpWeeks = [];
         		this.collabCount = "0 collaborateur";
         		this.effortEmpty = true;
         		this.dispoEmpty = true;
@@ -487,7 +649,7 @@ scriptContent:
         		this.profils = this.asList(ref.profils);
         		this.types = this.asList(ref.types);
         		this.elements = this.asList(ref.elements);
-        		this.porteurs = this.asList(ref.porteurs);
+        		this.participants = this.asList(ref.participants);
         		this.lignes = this.asList(ref.lignes);
         		if (grille.acteur) this.cleActeur = String(grille.acteur);
         		this.items = this.asList(grille.items);
@@ -513,7 +675,7 @@ scriptContent:
         			self.profils = self.asList(d.profils);
         			self.elements = self.asList(d.elements);
         			self.types = self.asList(d.types);
-        			self.porteurs = self.asList(d.porteurs);
+        			self.participants = self.asList(d.participants);
         			self.lignes = self.asList(d.lignes);
         			self.syncChrome();
         			self.ionViewDidEnter();
@@ -527,7 +689,7 @@ scriptContent:
         	syncChrome() {
         		var els = this.elements || [];
         		var lig = this.lignes || [];
-        		var ports = this.porteurs || [];
+        		var ports = this.participants || [];
         		var projets = 0;
         		var gens = 0;
         		var seen = {};
@@ -627,7 +789,7 @@ scriptContent:
         				var dayItems = items.filter(function (it) { return it.rowId === l.cle && it.start === key; });
         				var half = [null, null];
         				dayItems.forEach(function (it) {
-        					var v = { kind: self.kindOf(it), type: it.type || "", element: it.codeElement, label: it.label, commentaire: self.texteCommentaire(it.commentaire || it.filCorps), count: Number(it.commentCount) || 0 };
+        					var v = { kind: self.kindOf(it), type: it.type || "", element: it.codeElement, label: it.label, commentaire: self.texteCommentaire(it.commentaire || it.filCorps), premier: self.texteCommentaire(it.filCorps || it.commentaire), count: Number(it.commentCount) || 0 };
         					if (it.period === "JOURNEE" || !it.period) { half[0] = v; half[1] = v; }
         					else half[it.period === "MATIN" ? 0 : 1] = v;
         				});
@@ -812,7 +974,7 @@ scriptContent:
         			return {
         				col: self.axeVertical ? String(2 + i) : ((2 + i * 2) + " / span 2"),
         				label: JOURS[i].slice(0, 3) + " " + d.getDate(),
-        				sub: today ? "Aujourd\u2019hui" : (cur.jours[i].ferieLabel || (self.axeVertical ? "Matin / Apr\u00e8s-midi" : "Matin \u00b7 Apr\u00e8s-midi")),
+        				sub: today ? "Aujourd\u2019hui" : (cur.jours[i].ferieLabel || ""),
         				today: today,
         				focus: self.focusDay === i
         			};
@@ -836,11 +998,29 @@ scriptContent:
         				var today = self.iso(days[jour]) === todayIso;
         				var note = !!(s.commentaire || s.count);
         				var paint = s.kind === "nature" ? self.typeStyle(s.type) : null;
+        				var tipMemes = (p.slots || []).filter(function (x) { return (x.kind || "libre") === (s.kind || "libre") && (x.element || "") === (s.element || "") && (x.type || "") === (s.type || ""); }).length;
+        				var tipLib = elc ? (elc.libelle || s.label || "Projet") : (s.label || LIB[s.kind] || "Libre");
+        				var tipMeta = elc ? ("Projet " + self.affLc(elc.lcNc)) : ({ libre: "Aucune affectation", ferie: "Jour f\u00e9ri\u00e9", repos: "Repos", formation: "Formation", absence: "Absence" }[s.kind] || "Absence / indisponibilit\u00e9");
+        				var tipJour = days[jour].toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+        				self.tipData = self.tipData || {};
+        				self.tipData[l.cle + "|" + i] = {
+        					lib: tipLib,
+        					meta: tipMeta,
+        					couleur: elc && elc.couleur ? elc.couleur : (paint ? (paint.color || paint.border || "") : ""),
+        					kind: s.kind || "libre",
+        					date: tipJour.charAt(0).toUpperCase() + tipJour.slice(1) + (i % 2 ? " \u00b7 apr\u00e8s-midi" : " \u00b7 matin"),
+        					nom: l.libelle || l.nom || l.cle,
+        					chef: elc && elc.chefProjet ? self.nomLigne(elc.chefProjet) : "",
+        					semaine: (s.kind === "ferie" || s.kind === "repos") ? "" : self.fmtJ(tipMemes),
+        					note: (s.count || s.commentaire) ? self.plur(Math.max(Number(s.count) || 0, 1), "message") : "",
+        					premier: String(s.premier || s.commentaire || "").trim(),
+        					hint: (s.kind === "ferie" || s.kind === "repos") ? "" : ((s.kind || "libre") === "libre" ? "Cliquer pour affecter" : "Cliquer pour modifier ou commenter")
+        				};
         				return {
         					cls: "dash-cell dash-cell--" + (s.kind || "libre") + (match ? " is-match" : "") + (inDay ? " is-day" : "") + (today ? " is-today" : "") + (note ? " has-comment" : "") + (self.axeVertical ? (i % 2 ? " is-pm" : " is-am") : ""),
         					label: elc ? (elc.libelle || s.label || "Projet") : (s.label || LIB[s.kind] || "Libre"),
         					note: note,
-        					titre: note ? (s.commentaire || "Commentaire") : "",
+        					titre: "",
         					col: self.axeVertical ? String(2 + Math.floor(i / 2)) : String(2 + i),
         					row: self.axeVertical ? String((i % 2) + 1) : "",
         					bg: elc && elc.couleur ? self.alpha(elc.couleur, 0.18) : (paint ? paint.bg : ""),
@@ -950,18 +1130,18 @@ scriptContent:
         		this.absMeta = this.plur(absRows.length, "personne") + (semaine ? " · " + semaine + " toute la semaine" : "");
         		var actifs = (this.lignes || []).filter(function (l) { return self.onFlag(l.actif == null ? "true" : l.actif); });
         		var els = (this.elements || []).filter(function (e) { return self.onFlag(e.actif == null ? "true" : e.actif); });
-        		function countPorteur(code) {
-        			return (self.porteurs || []).filter(function (p) { return p.codeElement === code; }).length;
+        		function countParticipant(code) {
+        			return (self.participants || []).filter(function (p) { return p.codeElement === code; }).length;
         		}
         		var pills = [];
         		var sansRole = actifs.filter(function (l) { return !l.codeRole; }).length;
         		var sansRef = actifs.filter(function (l) { return !l.referent; }).length;
         		var sansChef = els.filter(function (e) { return !e.chefProjet; }).length;
-        		var sansPort = els.filter(function (e) { return !countPorteur(e.code); }).length;
+        		var sansPort = els.filter(function (e) { return !countParticipant(e.code); }).length;
         		if (sansRole) pills.push({ n: String(sansRole), label: "sans r\u00f4le", route: "lignes", preset: "role" });
         		if (sansRef) pills.push({ n: String(sansRef), label: "sans r\u00e9f\u00e9rent", route: "lignes", preset: "ref" });
         		if (sansChef) pills.push({ n: String(sansChef), label: "projets sans chef", route: "projets", preset: "chef" });
-        		if (sansPort) pills.push({ n: String(sansPort), label: "projets sans porteur", route: "projets", preset: "porteur" });
+        		if (sansPort) pills.push({ n: String(sansPort), label: "projets sans participant", route: "projets", preset: "participant" });
         		this.pills = pills;
         		this.showPills = !!(this.canAdmin && pills.length);
         		var chips = [{ value: "", label: "Tous" }];
@@ -991,6 +1171,62 @@ scriptContent:
         		var n = event && (event.currentTarget || event.target);
         		if (n && n.nodeType === 3) n = n.parentElement;
         		return n;
+        	}
+        	wpToggle(event) {
+        		if (this.wpOpen) { this.wpFermer(); return; }
+        		var n = this.noeud(event);
+        		var r = n && n.getBoundingClientRect ? n.getBoundingClientRect() : null;
+        		var w = 288;
+        		this.wpTop = (r ? r.bottom + 6 : 120) + "px";
+        		this.wpLeft = (r ? Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) : 24) + "px";
+        		var d = this.weekDays(this.offset || 0)[0];
+        		this.wpY = d.getFullYear();
+        		this.wpM = d.getMonth();
+        		this.wpConstruire();
+        		this.wpOpen = true;
+        		this.rafraichir();
+        	}
+        	wpNav(delta) {
+        		var m = this.wpM + delta;
+        		this.wpY += Math.floor(m / 12);
+        		this.wpM = ((m % 12) + 12) % 12;
+        		this.wpConstruire();
+        		this.rafraichir();
+        	}
+        	wpConstruire() {
+        		var debut = new Date(this.wpY, this.wpM, 1);
+        		var fin = new Date(this.wpY, this.wpM + 1, 0);
+        		var dow = debut.getDay();
+        		var cur = new Date(debut);
+        		cur.setDate(debut.getDate() + (dow === 0 ? -6 : 1 - dow));
+        		var ref = this.monday(0).getTime();
+        		var actuel = this.offset || 0;
+        		var out = [];
+        		while (cur <= fin) {
+        			var ven = new Date(cur);
+        			ven.setDate(cur.getDate() + 4);
+        			if (ven >= debut) {
+        				var off = Math.round((cur.getTime() - ref) / 604800000);
+        				var finTxt = ven.getDate() + " " + ven.toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
+        				var range = cur.getMonth() === ven.getMonth() ? cur.getDate() + " \u2013 " + finTxt : cur.getDate() + " " + cur.toLocaleDateString("fr-FR", { month: "short" }) + " \u2013 " + finTxt;
+        				out.push({ off: off, num: "S" + this.numSemaine(cur), range: range, current: off === actuel, today: off === 0 });
+        			}
+        			cur.setDate(cur.getDate() + 7);
+        		}
+        		this.wpWeeks = out;
+        		var t = debut.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+        		this.wpMoisLabel = t.charAt(0).toUpperCase() + t.slice(1);
+        	}
+        	wpChoisir(event) {
+        		var n = this.noeud(event);
+        		var off = Number(n && n.getAttribute ? n.getAttribute("data-off") : NaN);
+        		this.wpOpen = false;
+        		if (isNaN(off) || off === (this.offset || 0)) { this.rafraichir(); return; }
+        		this.semaine(off - (this.offset || 0));
+        	}
+        	wpFermer() {
+        		this.wpOpen = false;
+        		this.rafraichir();
         	}
         	semaine(delta) {
         		if (delta === 0) this.offset = 0;
@@ -1160,13 +1396,20 @@ scriptContent:
         		}).map(function (l) {
         			return { id: String(l.cle), name: l.libelle || l.cle };
         		});
-        		var tiles = [{ code: "PROJET", libelle: "Projet", couleur: "#1A428A", on: this.affKind === "PROJET" }];
+        		var ICO = {
+        			PROJET: "M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z",
+        			ABSENCE: "M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1",
+        			ABSENCE_PREV: "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM16 2v4M8 2v4M3 10h18",
+        			FORMATION: "M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8",
+        			SEMINAIRE: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M5 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        		};
+        		var tiles = [{ code: "PROJET", libelle: "Projet", couleur: "#1A428A", encre: "#FFFFFF", ico: ICO.PROJET, on: this.affKind === "PROJET" }];
         		(this.types || []).forEach(function (t) {
         			var req = String(t.requiertElement == null ? "" : t.requiertElement).toLowerCase();
         			if (req === "true" || req === "t" || req === "1") return;
         			if (!self.onFlag(t.actif == null ? "true" : t.actif)) return;
         			var code = String(t.code || "");
-        			tiles.push({ code: code, libelle: String(t.libelle || code), couleur: t.couleur || "#6C757D", on: self.affKind === code });
+        			tiles.push({ code: code, libelle: String(t.libelle || code), couleur: t.couleurFond || t.couleur || "#6C757D", encre: t.couleurTexte || "#FFFFFF", ico: ICO[code] || ICO.ABSENCE_PREV, on: self.affKind === code });
         		});
         		this.affTiles = tiles;
         		this.affProjet = this.affKind === "PROJET";
@@ -1451,7 +1694,7 @@ scriptContent:
         	affPreparerGroupes() {
         		var self = this;
         		var ses = {};
-        		(this.porteurs || []).forEach(function (p) { if (String(p.cleLigne || p.cle || "") === String(self.affRowId)) ses[String(p.codeElement)] = true; });
+        		(this.participants || []).forEach(function (p) { if (String(p.cle || "") === String(self.affRowId)) ses[String(p.codeElement)] = true; });
         		(this.elements || []).forEach(function (e) { if (String(e.chefProjet || "") === String(self.affRowId)) ses[String(e.code)] = true; });
         		var groups = { SES: [], LC: [], NC: [], AU: [] };
         		(this.elements || []).forEach(function (e) {
@@ -1484,15 +1727,13 @@ scriptContent:
         		var lignes = this.lignes || [];
         		for (i = 0; i < lignes.length; i++) if (String(lignes[i].cle) === String(el.chefProjet || "")) chef = lignes[i].libelle || lignes[i].cle;
         		var ports = [];
-        		(this.porteurs || []).forEach(function (p) {
+        		(this.participants || []).forEach(function (p) {
         			if (String(p.codeElement) !== String(el.code)) return;
-        			var nom = p.libelle || "";
-        			if (!nom) {
-        				for (var j = 0; j < lignes.length; j++) if (String(lignes[j].cle) === String(p.cleLigne || p.cle || "")) nom = lignes[j].libelle || lignes[j].cle;
-        			}
+        			var nom = "";
+        			for (var j = 0; j < lignes.length; j++) if (String(lignes[j].cle) === String(p.cle || "")) nom = lignes[j].libelle || lignes[j].cle;
         			if (nom) ports.push(nom);
         		});
-        		this.affFiche = { libelle: el.libelle, couleur: el.couleur || "#1A428A", type: this.affLc(el.lcNc), chef: chef || "À définir", porteurs: ports.length ? ports.join(", ") : "À définir", code: el.code || "" };
+        		this.affFiche = { libelle: el.libelle, couleur: el.couleur || "#1A428A", type: this.affLc(el.lcNc), statut: String(el.statutCatalogue || el.statut || ""), chef: chef || "À définir", chefMissing: !chef, participants: ports.length ? ports.join(", ") : "À définir", partsMissing: !ports.length, code: el.code || "" };
         	}
         	affSigle(label) {
         		return String(label || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]/g, "").slice(0, 4).toUpperCase();
@@ -1509,7 +1750,7 @@ scriptContent:
         		var avant = [];
         		var apres = [];
         		var changes = 0;
-        		days.forEach(function (d) {
+        		days.forEach(function (d, di) {
         			var iso = self.iso(d);
         			var ferie = !!(self.hol && self.hol[iso]);
         			var inRange = !ferie && iso >= from && iso <= to;
@@ -1526,12 +1767,12 @@ scriptContent:
         			var cible = periode === "JOURNEE" ? [0, 1] : [periode === "MATIN" ? 0 : 1];
         			[0, 1].forEach(function (h) {
         				var cur = halves[h];
-        				avant.push({ text: ferie ? "" : (cur ? cur.text : ""), ferie: ferie, changed: false, title: cur ? cur.title : "Libre" });
+        				avant.push({ text: ferie ? "" : (cur ? cur.text : ""), ferie: ferie, changed: false, title: cur ? cur.title : "Libre", col: String(2 + di), row: String(2 + h), demi: h ? "is-pm" : "is-am" });
         				var hit = inRange && cible.indexOf(h) >= 0;
         				var nextText = hit ? self.affSigle(nouveau) : (cur ? cur.text : "");
         				var changed = hit && (!cur || cur.title !== nouveau);
         				if (changed) changes++;
-        				apres.push({ text: ferie ? "" : nextText, ferie: ferie, changed: changed, title: hit ? nouveau : (cur ? cur.title : "Libre") });
+        				apres.push({ text: ferie ? "" : nextText, ferie: ferie, changed: changed, title: hit ? nouveau : (cur ? cur.title : "Libre"), col: String(2 + di), row: String(5 + h), demi: h ? "is-pm" : "is-am" });
         			});
         		});
         		this.affPreviewDays = heads;
@@ -1674,11 +1915,6 @@ scriptContent:
         	}
         
         
-        	setAxe(vertical) {
-        		this.axeVertical = !!vertical;
-        		try { window.sessionStorage.setItem("pfc:axe", this.axeVertical ? "v" : "h"); } catch (eAxe) {}
-        		this.reconstruire();
-        	}
         	fermerDetail() { this.detailOn = false; this.rafraichir(); }
         	aller(route, preset) {
         		if (!route || route === "dashboard") return;
@@ -1714,6 +1950,7 @@ scriptContent:
         		if (code && code.detail != null) code = code.detail;
         		code = String(code || "");
         		if (code.indexOf("logout") >= 0) { this.deconnecter(); return; }
+        		if (code === "roles") { this.routerProvider.navigateRoot("Roles", false, null); return; }
         		if (code === "dashboard" || code === "dashboard-v2") {
         			this.cells = true;
         			this.view = "dashboard";
@@ -2869,7 +3106,7 @@ title: Tableau de bord
                           - MobileSmartSourceType: plain:m9 18 6-6-6-6
             ↓WeekLab [ngx.components.UIDynamicElement-1795702100059]: 
               beanData: '{"ionBean":"DivTag"}'
-              tagName: div
+              tagName: button
               ↓WeekLabC [ngx.components.UIAttribute-1795702100053]: 
                 attrName: class
                 attrValue: 
@@ -2898,6 +3135,114 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.weekRange
+              ↓WeekLabType [ngx.components.UIAttribute-1791331063949]: 
+                attrName: type
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:button
+              ↓WeekLabAl [ngx.components.UIAttribute-1791331063951]: 
+                attrName: aria-label
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:Choisir une semaine
+              ↓WeekLabTi [ngx.components.UIAttribute-1791331063953]: 
+                attrName: title
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:Choisir une semaine
+              ↓WeekLabHp [ngx.components.UIAttribute-1791331063955]: 
+                attrName: aria-haspopup
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:dialog
+              ↓WeekLabEx [ngx.components.UIAttribute-1791331063957]: 
+                attrName: '[attr.aria-expanded]'
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: 'script:this.wpOpen ? ''true'' : ''false'''
+              ↓WeekLabOp [ngx.components.UIAttribute-1791331063959]: 
+                attrName: '[class.is-open]'
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:this.wpOpen
+              ↓WeekLabClick [ngx.components.UIControlEvent-1791331063961]: 
+                ↓WeekLabClickDo [ngx.components.UICustomAction-1791331064479]: 
+                  actionValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                        →: |
+                          page.wpToggle(event);
+                          resolve(true);
+              ↓WeekCaret [ngx.components.UIDynamicElement-1791331064481]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: span
+                ↓WeekCaretC [ngx.components.UIAttribute-1791331064483]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:dash-week__caret
+                ↓WeekCaretSvg [ngx.components.UIDynamicElement-1791331064485]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: svg
+                  ↓WeekCaretSvgW [ngx.components.UIAttribute-1791331064487]: 
+                    attrName: width
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:14
+                  ↓WeekCaretSvgH [ngx.components.UIAttribute-1791331064489]: 
+                    attrName: height
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:14
+                  ↓WeekCaretSvgVb [ngx.components.UIAttribute-1791331064491]: 
+                    attrName: viewBox
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:0 0 24 24
+                  ↓WeekCaretSvgFl [ngx.components.UIAttribute-1791331064493]: 
+                    attrName: fill
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:none
+                  ↓WeekCaretSvgSt [ngx.components.UIAttribute-1791331064495]: 
+                    attrName: stroke
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:currentColor
+                  ↓WeekCaretSvgSw [ngx.components.UIAttribute-1791331064497]: 
+                    attrName: stroke-width
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:2
+                  ↓WeekCaretSvgAh [ngx.components.UIAttribute-1791331064499]: 
+                    attrName: aria-hidden
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:true
+                  ↓WeekCaretSvgP [ngx.components.UIDynamicElement-1791331064501]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: path
+                    ↓WeekCaretSvgD [ngx.components.UIAttribute-1791331064503]: 
+                      attrName: d
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:m6 9 6 6 6-6
             ↓Next [ngx.components.UIDynamicElement-1795702100077]: 
               beanData: '{"ionBean":"DivTag"}'
               tagName: button
@@ -4479,118 +4824,6 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Qui fait quoi
-              ↓AxeToggle [ngx.components.UIDynamicElement-1791279773741]: 
-                beanData: '{"ionBean":"DivTag"}'
-                tagName: div
-                ↓AxeToggleC [ngx.components.UIAttribute-1791279773743]: 
-                  attrName: class
-                  attrValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:dash-axe
-                ↓AxeToggleL [ngx.components.UIAttribute-1791279773745]: 
-                  attrName: aria-label
-                  attrValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:Disposition matin et après-midi
-                ↓AxeH [ngx.components.UIDynamicElement-1791279880825]: 
-                  beanData: '{"ionBean":"DivTag"}'
-                  tagName: button
-                  ↓AxeHTy [ngx.components.UIAttribute-1791279880827]: 
-                    attrName: type
-                    attrValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: plain:button
-                  ↓AxeHP [ngx.components.UIAttribute-1791279880829]: 
-                    attrName: '[attr.aria-pressed]'
-                    attrValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: 'script:!this.axeVertical ? ''true'' : ''false'''
-                  ↓AxeHK [ngx.components.UIControlEvent-1791279880831]: 
-                    eventName: (click)
-                    ↓AxeHKDo [ngx.components.UICustomAction-1791279881349]: 
-                      actionValue: 
-                        - xmlizable: 
-                          - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
-                          - com.twinsoft.convertigo.beans.common.FormatedContent: 
-                            →: |
-                              page.setAxe(false);
-                              resolve(true);
-                              
-                  ↓AxeHT [ngx.components.UIText-1791279881351]: 
-                    textValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: plain:Côte à côte
-                ↓AxeV [ngx.components.UIDynamicElement-1791279883189]: 
-                  beanData: '{"ionBean":"DivTag"}'
-                  tagName: button
-                  ↓AxeVTy [ngx.components.UIAttribute-1791279883191]: 
-                    attrName: type
-                    attrValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: plain:button
-                  ↓AxeVP [ngx.components.UIAttribute-1791279883193]: 
-                    attrName: '[attr.aria-pressed]'
-                    attrValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: 'script:this.axeVertical ? ''true'' : ''false'''
-                  ↓AxeVK [ngx.components.UIControlEvent-1791279883195]: 
-                    eventName: (click)
-                    ↓AxeVKDo [ngx.components.UICustomAction-1791279883713]: 
-                      actionValue: 
-                        - xmlizable: 
-                          - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
-                          - com.twinsoft.convertigo.beans.common.FormatedContent: 
-                            →: |
-                              page.setAxe(true);
-                              resolve(true);
-                              
-                  ↓AxeVT [ngx.components.UIText-1791279883715]: 
-                    textValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: plain:Empilés
-              ↓ProfilSeg [ngx.components.UIUseShared-1791215258516]: 
-                sharedcomponent: lib_components_ui.Application.NgxApp.p_segmented
-                ↓options [ngx.components.UIUseVariable-1791215260094]: 
-                  varValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: script:this.profilChips
-                ↓value [ngx.components.UIUseVariable-1791215260096]: 
-                  binding: twoWayBinding
-                  varValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: script:this.profil
-                ↓large [ngx.components.UIUseVariable-1791215260098]: 
-                  varValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: script:false
-                ↓ariaLabel [ngx.components.UIUseVariable-1791215260100]: 
-                  varValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: script:'Filtrer par profil'
-                ↓onChange [ngx.components.UIControlEvent-1791215260102]: 
-                  attrName: (onChange)
-                  eventName: onChange
-                  ↓Do [ngx.components.UICustomAction-1791215260620]: 
-                    actionValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
-                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
-                          →: |
-                            try { page.setProfil(event); } catch (e) { console.error(e); }
-                            resolve(true);
-                            
               ↓Search [ngx.components.UIDynamicElement-1795702100222]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: div
@@ -4667,6 +4900,41 @@ title: Tableau de bord
                               try { setTimeout(function () { page.setRecherche(); }, 0); } catch (e) { console.error(e); }
                               resolve(true);
                               
+              ↓ProfilSeg [ngx.components.UIUseShared-1791215258516]: 
+                sharedcomponent: lib_components_ui.Application.NgxApp.p_segmented
+                ↓options [ngx.components.UIUseVariable-1791215260094]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.profilChips
+                ↓value [ngx.components.UIUseVariable-1791215260096]: 
+                  binding: twoWayBinding
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.profil
+                ↓large [ngx.components.UIUseVariable-1791215260098]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:false
+                ↓ariaLabel [ngx.components.UIUseVariable-1791215260100]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:'Filtrer par profil'
+                ↓onChange [ngx.components.UIControlEvent-1791215260102]: 
+                  attrName: (onChange)
+                  eventName: onChange
+                  ↓Do [ngx.components.UICustomAction-1791215260620]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            try { page.setProfil(event); } catch (e) { console.error(e); }
+                            resolve(true);
+                            
               ↓Focus [ngx.components.UIDynamicElement-1795702100238]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: div
@@ -6368,6 +6636,470 @@ title: Tableau de bord
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                     - MobileSmartSourceType: plain:Fermer
+    ↓WpIf [ngx.components.UIControlDirective-1791331066335]: 
+      directiveName: If
+      directiveSource: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.wpOpen
+      ↓WpBack [ngx.components.UIDynamicElement-1791331067877]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓WpBackC [ngx.components.UIAttribute-1791331067879]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:dash-wp-backdrop
+        ↓WpBackClick [ngx.components.UIControlEvent-1791331067881]: 
+          ↓WpBackClickDo [ngx.components.UICustomAction-1791331068399]: 
+            actionValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                  →: |
+                    page.wpFermer();
+                    resolve(true);
+      ↓WpPop [ngx.components.UIDynamicElement-1791331068401]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓WpPopC [ngx.components.UIAttribute-1791331068403]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:dash-wp
+        ↓WpPopR [ngx.components.UIAttribute-1791331068405]: 
+          attrName: role
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:dialog
+        ↓WpPopAl [ngx.components.UIAttribute-1791331068407]: 
+          attrName: aria-label
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Choisir une semaine
+        ↓WpPopT [ngx.components.UIAttribute-1791331068409]: 
+          attrName: '[style.top]'
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.wpTop
+        ↓WpPopL [ngx.components.UIAttribute-1791331068411]: 
+          attrName: '[style.left]'
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.wpLeft
+        ↓WpHead [ngx.components.UIDynamicElement-1791331068413]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓WpHeadC [ngx.components.UIAttribute-1791331068415]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:dash-wp__head
+          ↓WpPrev [ngx.components.UIDynamicElement-1791331068417]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: button
+            ↓WpPrevC [ngx.components.UIAttribute-1791331068419]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-week__btn
+            ↓WpPrevType [ngx.components.UIAttribute-1791331068421]: 
+              attrName: type
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:button
+            ↓WpPrevAl [ngx.components.UIAttribute-1791331068423]: 
+              attrName: aria-label
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Mois précédent
+            ↓WpPrevClick [ngx.components.UIControlEvent-1791331068425]: 
+              ↓WpPrevClickDo [ngx.components.UICustomAction-1791331068427]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.wpNav(-1);
+                        resolve(true);
+            ↓WpPrevIco [ngx.components.UIDynamicElement-1791331068429]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: span
+              ↓WpPrevIcoC [ngx.components.UIAttribute-1791331068431]: 
+                attrName: class
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:dash-week__chevron dash-week__chevron--prev
+              ↓WpPrevSvg [ngx.components.UIDynamicElement-1791331068433]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: svg
+                ↓WpPrevSvgW [ngx.components.UIAttribute-1791331068435]: 
+                  attrName: width
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:16
+                ↓WpPrevSvgH [ngx.components.UIAttribute-1791331068437]: 
+                  attrName: height
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:16
+                ↓WpPrevSvgVb [ngx.components.UIAttribute-1791331068439]: 
+                  attrName: viewBox
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:0 0 24 24
+                ↓WpPrevSvgFl [ngx.components.UIAttribute-1791331068441]: 
+                  attrName: fill
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:none
+                ↓WpPrevSvgSt [ngx.components.UIAttribute-1791331068443]: 
+                  attrName: stroke
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:currentColor
+                ↓WpPrevSvgSw [ngx.components.UIAttribute-1791331068445]: 
+                  attrName: stroke-width
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:2
+                ↓WpPrevSvgAh [ngx.components.UIAttribute-1791331068447]: 
+                  attrName: aria-hidden
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:true
+                ↓WpPrevSvgP [ngx.components.UIDynamicElement-1791331068449]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: path
+                  ↓WpPrevSvgD [ngx.components.UIAttribute-1791331068451]: 
+                    attrName: d
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:m9 18 6-6-6-6
+          ↓WpMonth [ngx.components.UIDynamicElement-1791331068453]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: strong
+            ↓WpMonthC [ngx.components.UIAttribute-1791331068455]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-wp__month
+            ↓WpMonthT [ngx.components.UIText-1791331068457]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.wpMoisLabel
+          ↓WpNext [ngx.components.UIDynamicElement-1791331068459]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: button
+            ↓WpNextC [ngx.components.UIAttribute-1791331068461]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-week__btn
+            ↓WpNextType [ngx.components.UIAttribute-1791331068463]: 
+              attrName: type
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:button
+            ↓WpNextAl [ngx.components.UIAttribute-1791331068465]: 
+              attrName: aria-label
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Mois suivant
+            ↓WpNextClick [ngx.components.UIControlEvent-1791331068467]: 
+              ↓WpNextClickDo [ngx.components.UICustomAction-1791331068469]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.wpNav(1);
+                        resolve(true);
+            ↓WpNextIco [ngx.components.UIDynamicElement-1791331068471]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: span
+              ↓WpNextIcoC [ngx.components.UIAttribute-1791331068473]: 
+                attrName: class
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:dash-week__chevron
+              ↓WpNextSvg [ngx.components.UIDynamicElement-1791331068475]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: svg
+                ↓WpNextSvgW [ngx.components.UIAttribute-1791331068477]: 
+                  attrName: width
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:16
+                ↓WpNextSvgH [ngx.components.UIAttribute-1791331068479]: 
+                  attrName: height
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:16
+                ↓WpNextSvgVb [ngx.components.UIAttribute-1791331068481]: 
+                  attrName: viewBox
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:0 0 24 24
+                ↓WpNextSvgFl [ngx.components.UIAttribute-1791331068483]: 
+                  attrName: fill
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:none
+                ↓WpNextSvgSt [ngx.components.UIAttribute-1791331068485]: 
+                  attrName: stroke
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:currentColor
+                ↓WpNextSvgSw [ngx.components.UIAttribute-1791331068487]: 
+                  attrName: stroke-width
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:2
+                ↓WpNextSvgAh [ngx.components.UIAttribute-1791331068489]: 
+                  attrName: aria-hidden
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:true
+                ↓WpNextSvgP [ngx.components.UIDynamicElement-1791331068491]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: path
+                  ↓WpNextSvgD [ngx.components.UIAttribute-1791331068493]: 
+                    attrName: d
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:m9 18 6-6-6-6
+        ↓WpList [ngx.components.UIDynamicElement-1791331068495]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓WpListC [ngx.components.UIAttribute-1791331068497]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:dash-wp__list
+          ↓WpListR [ngx.components.UIAttribute-1791331068499]: 
+            attrName: role
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:listbox
+          ↓WpListAl [ngx.components.UIAttribute-1791331068501]: 
+            attrName: aria-label
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:Semaines du mois
+          ↓WpLoop [ngx.components.UIControlDirective-1791331068503]: 
+            directiveItemName: wk
+            directiveSource: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:this.wpWeeks
+            ↓WpItem [ngx.components.UIDynamicElement-1791331068505]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: button
+              ↓WpItemC [ngx.components.UIAttribute-1791331068507]: 
+                attrName: class
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:dash-wp__item
+              ↓WpItemType [ngx.components.UIAttribute-1791331068509]: 
+                attrName: type
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:button
+              ↓WpItemR [ngx.components.UIAttribute-1791331068511]: 
+                attrName: role
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:option
+              ↓WpItemCur [ngx.components.UIAttribute-1791331068513]: 
+                attrName: '[class.is-current]'
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:wk.current
+              ↓WpItemTod [ngx.components.UIAttribute-1791331068515]: 
+                attrName: '[class.is-today]'
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:wk.today
+              ↓WpItemSel [ngx.components.UIAttribute-1791331068517]: 
+                attrName: '[attr.aria-selected]'
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: 'script:wk.current ? ''true'' : ''false'''
+              ↓WpItemOff [ngx.components.UIAttribute-1791331068519]: 
+                attrName: '[attr.data-off]'
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:wk.off
+              ↓WpItemClick [ngx.components.UIControlEvent-1791331068521]: 
+                ↓WpItemClickDo [ngx.components.UICustomAction-1791331068523]: 
+                  actionValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                        →: |
+                          page.wpChoisir(event);
+                          resolve(true);
+              ↓WpItNum [ngx.components.UIDynamicElement-1791331068525]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: span
+                ↓WpItNumC [ngx.components.UIAttribute-1791331068527]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:dash-week__num
+                ↓WpItNumT [ngx.components.UIText-1791331068529]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:wk.num
+              ↓WpItRg [ngx.components.UIDynamicElement-1791331068531]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: span
+                ↓WpItRgC [ngx.components.UIAttribute-1791331068533]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:dash-wp__range
+                ↓WpItRgT [ngx.components.UIText-1791331068535]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:wk.range
+              ↓WpItBadgeIf [ngx.components.UIControlDirective-1791331068537]: 
+                directiveName: If
+                directiveSource: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:wk.today
+                ↓WpItBadge [ngx.components.UIDynamicElement-1791331068539]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: span
+                  ↓WpItBadgeC [ngx.components.UIAttribute-1791331068541]: 
+                    attrName: class
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:dash-wp__badge
+                  ↓WpItBadgeT [ngx.components.UIText-1791331068543]: 
+                    textValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:Actuelle
+              ↓WpItCheckIf [ngx.components.UIControlDirective-1791331068545]: 
+                directiveName: If
+                directiveSource: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:wk.current && !wk.today
+                ↓WpItCheck [ngx.components.UIDynamicElement-1791331068547]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: span
+                  ↓WpItCheckC [ngx.components.UIAttribute-1791331068549]: 
+                    attrName: class
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:dash-wp__check
+                  ↓WpItCheckSvg [ngx.components.UIDynamicElement-1791331068551]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: svg
+                    ↓WpItCheckSvgW [ngx.components.UIAttribute-1791331068553]: 
+                      attrName: width
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:14
+                    ↓WpItCheckSvgH [ngx.components.UIAttribute-1791331068555]: 
+                      attrName: height
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:14
+                    ↓WpItCheckSvgVb [ngx.components.UIAttribute-1791331068557]: 
+                      attrName: viewBox
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:0 0 24 24
+                    ↓WpItCheckSvgFl [ngx.components.UIAttribute-1791331068559]: 
+                      attrName: fill
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:none
+                    ↓WpItCheckSvgSt [ngx.components.UIAttribute-1791331068561]: 
+                      attrName: stroke
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:currentColor
+                    ↓WpItCheckSvgSw [ngx.components.UIAttribute-1791331068563]: 
+                      attrName: stroke-width
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:2
+                    ↓WpItCheckSvgAh [ngx.components.UIAttribute-1791331068565]: 
+                      attrName: aria-hidden
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:true
+                    ↓WpItCheckSvgP [ngx.components.UIDynamicElement-1791331068567]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: path
+                      ↓WpItCheckSvgD [ngx.components.UIAttribute-1791331068569]: 
+                        attrName: d
+                        attrValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: plain:M20 6 9 17l-5-5
 ↓AffIf [ngx.components.UIControlDirective-1791137812661]: 
   directiveName: If
   directiveSource: 
@@ -6520,6 +7252,81 @@ title: Tableau de bord
               ↓AffTileBtn [ngx.components.UIDynamicElement-1791277608525]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: button
+                ↓AffTileIco [ngx.components.UIDynamicElement-1791332860610]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: span
+                  ↓AffTileIcoC [ngx.components.UIAttribute-1791332860612]: 
+                    attrName: class
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:aff-type__ico
+                  ↓AffTileIcoAh [ngx.components.UIAttribute-1791332860614]: 
+                    attrName: aria-hidden
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:true
+                  ↓AffTileSvg [ngx.components.UIDynamicElement-1791332860616]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: svg
+                    ↓AffTileSvgW [ngx.components.UIAttribute-1791332860618]: 
+                      attrName: width
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:16
+                    ↓AffTileSvgH [ngx.components.UIAttribute-1791332860620]: 
+                      attrName: height
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:16
+                    ↓AffTileSvgVb [ngx.components.UIAttribute-1791332860622]: 
+                      attrName: viewBox
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:0 0 24 24
+                    ↓AffTileSvgF [ngx.components.UIAttribute-1791332860624]: 
+                      attrName: fill
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:none
+                    ↓AffTileSvgS [ngx.components.UIAttribute-1791332860626]: 
+                      attrName: stroke
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:currentColor
+                    ↓AffTileSvgSw [ngx.components.UIAttribute-1791332860628]: 
+                      attrName: stroke-width
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:2
+                    ↓AffTileSvgLc [ngx.components.UIAttribute-1791332860630]: 
+                      attrName: stroke-linecap
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:round
+                    ↓AffTileSvgLj [ngx.components.UIAttribute-1791332860632]: 
+                      attrName: stroke-linejoin
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:round
+                    ↓AffTileSvgP [ngx.components.UIDynamicElement-1791332860634]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: path
+                      ↓AffTileSvgD [ngx.components.UIAttribute-1791332860636]: 
+                        attrName: '[attr.d]'
+                        attrValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:tile.ico
                 ↓AffTileBtnC [ngx.components.UIAttribute-1791277608527]: 
                   attrName: class
                   attrValue: 
@@ -6562,6 +7369,12 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:tile.couleur
+                ↓AffTileInk [ngx.components.UIAttribute-1791332858778]: 
+                  attrName: '[style.--tile-ink]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:tile.encre
         ↓AffFormC [ngx.components.UIAttribute-1791137814745]: 
           attrName: class
           attrValue: 
@@ -6677,38 +7490,88 @@ title: Tableau de bord
           ↓AffFiche [ngx.components.UIDynamicElement-1791277612153]: 
             beanData: '{"ionBean":"DivTag"}'
             tagName: div
-            ↓AffFicheC [ngx.components.UIAttribute-1791277612155]: 
+            ↓AffFicheC [ngx.components.UIAttribute-1791332773993]: 
               attrName: class
               attrValue: 
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                   - MobileSmartSourceType: plain:aff-fiche
-            ↓AffFicheTop [ngx.components.UIDynamicElement-1791277612157]: 
+            ↓AffFicheTop [ngx.components.UIDynamicElement-1791332774275]: 
               beanData: '{"ionBean":"DivTag"}'
               tagName: div
-              ↓AffFicheTopC [ngx.components.UIAttribute-1791277612159]: 
+              ↓AffFicheTopC [ngx.components.UIAttribute-1791332774277]: 
                 attrName: class
                 attrValue: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: plain:
-              ↓AffFicheName [ngx.components.UIText-1791277612161]: 
-                textValue: 
+                    - MobileSmartSourceType: plain:aff-fiche__top
+              ↓AffFicheDotS [ngx.components.UIDynamicElement-1791332774279]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: span
+                ↓AffFicheDotC [ngx.components.UIAttribute-1791332774281]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:aff-fiche__dot
+                ↓AffFicheDotBg [ngx.components.UIAttribute-1791332774283]: 
+                  attrName: '[style.background]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.couleur
+              ↓AffFicheNameS [ngx.components.UIDynamicElement-1791332774285]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: strong
+                ↓AffFicheName [ngx.components.UIText-1791332774287]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.libelle
+              ↓AffFicheChipIf [ngx.components.UIControlDirective-1791332774289]: 
+                directiveName: If
+                directiveSource: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: script:this.affFiche.libelle
-              ↓AffFicheLink [ngx.components.UIDynamicElement-1791277612163]: 
+                    - MobileSmartSourceType: script:this.affFiche.statut
+                ↓AffFicheChip [ngx.components.UIDynamicElement-1791332775831]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: span
+                  ↓AffFicheChipC [ngx.components.UIAttribute-1791332775833]: 
+                    attrName: class
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:aff-fiche__chip
+                  ↓AffFicheChipT [ngx.components.UIText-1791332775835]: 
+                    textValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: script:this.affFiche.statut
+              ↓AffFicheLink [ngx.components.UIDynamicElement-1791332775837]: 
                 beanData: '{"ionBean":"DivTag"}'
-                tagName: div
-                ↓AffFicheLinkC [ngx.components.UIAttribute-1791277612165]: 
+                tagName: a
+                ↓AffFicheLinkC [ngx.components.UIAttribute-1791332775839]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:aff-link
-                ↓AffFicheGo [ngx.components.UIControlEvent-1791277612167]: 
+                ↓AffFicheLinkR [ngx.components.UIAttribute-1791332775841]: 
+                  attrName: role
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:link
+                ↓AffFicheLinkTi [ngx.components.UIAttribute-1791332775843]: 
+                  attrName: tabindex
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:0
+                ↓AffFicheGo [ngx.components.UIControlEvent-1791332775845]: 
                   eventName: (click)
-                  ↓AffFicheGoDo [ngx.components.UICustomAction-1791277612685]: 
+                  ↓AffFicheGoDo [ngx.components.UICustomAction-1791332776363]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -6717,56 +7580,134 @@ title: Tableau de bord
                             page.affAllerProjet();
                             resolve(true);
                             
-                ↓AffFicheLinkT [ngx.components.UIText-1791277612687]: 
+                ↓AffFicheLinkT [ngx.components.UIText-1791332776365]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Fiche projet
-            ↓AffFicheMeta [ngx.components.UIDynamicElement-1791277612689]: 
+                ↓AffFicheArrow [ngx.components.UIDynamicElement-1791332776367]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: svg
+                  ↓AffFicheArrowW [ngx.components.UIAttribute-1791332776369]: 
+                    attrName: width
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:12
+                  ↓AffFicheArrowH [ngx.components.UIAttribute-1791332776371]: 
+                    attrName: height
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:12
+                  ↓AffFicheArrowVb [ngx.components.UIAttribute-1791332776373]: 
+                    attrName: viewBox
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:0 0 24 24
+                  ↓AffFicheArrowF [ngx.components.UIAttribute-1791332776375]: 
+                    attrName: fill
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:none
+                  ↓AffFicheArrowS [ngx.components.UIAttribute-1791332776377]: 
+                    attrName: stroke
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:currentColor
+                  ↓AffFicheArrowSw [ngx.components.UIAttribute-1791332776379]: 
+                    attrName: stroke-width
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:2
+                  ↓AffFicheArrowAh [ngx.components.UIAttribute-1791332776381]: 
+                    attrName: aria-hidden
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:true
+                  ↓AffFicheArrowP [ngx.components.UIDynamicElement-1791332776383]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: path
+                    ↓AffFicheArrowD [ngx.components.UIAttribute-1791332776385]: 
+                      attrName: d
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:M5 12h14M12 5l7 7-7 7
+            ↓AffFicheMeta [ngx.components.UIDynamicElement-1791332776667]: 
               beanData: '{"ionBean":"DivTag"}'
-              tagName: div
-              ↓AffFicheMetaC [ngx.components.UIAttribute-1791277612691]: 
+              tagName: dl
+              ↓AffFicheMetaC [ngx.components.UIAttribute-1791332776669]: 
                 attrName: class
                 attrValue: 
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: plain:aff-meta
-              ↓AffFicheT1 [ngx.components.UIText-1791277612693]: 
-                textValue: 
-                  - xmlizable: 
-                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: script:''
-              ↓AffFicheV1 [ngx.components.UIText-1791277612695]: 
-                textValue: 
-                  - xmlizable: 
-                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: 'script:''Type '' + this.affFiche.type + '' · Chef : '' + this.affFiche.chef + '' · Porteurs : '' + this.affFiche.porteurs'
-              ↓AffFicheT2 [ngx.components.UIText-1791277612697]: 
-                textValue: 
-                  - xmlizable: 
-                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: script:''
-              ↓AffFicheV2 [ngx.components.UIText-1791277612699]: 
-                textValue: 
-                  - xmlizable: 
-                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: script:''
-              ↓AffFicheT3 [ngx.components.UIText-1791277612701]: 
-                textValue: 
-                  - xmlizable: 
-                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: script:''
-              ↓AffFicheV3 [ngx.components.UIText-1791277612703]: 
-                textValue: 
-                  - xmlizable: 
-                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                    - MobileSmartSourceType: script:''
-            ↓AffFicheDot [ngx.components.UIAttribute-1791279024262]: 
-              attrName: '[style.--dot]'
-              attrValue: 
-                - xmlizable: 
-                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                  - MobileSmartSourceType: script:this.affFiche.couleur
+                    - MobileSmartSourceType: plain:aff-fiche__meta
+              ↓AffFicheTypeDt [ngx.components.UIDynamicElement-1791332776671]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: dt
+                ↓AffFicheTypeT [ngx.components.UIText-1791332776673]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Type
+              ↓AffFicheTypeDd [ngx.components.UIDynamicElement-1791332776675]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: dd
+                ↓AffFicheTypeV [ngx.components.UIText-1791332776677]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.type
+              ↓AffFicheChefDt [ngx.components.UIDynamicElement-1791332776679]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: dt
+                ↓AffFicheChefT [ngx.components.UIText-1791332776681]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Chef de projet
+              ↓AffFicheChefDd [ngx.components.UIDynamicElement-1791332776683]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: dd
+                ↓AffFicheChefMiss [ngx.components.UIAttribute-1791332776685]: 
+                  attrName: '[class.is-missing]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.chefMissing
+                ↓AffFicheChefV [ngx.components.UIText-1791332776687]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.chef
+              ↓AffFichePartsDt [ngx.components.UIDynamicElement-1791332776689]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: dt
+                ↓AffFichePartsT [ngx.components.UIText-1791332776691]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Participants
+              ↓AffFichePartsDd [ngx.components.UIDynamicElement-1791332776693]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: dd
+                ↓AffFichePartsMiss [ngx.components.UIAttribute-1791332776695]: 
+                  attrName: '[class.is-missing]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.partsMissing
+                ↓AffFichePartsV [ngx.components.UIText-1791332776697]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.affFiche.participants
         ↓AffDates [ngx.components.UIDynamicElement-1791277614261]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -7126,12 +8067,6 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:
-                ↓AffPrevAvantCls [ngx.components.UIAttribute-1791277619551]: 
-                  attrName: '[class]'
-                  attrValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: 'script:''aff-cell'' + (cell.ferie ? '' is-ferie'' : '''') + (!cell.text ? '' is-free'' : '''') + (cell.changed ? '' is-changed'' : '''')'
                 ↓AffPrevAvantTi [ngx.components.UIAttribute-1791277619553]: 
                   attrName: '[attr.title]'
                   attrValue: 
@@ -7143,6 +8078,24 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:cell.text || ''
+                ↓AffPrevAvantCls [ngx.components.UIAttribute-1791331803310]: 
+                  attrName: '[class]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: 'script:''aff-cell '' + cell.demi + (cell.ferie ? '' is-ferie'' : '''') + (!cell.text ? '' is-free'' : '''') + (cell.changed ? '' is-changed'' : '''')'
+                ↓AffPrevAvantCol [ngx.components.UIAttribute-1791331803312]: 
+                  attrName: '[style.grid-column]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:cell.col
+                ↓AffPrevAvantRow [ngx.components.UIAttribute-1791331803314]: 
+                  attrName: '[style.grid-row]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:cell.row
             ↓AffPrevLab2 [ngx.components.UIDynamicElement-1791277619557]: 
               beanData: '{"ionBean":"DivTag"}'
               tagName: i
@@ -7172,12 +8125,6 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:
-                ↓AffPrevApresCls [ngx.components.UIAttribute-1791277619569]: 
-                  attrName: '[class]'
-                  attrValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: 'script:''aff-cell'' + (cell.ferie ? '' is-ferie'' : '''') + (!cell.text ? '' is-free'' : '''') + (cell.changed ? '' is-changed'' : '''')'
                 ↓AffPrevApresTi [ngx.components.UIAttribute-1791277619571]: 
                   attrName: '[attr.title]'
                   attrValue: 
@@ -7189,6 +8136,24 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:cell.text || ''
+                ↓AffPrevApresCls [ngx.components.UIAttribute-1791331805424]: 
+                  attrName: '[class]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: 'script:''aff-cell '' + cell.demi + (cell.ferie ? '' is-ferie'' : '''') + (!cell.text ? '' is-free'' : '''') + (cell.changed ? '' is-changed'' : '''')'
+                ↓AffPrevApresCol [ngx.components.UIAttribute-1791331805426]: 
+                  attrName: '[style.grid-column]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:cell.col
+                ↓AffPrevApresRow [ngx.components.UIAttribute-1791331805428]: 
+                  attrName: '[style.grid-row]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:cell.row
         ↓AffCmt [ngx.components.UIDynamicElement-1791277621131]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -7813,11 +8778,21 @@ title: Tableau de bord
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 0 6px;
-            font-size: 14px;
-            font-weight: 500;
+            height: 32px;
+            padding: 0 8px 0 6px;
+            border: 0;
+            border-radius: var(--r-pill);
+            background: transparent;
+            font: 500 14px var(--font-body);
             color: var(--c-text-2);
+            cursor: pointer;
+            transition: background var(--t-fast);
           }
+          
+          .tdb .dash-week__label:hover,
+          .tdb .dash-week__label.is-open{ background: var(--c-primary-1); }
+          .tdb .dash-week__label:focus-visible{ outline: none; box-shadow: var(--focus-ring); }
+          .tdb .dash-week__caret{ display: inline-flex; color: var(--c-muted); }
           
           .tdb .dash-week__num{
             padding: 2px 8px;
@@ -7842,6 +8817,46 @@ title: Tableau de bord
           }
           
           .tdb .dash-week__today:hover{ background: var(--c-primary-2); }
+          
+          /* Sélecteur de semaine */
+          .tdb .dash-wp-backdrop{ position: fixed; inset: 0; z-index: 140; background: transparent; }
+          .tdb .dash-wp{
+            position: fixed;
+            z-index: 150;
+            width: 288px;
+            padding: 8px;
+            border: 1px solid var(--c-border-soft);
+            border-radius: var(--r-md);
+            background: var(--c-white);
+            box-shadow: 0 12px 32px rgba(15, 43, 91, 0.16);
+            animation: dash-fade-up 0.15s ease-out;
+          }
+          .tdb .dash-wp__head{ display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 4px; }
+          .tdb .dash-wp__month{ flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--c-primary-deep); }
+          .tdb .dash-wp__list{ display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow: auto; }
+          .tdb .dash-wp__item{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 8px 10px;
+            border: 0;
+            border-radius: var(--r-sm);
+            background: transparent;
+            text-align: left;
+            font: 500 13px var(--font-body);
+            color: var(--c-text);
+            cursor: pointer;
+            transition: background var(--t-fast);
+          }
+          .tdb .dash-wp__item:hover,
+          .tdb .dash-wp__item:focus-visible{ background: var(--c-primary-1); outline: none; }
+          .tdb .dash-wp__item.is-current{ background: var(--c-primary-1); font-weight: 600; }
+          .tdb .dash-wp__item.is-today:not(.is-current) .dash-week__num{ background: var(--c-primary-2); color: var(--c-primary); }
+          .tdb .dash-wp__range{ flex: 1; min-width: 0; color: var(--c-text-2); }
+          .tdb .dash-wp__item.is-current .dash-wp__range{ color: var(--c-text); }
+          .tdb .dash-wp__badge{ flex-shrink: 0; padding: 1px 7px; border-radius: var(--r-pill); background: var(--c-primary); color: var(--c-white); font-size: 10px; font-weight: 700; letter-spacing: 0.02em; }
+          .tdb .dash-wp__check{ display: inline-flex; flex-shrink: 0; margin-left: auto; color: var(--c-primary); }
           
           .tdb .dash-hero__title{
             margin: 16px 0 12px;
@@ -8191,6 +9206,8 @@ title: Tableau de bord
           .tdb .dash-dayhead.is-today{ background: var(--c-primary-1); }
           .tdb .dash-dayhead.is-today strong,
           .tdb .dash-dayhead.is-today span{ color: var(--c-primary); }
+          .tdb .dash-dayhead{ position: relative; }
+          .tdb .dash-dayhead span{ position: absolute; left: 10px; right: 10px; top: calc(50% + 9px); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           
           .tdb .dash-bg{
             border-left: 1px solid var(--c-grey-2);
@@ -8852,8 +9869,6 @@ title: Tableau de bord
           .aff-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 8px}
           .aff-type{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px;border:1px solid #D5DDEA;border-radius:10px;background:#fff;font:600 13px Roboto,sans-serif;color:#3D4D6A;cursor:pointer;text-align:center}
           .aff-type.is-on{border-color:#1A428A;background:#E6EFFD;color:#0F2B5B;box-shadow:inset 0 0 0 1px #1A428A}
-          .aff-fiche{margin:8px 0 12px;padding:12px 14px;border:1px solid #E6EAF2;border-radius:12px;background:#F7F9FC;font-size:13px;color:#1A2332}
-          .aff-fiche strong{font-size:14px}
           .aff-fiche a,.aff-link{color:#1A428A;font-weight:600;cursor:pointer}
           .aff-meta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 0}
           .aff-meta span{color:#6C757D}
@@ -8887,18 +9902,21 @@ title: Tableau de bord
           .pfm-card--aff .aff-sec{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px;font-size:16px}
           .pfm-card--aff .aff-tiles{grid-template-columns:repeat(5,minmax(0,1fr))}
           .pfm-card--aff .aff-type{flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;min-height:86px;padding:12px 4px 10px;border-radius:12px;font:600 12px/1.25 Roboto,sans-serif}
-          .pfm-card--aff .aff-type::before{content:"";width:34px;height:34px;border-radius:10px;background:var(--tile,#1A428A)}
-          .pfm-card--aff .aff-fiche>div:first-child{display:flex;align-items:center;gap:8px;font-weight:700}
-          .pfm-card--aff .aff-fiche>div:first-child::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--dot,#1A428A);flex:0 0 auto}
-          .pfm-card--aff .aff-link{margin-left:auto;font-size:12.5px;font-weight:600}
+          .pfm-card--aff .aff-type__ico{display:grid;place-items:center;flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--tile,#1A428A);color:var(--tile-ink,#fff)}
           .pfm-card--aff .aff-meta{display:block;margin-top:8px;font-size:12.5px;line-height:1.45;color:#5b6680}
           .pfm-card--aff .pfm-label{font-size:13px;font-weight:500;color:#3D4D6A}
           .pfm-card--aff .pfm-periods{display:flex;gap:4px;padding:3px;border:1px solid #D5DDEA;border-radius:999px;background:#F4F7FB}
           .pfm-card--aff .pfm-period{flex:1 1 0;min-width:0;height:40px;border-radius:999px;background:transparent;font-size:14px}
           .pfm-card--aff .pfm-period--on{background:#E6EFFD;color:#0F2B5B;box-shadow:inset 0 0 0 1px #C5D4EE;font-weight:600}
-          .pfm-card--aff .aff-preview{grid-template-columns:46px repeat(10,minmax(0,1fr))}
-          .pfm-card--aff .aff-preview b{grid-column:span 2;font-size:11.5px;font-weight:600}
-          .pfm-card--aff .aff-cell{height:30px;font-size:9.5px;letter-spacing:.03em}
+          .pfm-card--aff .aff-preview{grid-template-columns:46px repeat(5,minmax(0,1fr));grid-template-rows:auto 24px 24px 6px 24px 24px;row-gap:2px}
+          .pfm-card--aff .aff-preview b{grid-row:1;font-size:11.5px;font-weight:600;margin-bottom:4px}
+          .aff-preview > div:first-child{grid-row:1;grid-column:1}
+          .aff-preview i{grid-column:1;align-self:center}
+          .aff-preview i:nth-of-type(1){grid-row:2 / span 2}
+          .aff-preview i:nth-of-type(2){grid-row:5 / span 2}
+          .aff-cell.is-am{border-radius:6px 6px 2px 2px}
+          .aff-cell.is-pm{border-radius:2px 2px 6px 6px}
+          .pfm-card--aff .aff-cell{height:24px;font-size:9.5px;letter-spacing:.03em}
           .pfm-card--aff .aff-sum{float:none}
           .pfm-card--aff .aff-msg .aff-actions{display:flex;align-items:center;gap:14px;margin-top:8px}
           .pfm-card--aff .aff-msg .aff-actions .aff-actions{display:contents}
@@ -8943,34 +9961,17 @@ title: Tableau de bord
           .tdb .dash-grid--vertical button.dash-cell.is-am{margin-top:6px !important;margin-bottom:1px !important;border-radius:8px 8px 3px 3px}
           .tdb .dash-grid--vertical button.dash-cell.is-pm{margin-top:1px !important;margin-bottom:6px !important;border-radius:3px 3px 8px 8px}
           
-          .tdb .dash-main{overflow:visible}
-          .tdb .dash-grid-wrap{max-height:none;overflow:visible}
-          .tdb .dash-toolbar{position:sticky;top:0;z-index:8;background:#fff}
-          .tdb .dash-row--head{top:72px;z-index:7;background:#fff}
-          
-          .tdb .dash-toolbar{background:#fff !important;box-shadow:0 16px 0 #fff}
-          .tdb .dash-row--head,
-          .tdb .dash-row--head .dash-dayhead,
-          .tdb .dash-row--head .dash-cell-name,
-          .tdb .dash-row--head .dash-cell-rate{background:#fff !important}
-          .tdb .dash-row--head{z-index:25;box-shadow:0 -20px 0 #fff, 0 1px 0 #E6EAF2}
-          .tdb .dash-toolbar{z-index:30}
-          
-          .tdb .dash-main{overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 220px);border-radius:var(--r-lg)}
-          .tdb .dash-toolbar{position:relative;top:auto;z-index:2;flex:0 0 auto;background:#fff;box-shadow:none}
-          .tdb .dash-grid-wrap{flex:1 1 auto;min-height:0;max-height:none;overflow:auto}
-          .tdb .dash-row--head{position:sticky;top:0;z-index:4;background:#fff;box-shadow:0 1px 0 #E6EAF2}
-          .tdb .dash-row--head .dash-dayhead,
-          .tdb .dash-row--head .dash-cell-name,
-          .tdb .dash-row--head .dash-cell-rate{background:#fff}
-          
-          
-          /* qfq-stick */
-          .tdb .dash-main{overflow:visible !important;display:block !important;max-height:none !important;border-radius:18px !important;background:#fff !important}
+          /* qfq : titre + filtres + jours dans la carte, collés au scroll, voile #F4F7FB */
+          .tdb{--qfq-stick:12px}
+          .tdb .dash-main{overflow:visible !important;display:block !important;max-height:none !important;border-radius:18px !important;background:#fff !important;padding:0 !important}
+          .tdb .qfq-sentinel{height:1px;margin:0;padding:0;overflow:hidden;pointer-events:none}
           .tdb .dash-grid-wrap{overflow:visible !important;max-height:none !important;min-height:0 !important;flex:none !important}
-          .tdb .dash-toolbar{position:sticky !important;top:0 !important;z-index:40 !important;background:#fff !important;border-radius:18px 18px 0 0 !important;box-shadow:none !important;isolation:isolate}
-          .tdb .dash-toolbar::before{content:"";position:absolute;z-index:-1;left:-1px;right:-1px;top:-32px;bottom:0;background:#F4F7FB;pointer-events:none}
-          .tdb .dash-row--head{position:sticky !important;top:calc(var(--qfq-bar, 70px) - 1px) !important;z-index:35 !important;background:#fff !important;box-shadow:0 1px 0 #E6EAF2 !important}
+          .tdb .dash-toolbar{position:sticky !important;top:var(--qfq-stick, 12px) !important;z-index:40 !important;background:#fff !important;border-radius:18px 18px 0 0 !important;box-shadow:none !important;border-top:0 !important;border-left:0 !important;border-right:0 !important}
+          .tdb .dash-toolbar.is-stuck{box-shadow:0 -18px 0 18px #F4F7FB !important}
+          .tdb .dash-toolbar.is-stuck::before{content:"";position:absolute;left:-18px;right:-18px;bottom:100%;height:400px;background:#F4F7FB;pointer-events:none}
+          .tdb .dash-main.is-stuck,
+          html.qfq-stuck .tdb .dash-main{border-color:transparent !important;box-shadow:none !important;outline:none !important;filter:none !important}
+          .tdb .dash-row--head{position:sticky !important;top:calc(var(--qfq-stick, 12px) + var(--qfq-bar, 70px) - 1px) !important;z-index:39 !important;background:#fff !important;box-shadow:0 1px 0 #E6EAF2 !important}
           .tdb .dash-row--head .dash-dayhead,
           .tdb .dash-row--head .dash-cell-name,
           .tdb .dash-row--head .dash-cell-rate{background:#fff !important}
@@ -8985,6 +9986,58 @@ title: Tableau de bord
           .pfm-card--aff.is-ro .aff-type{cursor:default}
           .pfm-card--aff .pfm-btn.is-hidden{display:none !important}
           .pfm-card--aff.is-ro .pfm-actions{justify-content:flex-end}
+          
+          /* badge commentaire : identique maquette */
+          .tdb .dash-grid--cells button.dash-cell,.tdb .dash-grid--cells button.dash-seg{position:relative;overflow:visible !important}
+          .tdb .dash-grid--cells button.dash-cell.has-comment{padding-right:revert-layer}
+          .tdb .dash-grid--cells .dash-cell__note{top:-6px !important;right:-5px !important;width:16px !important;height:16px !important;z-index:2;background-size:10px 10px !important;box-shadow:0 0 0 2px #fff !important;background-image:url("data:image/svg+xml,%3Csvg xmlns=''http://www.w3.org/2000/svg'' viewBox=''0 0 24 24'' fill=''none'' stroke=''white'' stroke-width=''2'' stroke-linecap=''round'' stroke-linejoin=''round''%3E%3Cpath d=''M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z''/%3E%3C/svg%3E") !important}
+          
+          /* responsive : la grille reste dans sa carte */
+          .tdb .dash-layout > *{ min-width: 0; }
+          .tdb .dash-grid{ min-width: 0 !important; }
+          .tdb .dash-grid:not(.dash-grid--vertical) .dash-row{ grid-template-columns: minmax(132px, 200px) repeat(10, minmax(0, 1fr)) minmax(60px, 104px); }
+          .tdb .dash-grid--vertical .dash-row:not(.dash-row--head),
+          .tdb .dash-grid--vertical .dash-row--head{ grid-template-columns: minmax(132px, 200px) repeat(5, minmax(0, 1fr)) minmax(60px, 104px) !important; }
+          @media (max-width: 1360px){
+            .tdb .dash-layout{ grid-template-columns: minmax(0, 1fr); }
+            .tdb .dash-aside{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+          }
+          @media (max-width: 860px){
+            .tdb .dash-grid-wrap{ overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+            .tdb .dash-grid:not(.dash-grid--vertical){ min-width: 760px !important; }
+            .tdb .dash-grid--vertical{ min-width: 560px !important; }
+            .tdb .dash-toolbar--cells .search{ flex: 1 1 100%; width: 100%; min-width: 0; }
+          }
+          @media (max-width: 560px){
+            .tdb .dash-kpis{ grid-template-columns: minmax(0, 1fr); }
+            .tdb .dash-aside{ grid-template-columns: minmax(0, 1fr); }
+          }
+          
+          /* libellé : une ligne en mode empilé, deux en côte à côte, jamais hors de la case */
+          .tdb .dash-grid--cells button.dash-cell .dash-seg__txt{ max-width: 100%; min-width: 0; line-height: 1.2; word-break: break-word; }
+          .tdb .dash-grid--vertical button.dash-cell .dash-seg__txt{
+            display: block !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            -webkit-line-clamp: unset !important;
+          }
+          
+          /* La recherche démarre au-dessus de la colonne Lun : 200px (colonne noms) - 20px (padding) - 12px (gap) */
+          @media (min-width: 900px){ .tdb .dash-toolbar > h3{ flex: 0 0 168px; margin: 0; } }
+          
+          /* Fiche projet dans le panneau d''affectation (maquette aff-projet) */
+          .aff-fiche{margin:4px 0 12px;padding:12px 14px;border:1px solid #E6E9EC;border-radius:12px;background:#F8F9FA}
+          .aff-fiche__top{display:flex;align-items:center;gap:8px;min-width:0}
+          .aff-fiche__dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+          .aff-fiche__top strong{overflow:hidden;font-size:14px;font-weight:600;color:#1A2332;white-space:nowrap;text-overflow:ellipsis}
+          .aff-fiche__chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:#DBE7FF;color:#122F62;font-size:11.5px;font-weight:500;white-space:nowrap}
+          .aff-fiche .aff-link{display:inline-flex;flex:0 0 auto;align-items:center;gap:4px;margin-left:auto;font-size:12.5px;font-weight:600;color:#1A428A;cursor:pointer}
+          .aff-fiche .aff-link:hover{text-decoration:underline}
+          .aff-fiche__meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:10px 0 0;font-size:12.5px}
+          .aff-fiche__meta dt{color:#6C757D}
+          .aff-fiche__meta dd{margin:0;color:#1A2332}
+          .aff-fiche__meta dd.is-missing{color:#8A5A00;font-weight:600}
           '
 ↓PageEvent [ngx.components.UIPageEvent-1791141759900]: 
   ↓LireReferentiel [ngx.components.UIDynamicAction-1791141771686]: 

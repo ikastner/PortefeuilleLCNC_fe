@@ -24,7 +24,7 @@ scriptContent:
         	elements: any[];
         	types: any[];
         	profils: any[];
-        	porteurs: any[];
+        	participants: any[];
         	lignes: any[];
         	pfaState: any;
         	pfaHtml: any;
@@ -118,7 +118,7 @@ scriptContent:
         		this.elements = [];
         		this.types = [];
         		this.profils = [];
-        		this.porteurs = [];
+        		this.participants = [];
         		this.lignes = [];
         		this.pfaState = { collapsed: false, q: "", manque: "", sansReferent: false, sansRole: false, drawer: null, mvpVue: "classement", dashOffset: 0, focusDay: null, week: null, popover: "" };
         		this.pfaHtml = "";
@@ -226,7 +226,7 @@ scriptContent:
         		try { window.sessionStorage.setItem("pfc:userRole", this.pfaUserRole); } catch (eRole) {}
         		var els = this.elements || [];
         		var lig = this.lignes || [];
-        		var ports = this.porteurs || [];
+        		var ports = this.participants || [];
         		var projets = 0;
         		var gens = 0;
         		var seen = {};
@@ -261,11 +261,12 @@ scriptContent:
         	}
         	pfaBoot() {
         		var self = this;
+        		var assets = this.c8o.endpointConvertigo + "/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/";
         		if (!document.getElementById("pfa-admin-css")) {
         			var link = document.createElement("link");
         			link.id = "pfa-admin-css";
         			link.rel = "stylesheet";
-        			link.href = "http://localhost:18080/convertigo/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/css/pfa-admin.css?v=admin3";
+        			link.href = assets + "css/pfa-admin.css?v=admin3";
         			document.head.appendChild(link);
         		}
         		if (document.getElementById("pfa-admin-js")) {
@@ -275,7 +276,7 @@ scriptContent:
         		}
         		var script = document.createElement("script");
         		script.id = "pfa-admin-js";
-        		script.src = "http://localhost:18080/convertigo/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/js/pfa-admin.js?v=admin4";
+        		script.src = assets + "js/pfa-admin.js?v=admin4";
         		script.onload = function() { var charge = self.pfaAdmin(); if (charge) charge.boot(self); };
         		document.head.appendChild(script);
         	}
@@ -564,6 +565,10 @@ scriptContent:
         		this.saisie.commentaire = v;
         	}
         	ouvrir(vue) {
+        		if (vue === "roles") {
+        			this.routerProvider.navigateRoot("Roles", false, null);
+        			return;
+        		}
         		if (vue === "dashboard" || vue === "dashboard-v2") {
         			try { window.sessionStorage.setItem("pfc:tdb", "v2"); window.sessionStorage.setItem("pfc:vue", "dashboard"); } catch (eV) {}
         			this.routerProvider.navigateRoot("TableauDeBord", false, null);
@@ -587,7 +592,7 @@ scriptContent:
         			if (preset) {
         				window.sessionStorage.removeItem("pfc:preset");
         				if (!this.pfaState) this.pfaState = {};
-        				this.pfaState.manque = preset === "chef" ? "chef" : preset === "porteur" ? "porteur" : "";
+        				this.pfaState.manque = preset === "chef" ? "chef" : preset === "participant" ? "participant" : "";
         				this.pfaState.sansReferent = preset === "ref";
         				this.pfaState.sansRole = preset === "role";
         			}
@@ -771,7 +776,7 @@ scriptContent:
         		}
         		choices.sort();
         		this.statusChoices = choices.concat(["Absence", "AbsencePrev", "Formation"]);
-        		this.porteurs = this.asList(ref.porteurs);
+        		this.participants = this.asList(ref.participants);
         		this.lignes = this.asList(ref.lignes);
         		this.etapes = this.asList(ref.etapes);
         		this.roles = this.asList(ref.roles);
@@ -898,7 +903,7 @@ scriptContent:
         			}
         			choices.sort();
         			self.statusChoices = choices.concat(["Absence", "AbsencePrev", "Formation"]);
-        			self.porteurs = self.asList(d.porteurs);
+        			self.participants = self.asList(d.participants);
         			self.lignes = self.asList(d.lignes);
         			self.etapes = self.asList(d.etapes);
         			self.roles = self.asList(d.roles);
@@ -945,10 +950,10 @@ scriptContent:
         		var i;
         		for (i = 0; i < this.elements.length; i++) if (this.elements[i].code === code) found = this.elements[i];
         		var ports = [];
-        		for (i = 0; i < this.porteurs.length; i++) {
-        			if (this.porteurs[i].codeElement === code) ports.push((this.porteurs[i].codeAgent || "") + "|" + (this.porteurs[i].libelle || ""));
+        		for (i = 0; i < this.participants.length; i++) {
+        			if (this.participants[i].codeElement === code) ports.push(String(this.participants[i].cle || ""));
         		}
-        		this.boForm = found ? { code: found.code, libelle: found.libelle, lcNc: found.lcNc, statutCatalogue: found.statutCatalogue, couleur: found.couleur, actif: found.actif, chefProjet: found.chefProjet || "", porteurs: ports.join(";") } : { code: code, chefProjet: "" };
+        		this.boForm = found ? { code: found.code, libelle: found.libelle, lcNc: found.lcNc, statutCatalogue: found.statutCatalogue, couleur: found.couleur, actif: found.actif, chefProjet: found.chefProjet || "", participants: ports.join(",") } : { code: code, chefProjet: "" };
         		this.refresh();
         	}
         
@@ -983,10 +988,10 @@ scriptContent:
         			chefProjet: f.chefProjet || ""
         		}).then(function(out) { self.okOf(out); self.chargerReferentiel(); });
         	}
-        	sauverPorteurs() {
+        	sauverParticipants() {
         		var self = this;
         		var f = this.boForm || {};
-        		this.appel("Porteur_Remplacer", { cleActeur: this.cleActeur, code: f.code || "", porteurs: f.porteurs || "" }).then(function(out) {
+        		this.appel("Participant_Remplacer", { cleActeur: this.cleActeur, code: f.code || "", participants: f.participants || "" }).then(function(out) {
         			self.okOf(out); self.chargerReferentiel();
         		});
         	}
@@ -2504,20 +2509,20 @@ title: Plan de charge
       ↓OpenDash [ngx.components.UIDynamicElement-1791128185185]: 
         beanData: '{"ionBean":"DivTag"}'
         tagName: button
-        ↓OpenDashC [ngx.components.UIAttribute-1791128185187]: 
+        ↓OpenDashC [ngx.components.UIAttribute-1791328057970]: 
           attrName: class
           attrValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
               - MobileSmartSourceType: plain:topbar__btn
-        ↓OpenDashTy [ngx.components.UIAttribute-1791128185189]: 
+        ↓OpenDashTy [ngx.components.UIAttribute-1791328058308]: 
           attrName: type
           attrValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
               - MobileSmartSourceType: plain:button
-        ↓OpenDashE [ngx.components.UIControlEvent-1791128185191]: 
-          ↓OpenDashA [ngx.components.UICustomAction-1791128185709]: 
+        ↓OpenDashE [ngx.components.UIControlEvent-1791328058646]: 
+          ↓OpenDashA [ngx.components.UICustomAction-1791328059164]: 
             actionValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -2526,83 +2531,206 @@ title: Plan de charge
                     page.ouvrir('dashboard');
                     resolve(true);
                     
-        ↓OpenDashL [ngx.components.UIText-1791128185711]: 
-          textValue: 
-            - xmlizable: 
-              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:Tableau de bord
-        ↓Arr [ngx.components.UIDynamicElement-1791128657110]: 
+        ↓Arr [ngx.components.UIDynamicElement-1791328059502]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: svg
-          ↓ArrNs [ngx.components.UIAttribute-1791128657112]: 
+          ↓ArrNs [ngx.components.UIAttribute-1791328059504]: 
             attrName: xmlns
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:http://www.w3.org/2000/svg
-          ↓ArrW [ngx.components.UIAttribute-1791128657114]: 
+          ↓ArrW [ngx.components.UIAttribute-1791328059506]: 
             attrName: width
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:16
-          ↓ArrH [ngx.components.UIAttribute-1791128657116]: 
+          ↓ArrH [ngx.components.UIAttribute-1791328059508]: 
             attrName: height
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:16
-          ↓ArrVb [ngx.components.UIAttribute-1791128657118]: 
+          ↓ArrVb [ngx.components.UIAttribute-1791328059510]: 
             attrName: viewBox
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:0 0 24 24
-          ↓ArrF [ngx.components.UIAttribute-1791128657120]: 
+          ↓ArrF [ngx.components.UIAttribute-1791328059512]: 
             attrName: fill
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:none
-          ↓ArrSt [ngx.components.UIAttribute-1791128657122]: 
+          ↓ArrSt [ngx.components.UIAttribute-1791328059514]: 
             attrName: stroke
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:currentColor
-          ↓ArrSw [ngx.components.UIAttribute-1791128657124]: 
+          ↓ArrSw [ngx.components.UIAttribute-1791328059516]: 
             attrName: stroke-width
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                - MobileSmartSourceType: plain:1.8
-          ↓ArrCap [ngx.components.UIAttribute-1791128657126]: 
+                - MobileSmartSourceType: plain:2
+          ↓ArrCap [ngx.components.UIAttribute-1791328059518]: 
             attrName: stroke-linecap
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:round
-          ↓ArrJoin [ngx.components.UIAttribute-1791128657128]: 
+          ↓ArrJoin [ngx.components.UIAttribute-1791328059520]: 
             attrName: stroke-linejoin
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:round
-          ↓ArrAh [ngx.components.UIAttribute-1791128657130]: 
+          ↓ArrAh [ngx.components.UIAttribute-1791328059522]: 
             attrName: aria-hidden
             attrValue: 
               - xmlizable: 
                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                 - MobileSmartSourceType: plain:true
-          ↓ArrP [ngx.components.UIDynamicElement-1791128657132]: 
+          ↓Rect1 [ngx.components.UIDynamicElement-1791328059524]: 
             beanData: '{"ionBean":"DivTag"}'
-            tagName: path
-            ↓ArrPD [ngx.components.UIAttribute-1791128657134]: 
-              attrName: d
+            tagName: rect
+            ↓R1x [ngx.components.UIAttribute-1791328059526]: 
+              attrName: x
               attrValue: 
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                  - MobileSmartSourceType: plain:M5 12h14M12 5l7 7-7 7
+                  - MobileSmartSourceType: plain:3
+            ↓R1y [ngx.components.UIAttribute-1791328059528]: 
+              attrName: y
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:3
+            ↓R1width [ngx.components.UIAttribute-1791328059530]: 
+              attrName: width
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:7
+            ↓R1height [ngx.components.UIAttribute-1791328059532]: 
+              attrName: height
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:9
+            ↓R1rx [ngx.components.UIAttribute-1791328059534]: 
+              attrName: rx
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:1.5
+          ↓Rect2 [ngx.components.UIDynamicElement-1791328059536]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: rect
+            ↓R2x [ngx.components.UIAttribute-1791328059538]: 
+              attrName: x
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:14
+            ↓R2y [ngx.components.UIAttribute-1791328059540]: 
+              attrName: y
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:3
+            ↓R2width [ngx.components.UIAttribute-1791328059542]: 
+              attrName: width
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:7
+            ↓R2height [ngx.components.UIAttribute-1791328059544]: 
+              attrName: height
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:5
+            ↓R2rx [ngx.components.UIAttribute-1791328059546]: 
+              attrName: rx
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:1.5
+          ↓Rect3 [ngx.components.UIDynamicElement-1791328059548]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: rect
+            ↓R3x [ngx.components.UIAttribute-1791328059550]: 
+              attrName: x
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:14
+            ↓R3y [ngx.components.UIAttribute-1791328059552]: 
+              attrName: y
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:12
+            ↓R3width [ngx.components.UIAttribute-1791328059554]: 
+              attrName: width
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:7
+            ↓R3height [ngx.components.UIAttribute-1791328059556]: 
+              attrName: height
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:9
+            ↓R3rx [ngx.components.UIAttribute-1791328059558]: 
+              attrName: rx
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:1.5
+          ↓Rect4 [ngx.components.UIDynamicElement-1791328059560]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: rect
+            ↓R4x [ngx.components.UIAttribute-1791328059562]: 
+              attrName: x
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:3
+            ↓R4y [ngx.components.UIAttribute-1791328059564]: 
+              attrName: y
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:16
+            ↓R4width [ngx.components.UIAttribute-1791328059566]: 
+              attrName: width
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:7
+            ↓R4height [ngx.components.UIAttribute-1791328059568]: 
+              attrName: height
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:5
+            ↓R4rx [ngx.components.UIAttribute-1791328059570]: 
+              attrName: rx
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:1.5
+        ↓OpenDashL [ngx.components.UIText-1791328059908]: 
+          textValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:Tableau de bord
 ↓Content [ngx.components.UIDynamicElement-1790692987485]: 
   beanData: '{"ionBean":"Content"}'
   tagName: ion-content
@@ -5274,7 +5402,7 @@ title: Plan de charge
            "ionBean": "Input",
            "ControlName": "plain:name1790693113217",
            "Fill": "plain:outline",
-           "Placeholder": "plain:Porteurs code|libelle;..."
+           "Placeholder": "plain:Participants : ID collaborateurs, séparés par des virgules"
           }'
         tagName: ion-input
         ↓PPorE [ngx.components.UIControlEvent-1790693113219]: 
@@ -5286,7 +5414,7 @@ title: Plan de charge
                 - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
                 - com.twinsoft.convertigo.beans.common.FormatedContent: 
                   →: |
-                    page.setBo(event, 'porteurs');
+                    page.setBo(event, 'participants');
                     resolve(true);
                     
       ↓PSavePor [ngx.components.UIDynamicElement-1790693113223]: 
@@ -5312,14 +5440,14 @@ title: Plan de charge
                 - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
                 - com.twinsoft.convertigo.beans.common.FormatedContent: 
                   →: |
-                    page.sauverPorteurs();
+                    page.sauverParticipants();
                     resolve(true);
                     
         ↓PSavePorT [ngx.components.UIText-1790693113231]: 
           textValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:Remplacer les porteurs
+              - MobileSmartSourceType: plain:Remplacer les participants
   ↓IfBoL [ngx.components.UIControlDirective-1790693114103]: 
     directiveName: If
     directiveSource: 

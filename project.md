@@ -66,20 +66,20 @@ Describes the mobile application global properties
 <details><summary><span style="color:DarkGoldenRod"><i>Pages</i></span></summary><blockquote><p>
 
 
-<details><summary><b>Collaborateurs</b></summary><blockquote><p>
+<details><summary><b>Collaborateurs</b> : Collaborateurs</summary><blockquote><p>
 
 
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Collaborateurs
 
-
+Collaborateurs
 </p></blockquote></details>
 
-<details><summary><b>Login</b> : Connexion LDAP via lib_common_be</summary><blockquote><p>
+<details><summary><b>Login</b> : Connexion : le code Anaïs doit exister dans les collaborateurs (PLG_Ligne)</summary><blockquote><p>
 
 
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Login
 
-Connexion LDAP via lib_common_be.auth__login des qu un mot de passe est saisi. En mode test (symbole Mode_test) : le role choisi est ensuite simule via PortefeuilleLCNC_be.auth__role_test (identite reelle conservee) ; sans mot de passe, connexion sans LDAP via PortefeuilleLCNC_be.auth__login_test, puis le role choisi est simule de la meme facon.
+Connexion : le code Anaïs doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit. Mot de passe = LDAP. Sans mot de passe (Mode_test), auth__login_test. Le menu rôle ne s'applique que si aucun login n'est saisi.
 </p></blockquote></details>
 
 <details><summary><b>Page</b> : Accueil, redirection vers le plan de charge</summary><blockquote><p>
@@ -104,6 +104,14 @@ Ecran portefeuille LCNC
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Projets
 
 Catalogue projets et hors projet.
+</p></blockquote></details>
+
+<details><summary><b>Roles</b> : Rôles et droits</summary><blockquote><p>
+
+
+### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Roles
+
+Rôles et droits
 </p></blockquote></details>
 
 <details><summary><b>TableauDeBord</b> : Tableau de bord de la semaine, en balises Convertigo</summary><blockquote><p>

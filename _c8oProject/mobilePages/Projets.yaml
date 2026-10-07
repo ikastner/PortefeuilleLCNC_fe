@@ -18,10 +18,16 @@ scriptContent:
         	types: any[];
         	profils: any[];
         	elements: any[];
-        	porteurs: any[];
+        	participants: any[];
+        	participantOpts: any[];
+        	draftParticipants: any[];
+        	draftAuto: any[];
+        	draftAutoTitre: string;
+        	participantsInit: string;
         	rows: any[];
         	natureRows: any[];
         	statutOpts: any[];
+        	statutCatalogueBase: any[];
         	manqueOpts: any[];
         	typeOpts: any[];
         	chefOpts: any[];
@@ -78,11 +84,25 @@ scriptContent:
         		this.types = [];
         		this.profils = [];
         		this.elements = [];
-        		this.porteurs = [];
+        		this.participants = [];
+        		this.participantOpts = [];
+        		this.draftParticipants = [];
+        		this.draftAuto = [];
+        		this.draftAutoTitre = "";
+        		this.participantsInit = "";
         		this.rows = [];
         		this.natureRows = [];
-        		this.statutOpts = [{ value: "", label: "Tous les statuts" }];
-        		this.manqueOpts = [{ value: "", label: "Tous les projets" }, { value: "chef", label: "Chef de projet a definir" }, { value: "porteur", label: "Porteur a definir" }];
+        		this.statutCatalogueBase = [
+        			{ value: "À définir", label: "À définir" },
+        			{ value: "Cadrage", label: "Cadrage" },
+        			{ value: "Dev", label: "Dev" },
+        			{ value: "Recette", label: "Recette" },
+        			{ value: "Test MOA", label: "Test MOA" },
+        			{ value: "Prod", label: "Prod" },
+        			{ value: "Arrêté", label: "Arrêté" }
+        		];
+        		this.statutOpts = [{ value: "", label: "Tous les statuts" }].concat(this.statutCatalogueBase);
+        		this.manqueOpts = [{ value: "", label: "Tous les projets" }, { value: "chef", label: "Chef de projet a definir" }, { value: "participant", label: "Sans participant" }];
         		this.typeOpts = [{ value: "ALL", label: "Tous" }, { value: "LC", label: "Low Code" }, { value: "NC", label: "No Code" }, { value: "AU", label: "Autre" }];
         		this.chefOpts = [];
         		this.colors = ["#1A428A", "#0F6E56", "#8A4B08", "#6B3FA0", "#1D6F8A", "#8B194D", "#006FB7", "#B23A48", "#3D6B2F", "#5A4FCF"].map(function (c) { return { hex: c }; });
@@ -110,7 +130,7 @@ scriptContent:
         		this.draftLibelle = "";
         		this.draftLc = "LC";
         		this.lcOpts = [{ value: "LC", label: "Low Code" }, { value: "NC", label: "No Code" }, { value: "AU", label: "Autre" }];
-        		this.draftStatut = "Cadrage";
+        		this.draftStatut = "À définir";
         		this.draftCouleur = "#1A428A";
         		this.draftActif = true;
         		this.draftChef = "";
@@ -126,7 +146,7 @@ scriptContent:
         			var preset = window.sessionStorage.getItem("pfc:preset") || "";
         			if (preset) {
         				window.sessionStorage.removeItem("pfc:preset");
-        				if (preset === "chef" || preset === "porteur") { this.tab = "projets"; this.manque = preset; }
+        				if (preset === "chef" || preset === "participant") { this.tab = "projets"; this.manque = preset; }
         			}
         		} catch (e) {}
         		this.rafraichir();
@@ -243,7 +263,7 @@ scriptContent:
         		this.profils = this.asList(ref.profils);
         		this.types = this.asList(ref.types);
         		this.elements = this.asList(ref.elements);
-        		this.porteurs = this.asList(ref.porteurs);
+        		this.participants = this.asList(ref.participants);
         		this.lignes = this.asList(ref.lignes);
         		this.loading = false;
         		this.syncChrome();
@@ -258,7 +278,7 @@ scriptContent:
         		var seen = {};
         		(this.elements || []).forEach(function (el) {
         			if (!self.onFlag(el.actif == null ? "true" : el.actif)) return;
-        			var hasP = (self.porteurs || []).some(function (p) { return p.codeElement === el.code; });
+        			var hasP = (self.participants || []).some(function (p) { return p.codeElement === el.code; });
         			if ((!el.chefProjet || !hasP) && !seen[el.code]) { seen[el.code] = 1; projets++; }
         		});
         		this.badgeProjets = projets;
@@ -287,17 +307,17 @@ scriptContent:
         			if (!self.inactifs && !actif) return false;
         			if (self.typeFiltre !== "ALL" && e.lcNc !== self.typeFiltre) return false;
         			if (self.statutFiltre && e.statutCatalogue !== self.statutFiltre) return false;
-        			var ports = (self.porteurs || []).filter(function (p) { return p.codeElement === e.code; });
+        			var ports = (self.participants || []).filter(function (p) { return p.codeElement === e.code; });
         			if (self.manque === "chef" && e.chefProjet) return false;
-        			if (self.manque === "porteur" && ports.length) return false;
+        			if (self.manque === "participant" && ports.length) return false;
         			if (restreint && !choisis[String(e.code)]) return false;
         			return true;
         		}).map(function (e) {
         			var chef = self.lignePar(e.chefProjet);
-        			var ports = (self.porteurs || []).filter(function (p) { return p.codeElement === e.code; });
+        			var ports = (self.participants || []).filter(function (p) { return p.codeElement === e.code; });
         			var bulles = ports.slice(0, 6).map(function (p) {
-        				var l = self.lignePar(p.codeAgent) || self.lignePar(p.libelle);
-        				var nom = (l && (l.libelle || l.cle)) || p.libelle || p.codeAgent;
+        				var l = self.lignePar(p.cle);
+        				var nom = (l && (l.libelle || l.cle)) || p.cle;
         				return { nom: nom, initiales: self.initiales(nom), couleur: (l && l.couleur) || "#1A428A" };
         			});
         			return {
@@ -306,7 +326,8 @@ scriptContent:
         				couleur: e.couleur || "#1A428A",
         				lc: e.lcNc === "NC" ? "No Code" : (e.lcNc === "AU" ? "Autre" : (e.lcNc === "LC" ? "Low Code" : "—")),
         				lcCls: e.lcNc === "NC" ? "chip chip--secondary" : (e.lcNc === "AU" ? "chip chip--outline" : "chip chip--primary"),
-        				statut: e.statutCatalogue || "—",
+        				statut: self.normaliserStatut(e.statutCatalogue),
+        				statutCls: self.statutCls(e.statutCatalogue),
         				chefNom: chef ? (chef.libelle || chef.cle) : "",
         				chefInit: chef ? self.initiales(chef.libelle || chef.cle) : "",
         				chefCouleur: chef ? (chef.couleur || "#1A428A") : "",
@@ -320,10 +341,18 @@ scriptContent:
         		this.rows = rows;
         		this.countLabel = rows.length + " projet" + (rows.length > 1 ? "s" : "");
         		this.nProjets = (this.elements || []).filter(function (e) { return self.onFlag(e.actif == null ? "true" : e.actif); }).length;
-        		var stats = {};
-        		(this.elements || []).forEach(function (e) { if (e.statutCatalogue) stats[e.statutCatalogue] = 1; });
-        		["Cadrage", "Dev", "Recette", "Test MOA", "Prod", "Arrêté"].forEach(function (s) { stats[s] = 1; });
-        		this.statutOpts = [{ value: "", label: "Tous les statuts" }].concat(Object.keys(stats).sort().map(function (s) { return { value: s, label: s }; }));
+        				var stats = {};
+        		(this.elements || []).forEach(function (e) {
+        			var st = String(e.statutCatalogue || "").trim();
+        			if (st) stats[st] = 1;
+        		});
+        		var base = this.statutCatalogueBase || [];
+        		var known = {};
+        		base.forEach(function (o) { known[o.value] = 1; });
+        		var customs = Object.keys(stats).filter(function (x) { return !known[x]; }).sort(function (a, b) {
+        			return String(a).localeCompare(String(b), "fr");
+        		}).map(function (x) { return { value: x, label: x }; });
+        		this.statutOpts = [{ value: "", label: "Tous les statuts" }].concat(base).concat(customs);
         		this.natureRows = (this.types || []).filter(function (t) {
         			if (t.code === "PROJET" || t.code === "OFF" || self.onFlag(t.requiertElement)) return false;
         			if (!self.natureInactifs && !self.onFlag(t.actif == null ? "true" : t.actif)) return false;
@@ -351,11 +380,52 @@ scriptContent:
         		if (event && event.value !== undefined && !event.target) return event.value;
         		return event == null ? "" : event;
         	}
-        	statutsCatalogue() { return (this.statutOpts || []).filter(function (o) { return !!o.value; }); }
+        	statutsCatalogue() {
+        		var base = this.statutCatalogueBase || [];
+        		var known = {};
+        		base.forEach(function (o) { known[o.value] = 1; });
+        		var customs = [];
+        		(this.elements || []).forEach(function (e) {
+        			var st = String(e.statutCatalogue || "").trim();
+        			if (st && !known[st]) { known[st] = 1; customs.push({ value: st, label: st }); }
+        		});
+        		customs.sort(function (a, b) { return String(a.label).localeCompare(String(b.label), "fr"); });
+        		var cur = String(this.draftStatut || "").trim();
+        		if (cur && !known[cur]) customs.push({ value: cur, label: cur });
+        		return base.concat(customs);
+        	}
+        	statutCls(v) {
+        		var s = this.normaliserStatut(v);
+        		if (s === "À définir") return "chip chip--outline";
+        		if (s === "Cadrage") return "chip chip--info";
+        		if (s === "Dev") return "chip chip--primary";
+        		if (s === "Recette") return "chip chip--violet";
+        		if (s === "Test MOA") return "chip chip--warning";
+        		if (s === "Prod") return "chip chip--success";
+        		if (s === "Arrêté") return "chip chip--muted";
+        		return "chip chip--secondary";
+        	}
+        	normaliserStatut(v) {
+        		var s = String(v == null ? "" : v).trim();
+        		if (!s) return "À définir";
+        		var low = s.toLowerCase();
+        		if (low === "a definir" || low === "à définir" || low === "a définir" || low === "à definir") return "À définir";
+        		if (low === "dev") return "Dev";
+        		if (low === "prod") return "Prod";
+        		if (low === "design") return "Cadrage";
+        		if (low === "pré-prod" || low === "pre-prod" || low === "preprod" || low === "préprod") return "Test MOA";
+        		return s;
+        	}
         	setStatut(event) { this.statutFiltre = String(this.valeurSelect(event) == null ? "" : this.valeurSelect(event)); this.reconstruire(); }
         	setManque(event) { this.manque = String(this.valeurSelect(event) == null ? "" : this.valeurSelect(event)); this.reconstruire(); }
         	toggle(name) { this[name] = !this[name]; this.reconstruire(); }
-        	setDraft(name, event) { var v = this.valeurSelect(event); if (v == null) v = ""; this[name] = v; this.rafraichir(); }
+        	setDraft(name, event) {
+        		var v = this.valeurSelect(event);
+        		if (v == null) v = "";
+        		if (name === "draftStatut") v = this.normaliserStatut(v);
+        		this[name] = v;
+        		this.rafraichir();
+        	}
         	choisirCouleur(hex) { this.draftCouleur = hex; this.rafraichir(); }
         	ouvrirAction() { if (this.tab === "natures") this.ouvrirNature(""); else this.ouvrirProjet(""); }
         	ouvrirProjet(code) {
@@ -367,7 +437,7 @@ scriptContent:
         		this.draftCode = found ? found.code : "";
         		this.draftLibelle = found ? (found.libelle || "") : "";
         		this.draftLc = found && (found.lcNc === "NC" || found.lcNc === "AU") ? found.lcNc : "LC";
-        		this.draftStatut = found ? (found.statutCatalogue || "Cadrage") : "Cadrage";
+        		this.draftStatut = found ? this.normaliserStatut(found.statutCatalogue) : "À définir";
         		this.draftCouleur = found ? (found.couleur || "#1A428A") : "#1A428A";
         		this.draftActif = found ? this.onFlag(found.actif == null ? "true" : found.actif) : true;
         		this.draftChef = found ? (found.chefProjet || "") : "";
@@ -381,6 +451,21 @@ scriptContent:
         			return { value: l.cle, label: hors ? (nom + " (hors plan)") : nom };
         		}).sort(function (a, b) { return String(a.label).localeCompare(String(b.label), "fr"); });
         		this.chefOpts = [{ value: "", label: "À définir" }].concat(gens);
+        		var parts = (this.participants || []).filter(function (p) { return found && String(p.codeElement) === String(found.code); });
+        		this.draftParticipants = parts.filter(function (p) { return self.onFlag(p.manuel); }).map(function (p) { return String(p.cle); });
+        		this.participantsInit = this.draftParticipants.slice().sort().join(",");
+        		this.participantOpts = (this.lignes || []).filter(function (l) {
+        			return self.onFlag(l.actif == null ? "true" : l.actif) || self.draftParticipants.indexOf(String(l.cle)) >= 0;
+        		}).map(function (l) {
+        			return { value: String(l.cle), label: l.libelle || l.cle };
+        		}).sort(function (a, b) { return String(a.label).localeCompare(String(b.label), "fr"); });
+        		this.draftAuto = parts.filter(function (p) { return Number(p.jours || 0) > 0; }).map(function (p) {
+        			var l = self.lignePar(p.cle);
+        			var nom = (l && (l.libelle || l.cle)) || p.cle;
+        			var j = Number(p.jours || 0);
+        			return { nom: nom, ini: self.initiales(nom), couleur: (l && l.couleur) || "#1A428A", n: j, jours: String(j).replace(".", ",") + " j" };
+        		}).sort(function (a, b) { return b.n - a.n || String(a.nom).localeCompare(String(b.nom), "fr"); });
+        		this.draftAutoTitre = "Via le plan de charge (" + this.draftAuto.length + ")";
         		this.animerOuverture();
         		this.rafraichir();
         	}
@@ -416,9 +501,42 @@ scriptContent:
         		setTimeout(function () { self.drawerOn = false; self.rafraichir(); }, 260);
         	}
         	sauver() { if (this.drawerKind === "nature") this.sauverNature(); else this.sauverProjet(); }
+        	setParticipants(event) {
+        		var v = event && event.value !== undefined ? event.value : (event && event.event && event.event.value !== undefined ? event.event.value : event);
+        		this.draftParticipants = Array.isArray(v) ? v.map(function (x) { return String(x); }) : [];
+        		this.rafraichir();
+        	}
+        	sauverParticipants(code) {
+        		var liste = (this.draftParticipants || []).map(function (x) { return String(x); }).sort().join(",");
+        		if (!code || liste === this.participantsInit) return Promise.resolve(true);
+        		var self = this;
+        		return this.appel("Participant_Remplacer", { cleActeur: this.cleActeur, code: code, participants: liste }).then(function (out) {
+        			var raw: any = out;
+        			var res = (raw && raw.resultat) || {};
+        			if ((raw && raw.error) || String(res.ok) !== "true") {
+        				var e = raw && raw.error ? raw.error : null;
+        				self.message = "Projet enregistré, mais pas ses participants" + (e && e.message ? " : " + e.message : (res.message ? " : " + res.message : "."));
+        				self.rafraichir();
+        				return false;
+        			}
+        			return true;
+        		});
+        	}
+        	codeParLibelle(libelle) {
+        		var self = this;
+        		return this.appel("Referentiel_Lire", {}).then(function (out) {
+        			var raw: any = out;
+        			var d = self.doc(out);
+        			var els = self.asList((raw && raw.elements) || (d && d.elements));
+        			var i;
+        			for (i = 0; i < els.length; i++) if (String(els[i].libelle) === String(libelle)) return String(els[i].code);
+        			return "";
+        		});
+        	}
         	sauverProjet() {
         		var self = this;
         		if (!String(this.draftLibelle || "").trim()) { this.message = "Le libellé est obligatoire."; this.rafraichir(); return; }
+        		var libelle = String(this.draftLibelle).trim();
         		this.appel("Element_Enregistrer", {
         			cleActeur: this.cleActeur,
         			code: this.draftCode || "",
@@ -426,12 +544,15 @@ scriptContent:
         			couleur: this.draftCouleur || "",
         			actif: this.draftActif ? "true" : "false",
         			lcNc: this.draftLc || "",
-        			statutCatalogue: this.draftStatut || "",
+        			statutCatalogue: this.normaliserStatut(this.draftStatut),
         			chefProjet: this.draftChef || ""
         		}).then(function (out) {
         			if (!self.okOf(out)) { self.message = "Enregistrement impossible."; self.rafraichir(); return; }
-        			self.fermer();
-        			self.ionViewDidEnter();
+        			var code = self.draftCode ? Promise.resolve(String(self.draftCode)) : self.codeParLibelle(libelle);
+        			return code.then(function (c) { return self.sauverParticipants(c); }).then(function () {
+        				self.fermer();
+        				self.ionViewDidEnter();
+        			});
         		});
         	}
         	sauverNature() {
@@ -483,6 +604,7 @@ scriptContent:
         		if (code && code.detail != null) code = code.detail;
         		code = String(code || "");
         		if (code.indexOf("logout") >= 0) { this.deconnecter(); return; }
+        		if (code === "roles") { this.routerProvider.navigateRoot("Roles", false, null); return; }
         		if (code === "projets") return;
         		try { window.sessionStorage.setItem("pfc:vue", code === "grille" ? "grille" : code); } catch (e) {}
         		if (code === "dashboard-v2") {
@@ -1406,7 +1528,7 @@ title: Projets
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:Porteurs
+                      - MobileSmartSourceType: plain:Participants
               ↓H6 [ngx.components.UIDynamicElement-1791188924099]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
@@ -1509,11 +1631,20 @@ title: Projets
                 ↓C3 [ngx.components.UIDynamicElement-1791188924143]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓C3T [ngx.components.UIText-1791188924145]: 
-                    textValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: script:row.statut
+                  ↓StChip [ngx.components.UIDynamicElement-1791329947374]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: span
+                    ↓LcC [ngx.components.UIAttribute-1791329947376]: 
+                      attrName: '[class]'
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:row.statutCls
+                    ↓LcT [ngx.components.UIText-1791329947378]: 
+                      textValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:row.statut
                 ↓C4 [ngx.components.UIDynamicElement-1791188924147]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
@@ -2327,12 +2458,17 @@ title: Projets
               varValue: 
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                  - MobileSmartSourceType: script:'Statut'
+                  - MobileSmartSourceType: script:'Choisir ou saisir un statut'
             ↓filter [ngx.components.UIUseVariable-1791197821448]: 
               varValue: 
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                  - MobileSmartSourceType: script:false
+                  - MobileSmartSourceType: script:true
+            ↓editable [ngx.components.UIUseVariable-1791329785648]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:true
             ↓filterPlaceholder [ngx.components.UIUseVariable-1791197821450]: 
               varValue: 
                 - xmlizable: 
@@ -2579,6 +2715,209 @@ title: Projets
                         try { page.setDraft('draftChef', event); } catch (e) { console.error(e); }
                         resolve(true);
                         
+        ↓FPart [ngx.components.UIDynamicElement-1791308374045]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓PartA28 [ngx.components.UIAttribute-1791308374047]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:field part-field
+          ↓PartE15 [ngx.components.UIDynamicElement-1791308374049]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: span
+            ↓PartA13 [ngx.components.UIAttribute-1791308374051]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:field__label
+            ↓PartT14 [ngx.components.UIText-1791308374053]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Participants
+          ↓FPartPick [ngx.components.UIUseShared-1791308374055]: 
+            sharedcomponent: lib_components_ui.Application.NgxApp.p_multiselect
+            ↓options [ngx.components.UIUseVariable-1791308375633]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.participantOpts
+            ↓optionLabel [ngx.components.UIUseVariable-1791308375635]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'label'
+            ↓optionValue [ngx.components.UIUseVariable-1791308375637]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'value'
+            ↓value [ngx.components.UIUseVariable-1791308375639]: 
+              binding: twoWayBinding
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.draftParticipants
+            ↓placeholder [ngx.components.UIUseVariable-1791308375641]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'Ajouter des collaborateurs'
+            ↓filter [ngx.components.UIUseVariable-1791308375643]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:true
+            ↓filterPlaceholder [ngx.components.UIUseVariable-1791308375645]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'Rechercher'
+            ↓display [ngx.components.UIUseVariable-1791308375647]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'chip'
+            ↓maxSelectedLabels [ngx.components.UIUseVariable-1791308375649]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:50
+            ↓scrollHeight [ngx.components.UIUseVariable-1791308375651]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'260px'
+            ↓onChange [ngx.components.UIControlEvent-1791308375653]: 
+              attrName: (onChange)
+              eventName: onChange
+              ↓OnPartPick [ngx.components.UICustomAction-1791308376171]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        try { page.setParticipants(event); } catch (e) { console.error(e); }
+                        resolve(true);
+                        
+          ↓PartE18 [ngx.components.UIDynamicElement-1791308376173]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: p
+            ↓PartA16 [ngx.components.UIAttribute-1791308376175]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:field__hint
+            ↓PartT17 [ngx.components.UIText-1791308376177]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Ajout manuel. Les collaborateurs affectés au projet dans le plan de charge sont repris automatiquement.
+          ↓PartIf27 [ngx.components.UIControlDirective-1791308376179]: 
+            directiveName: If
+            directiveSource: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:this.draftAuto && this.draftAuto.length > 0
+            ↓PartE26 [ngx.components.UIDynamicElement-1791308377721]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓PartA25 [ngx.components.UIAttribute-1791308377723]: 
+                attrName: class
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:part-auto
+              ↓PartE21 [ngx.components.UIDynamicElement-1791308377725]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: div
+                ↓PartA20 [ngx.components.UIAttribute-1791308377727]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:part-auto__titre
+                ↓PartT19 [ngx.components.UIText-1791308377729]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.draftAutoTitre
+              ↓PartE24 [ngx.components.UIDynamicElement-1791308377731]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: ul
+                ↓PartA23 [ngx.components.UIAttribute-1791308377733]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:part-auto__list
+                ↓PartFor22 [ngx.components.UIControlDirective-1791308377735]: 
+                  directiveItemName: a
+                  directiveSource: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.draftAuto
+                  ↓PartE12 [ngx.components.UIDynamicElement-1791308377737]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: li
+                    ↓PartA11 [ngx.components.UIAttribute-1791308377739]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:part-auto__item
+                    ↓PartE4 [ngx.components.UIDynamicElement-1791308377741]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: span
+                      ↓PartA2 [ngx.components.UIAttribute-1791308377743]: 
+                        attrName: class
+                        attrValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: plain:avatar avatar--sm
+                      ↓PartA3 [ngx.components.UIAttribute-1791308377745]: 
+                        attrName: '[style.background]'
+                        attrValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:a.couleur
+                      ↓PartT1 [ngx.components.UIText-1791308377747]: 
+                        textValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:a.ini
+                    ↓PartE7 [ngx.components.UIDynamicElement-1791308377749]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: span
+                      ↓PartA6 [ngx.components.UIAttribute-1791308377751]: 
+                        attrName: class
+                        attrValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: plain:part-auto__nom
+                      ↓PartT5 [ngx.components.UIText-1791308377753]: 
+                        textValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:a.nom
+                    ↓PartE10 [ngx.components.UIDynamicElement-1791308377755]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: span
+                      ↓PartA9 [ngx.components.UIAttribute-1791308377757]: 
+                        attrName: class
+                        attrValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: plain:part-auto__jours
+                      ↓PartT8 [ngx.components.UIText-1791308377759]: 
+                        textValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:a.jours
     ↓PFoot [ngx.components.UIDynamicElement-1791188929717]: 
       beanData: '{"ionBean":"DivTag"}'
       tagName: div
@@ -3414,6 +3753,7 @@ title: Projets
           .chip--violet { background: #F6E8F0; color: var(--c-violet); }
           .chip--info { background: var(--c-info-1); color: var(--c-info); }
           .chip--outline { background: transparent; border: 1px solid var(--c-grey-3); }
+          .chip--secondary { background: #E8F5F0; color: #0F6E56; }
           .person { display: flex; align-items: center; gap: 12px; min-width: 0; }
           .person__name { font-weight: 500; color: var(--c-text); }
           .person__sub { font-size: 12px; color: var(--c-muted); }
@@ -3601,6 +3941,20 @@ title: Projets
                     .toolbar .search ::ng-deep .p-autocomplete-token{ flex:0 0 auto; }
                     .toolbar .search ::ng-deep .p-autocomplete-input-token{ flex:1 0 80px; }
                     .toolbar .search ::ng-deep .p-autocomplete-input-token input{ height:28px; }
+          
+          /* participants */
+          .part-field { margin-top: 16px; }
+          .part-field p-multiselect, .part-field .p-multiselect { width: 100%; }
+          .part-auto { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--c-grey-2); border-radius: 12px; background: var(--c-grey-1); }
+          .part-auto__titre { margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--c-muted); text-transform: uppercase; letter-spacing: .04em; }
+          .part-auto__list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+          .part-auto__item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--c-text); }
+          .part-auto__nom { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .part-auto__jours { flex: 0 0 auto; font-size: 12px; color: var(--c-muted); }
+          
+          /* statut catalogue chips */
+          .table td .chip { white-space: nowrap; font-weight: 500; letter-spacing: .01em; }
+          .chip--muted { background: var(--c-grey-1); color: var(--c-muted); }
           '
 ↓PageEvent [ngx.components.UIPageEvent-1791188942341]: 
   ↓LireReferentiel [ngx.components.UIDynamicAction-1791188942927]: 

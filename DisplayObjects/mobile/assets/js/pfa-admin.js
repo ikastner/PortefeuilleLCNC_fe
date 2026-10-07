@@ -618,7 +618,7 @@
       var link = document.createElement("link");
       link.id = "pfa-admin-css";
       link.rel = "stylesheet";
-      link.href = "http://localhost:18080/convertigo/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/css/pfa-admin.css?v=admin2";
+      link.href = page.c8o.endpointConvertigo + "/projects/PortefeuilleLCNC_fe/DisplayObjects/mobile/assets/css/pfa-admin.css?v=admin2";
       document.head.appendChild(link);
     }
     if (page.__pfa) return;

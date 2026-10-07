@@ -23,7 +23,7 @@ scriptContent:
         	droitVide: boolean;
         	types: any[];
         	elements: any[];
-        	porteurs: any[];
+        	participants: any[];
         	rows: any[];
         	profilRows: any[];
         	profilOpts: any[];
@@ -93,7 +93,7 @@ scriptContent:
         		this.droitVide = false;
         		this.types = [];
         		this.elements = [];
-        		this.porteurs = [];
+        		this.participants = [];
         		this.rows = [];
         		this.profilRows = [];
         		this.profilOpts = [{ value: "", label: "Tous les profils" }];
@@ -317,7 +317,7 @@ scriptContent:
         		this.roleDroits = this.asList(ref.roleDroits);
         		this.types = this.asList(ref.types);
         		this.elements = this.asList(ref.elements);
-        		this.porteurs = this.asList(ref.porteurs);
+        		this.participants = this.asList(ref.participants);
         		this.lignes = this.asList(ref.lignes);
         		this.loading = false;
         		this.syncChrome();
@@ -334,7 +334,7 @@ scriptContent:
         		var seenL = {};
         		(this.elements || []).forEach(function (el) {
         			if (!self.onFlag(el.actif == null ? "true" : el.actif)) return;
-        			var hasP = (self.porteurs || []).some(function (p) { return p.codeElement === el.code; });
+        			var hasP = (self.participants || []).some(function (p) { return p.codeElement === el.code; });
         			if ((!el.chefProjet || !hasP) && !seen[el.code]) { seen[el.code] = 1; projets++; }
         		});
         		(this.lignes || []).forEach(function (l) {
@@ -685,6 +685,7 @@ scriptContent:
         		if (code && code.detail != null) code = code.detail;
         		code = String(code || "");
         		if (code.indexOf("logout") >= 0) { this.deconnecter(); return; }
+        		if (code === "roles") { this.routerProvider.navigateRoot("Roles", false, null); return; }
         		if (code === "lignes") return;
         		if (code === "projets") { this.routerProvider.navigateRoot("Projets", false, null); return; }
         		try { window.sessionStorage.setItem("pfc:vue", code === "grille" ? "grille" : code); } catch (e) {}
@@ -1665,18 +1666,18 @@ title: Collaborateurs
             ↓Hr [ngx.components.UIDynamicElement-1791143697053]: 
               beanData: '{"ionBean":"DivTag"}'
               tagName: tr
-              ↓ThNom [ngx.components.UIDynamicElement-1791143697055]: 
+              ↓ThNom [ngx.components.UIDynamicElement-1791327926429]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThNomC [ngx.components.UIAttribute-1791143697057]: 
+                ↓ThNomC [ngx.components.UIAttribute-1791327926431]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThNomK [ngx.components.UIControlEvent-1791143697059]: 
+                ↓ThNomK [ngx.components.UIControlEvent-1791327926433]: 
                   eventName: (click)
-                  ↓ThNomKDo [ngx.components.UICustomAction-1791143697061]: 
+                  ↓ThNomKDo [ngx.components.UICustomAction-1791327926951]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1685,28 +1686,28 @@ title: Collaborateurs
                             page.trier('nom');
                             resolve(true);
                             
-                ↓ThNomT [ngx.components.UIText-1791143697063]: 
+                ↓ThNomT [ngx.components.UIText-1791327926953]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Collaborateur
-                ↓ThNomS [ngx.components.UIText-1791143697065]: 
+                ↓ThNomS [ngx.components.UIText-1791327926955]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('nom')
-              ↓ThAgent [ngx.components.UIDynamicElement-1791143697067]: 
+              ↓ThAgent [ngx.components.UIDynamicElement-1791327927181]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThAgentC [ngx.components.UIAttribute-1791143697069]: 
+                ↓ThAgentC [ngx.components.UIAttribute-1791327927183]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThAgentK [ngx.components.UIControlEvent-1791143697071]: 
+                ↓ThAgentK [ngx.components.UIControlEvent-1791327927185]: 
                   eventName: (click)
-                  ↓ThAgentKDo [ngx.components.UICustomAction-1791143697073]: 
+                  ↓ThAgentKDo [ngx.components.UICustomAction-1791327927187]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1715,28 +1716,28 @@ title: Collaborateurs
                             page.trier('agent');
                             resolve(true);
                             
-                ↓ThAgentT [ngx.components.UIText-1791143697075]: 
+                ↓ThAgentT [ngx.components.UIText-1791327927189]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Code agent
-                ↓ThAgentS [ngx.components.UIText-1791143697077]: 
+                ↓ThAgentS [ngx.components.UIText-1791327927191]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('agent')
-              ↓ThProfil [ngx.components.UIDynamicElement-1791143697079]: 
+              ↓ThProfil [ngx.components.UIDynamicElement-1791327927417]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThProfilC [ngx.components.UIAttribute-1791143697081]: 
+                ↓ThProfilC [ngx.components.UIAttribute-1791327927419]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThProfilK [ngx.components.UIControlEvent-1791143697083]: 
+                ↓ThProfilK [ngx.components.UIControlEvent-1791327927421]: 
                   eventName: (click)
-                  ↓ThProfilKDo [ngx.components.UICustomAction-1791143697085]: 
+                  ↓ThProfilKDo [ngx.components.UICustomAction-1791327927423]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1745,28 +1746,28 @@ title: Collaborateurs
                             page.trier('profil');
                             resolve(true);
                             
-                ↓ThProfilT [ngx.components.UIText-1791143697087]: 
+                ↓ThProfilT [ngx.components.UIText-1791327927425]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Profil
-                ↓ThProfilS [ngx.components.UIText-1791143697089]: 
+                ↓ThProfilS [ngx.components.UIText-1791327927427]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('profil')
-              ↓ThRef [ngx.components.UIDynamicElement-1791143697091]: 
+              ↓ThRef [ngx.components.UIDynamicElement-1791327927653]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThRefC [ngx.components.UIAttribute-1791143697093]: 
+                ↓ThRefC [ngx.components.UIAttribute-1791327927655]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThRefK [ngx.components.UIControlEvent-1791143697095]: 
+                ↓ThRefK [ngx.components.UIControlEvent-1791327927657]: 
                   eventName: (click)
-                  ↓ThRefKDo [ngx.components.UICustomAction-1791143697097]: 
+                  ↓ThRefKDo [ngx.components.UICustomAction-1791327927659]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1775,28 +1776,28 @@ title: Collaborateurs
                             page.trier('referent');
                             resolve(true);
                             
-                ↓ThRefT [ngx.components.UIText-1791143697099]: 
+                ↓ThRefT [ngx.components.UIText-1791327927661]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Référent
-                ↓ThRefS [ngx.components.UIText-1791143697101]: 
+                ↓ThRefS [ngx.components.UIText-1791327927663]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('referent')
-              ↓ThRole [ngx.components.UIDynamicElement-1791143697103]: 
+              ↓ThRole [ngx.components.UIDynamicElement-1791327927889]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThRoleC [ngx.components.UIAttribute-1791143697105]: 
+                ↓ThRoleC [ngx.components.UIAttribute-1791327927891]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThRoleK [ngx.components.UIControlEvent-1791143697107]: 
+                ↓ThRoleK [ngx.components.UIControlEvent-1791327927893]: 
                   eventName: (click)
-                  ↓ThRoleKDo [ngx.components.UICustomAction-1791143697109]: 
+                  ↓ThRoleKDo [ngx.components.UICustomAction-1791327927895]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1805,42 +1806,28 @@ title: Collaborateurs
                             page.trier('role');
                             resolve(true);
                             
-                ↓ThRoleT [ngx.components.UIText-1791143697111]: 
+                ↓ThRoleT [ngx.components.UIText-1791327927897]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Rôle
-                ↓ThRoleS [ngx.components.UIText-1791143697113]: 
+                ↓ThRoleS [ngx.components.UIText-1791327927899]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('role')
-              ↓ThScore [ngx.components.UIDynamicElement-1791144009084]: 
+              ↓ThOrdre [ngx.components.UIDynamicElement-1791327928125]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThScoreC [ngx.components.UIAttribute-1791144009086]: 
-                  attrName: class
-                  attrValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:col-num
-                ↓ThScoreT [ngx.components.UIText-1791144009088]: 
-                  textValue: 
-                    - xmlizable: 
-                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                      - MobileSmartSourceType: plain:Score MVP
-              ↓ThOrdre [ngx.components.UIDynamicElement-1791143697115]: 
-                beanData: '{"ionBean":"DivTag"}'
-                tagName: th
-                ↓ThOrdreC [ngx.components.UIAttribute-1791143697117]: 
+                ↓ThOrdreC [ngx.components.UIAttribute-1791327928127]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThOrdreK [ngx.components.UIControlEvent-1791143697119]: 
+                ↓ThOrdreK [ngx.components.UIControlEvent-1791327928129]: 
                   eventName: (click)
-                  ↓ThOrdreKDo [ngx.components.UICustomAction-1791143697121]: 
+                  ↓ThOrdreKDo [ngx.components.UICustomAction-1791327928131]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1849,28 +1836,28 @@ title: Collaborateurs
                             page.trier('ordre');
                             resolve(true);
                             
-                ↓ThOrdreT [ngx.components.UIText-1791143697123]: 
+                ↓ThOrdreT [ngx.components.UIText-1791327928133]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:Ordre
-                ↓ThOrdreS [ngx.components.UIText-1791143697125]: 
+                ↓ThOrdreS [ngx.components.UIText-1791327928135]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('ordre')
-              ↓ThEtat [ngx.components.UIDynamicElement-1791143697127]: 
+              ↓ThEtat [ngx.components.UIDynamicElement-1791327928361]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
-                ↓ThEtatC [ngx.components.UIAttribute-1791143697129]: 
+                ↓ThEtatC [ngx.components.UIAttribute-1791327928363]: 
                   attrName: class
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:is-sortable
-                ↓ThEtatK [ngx.components.UIControlEvent-1791143697131]: 
+                ↓ThEtatK [ngx.components.UIControlEvent-1791327928365]: 
                   eventName: (click)
-                  ↓ThEtatKDo [ngx.components.UICustomAction-1791143697133]: 
+                  ↓ThEtatKDo [ngx.components.UICustomAction-1791327928367]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1879,17 +1866,17 @@ title: Collaborateurs
                             page.trier('etat');
                             resolve(true);
                             
-                ↓ThEtatT [ngx.components.UIText-1791143697135]: 
+                ↓ThEtatT [ngx.components.UIText-1791327928369]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: plain:État
-                ↓ThEtatS [ngx.components.UIText-1791143697137]: 
+                ↓ThEtatS [ngx.components.UIText-1791327928371]: 
                   textValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:this.sortMark('etat')
-              ↓ThEdit [ngx.components.UIDynamicElement-1791143697139]: 
+              ↓ThEdit [ngx.components.UIDynamicElement-1791327928597]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: th
           ↓Tbody [ngx.components.UIDynamicElement-1791143697141]: 
@@ -1904,15 +1891,15 @@ title: Collaborateurs
               ↓Tr [ngx.components.UIDynamicElement-1791143697145]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: tr
-                ↓TrC [ngx.components.UIAttribute-1791143697147]: 
+                ↓TrC [ngx.components.UIAttribute-1791327930823]: 
                   attrName: '[class]'
                   attrValue: 
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: 'script:row.inactive ? ''is-inactive'' : (row.selected ? ''is-selected'' : '''')'
-                ↓TrK [ngx.components.UIControlEvent-1791143697149]: 
+                ↓TrK [ngx.components.UIControlEvent-1791327931049]: 
                   eventName: (click)
-                  ↓TrKDo [ngx.components.UICustomAction-1791143697151]: 
+                  ↓TrKDo [ngx.components.UICustomAction-1791327931567]: 
                     actionValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
@@ -1922,331 +1909,308 @@ title: Collaborateurs
                             page.ouvrirLigne(row.cle);
                             resolve(true);
                             
-                ↓TdWho [ngx.components.UIDynamicElement-1791143697153]: 
+                ↓TdWho [ngx.components.UIDynamicElement-1791327931793]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓Who [ngx.components.UIDynamicElement-1791143697155]: 
+                  ↓Who [ngx.components.UIDynamicElement-1791327931795]: 
                     beanData: '{"ionBean":"DivTag"}'
                     tagName: div
-                    ↓WhoC [ngx.components.UIAttribute-1791143697157]: 
+                    ↓WhoC [ngx.components.UIAttribute-1791327931797]: 
                       attrName: class
                       attrValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: plain:person
-                    ↓Av [ngx.components.UIDynamicElement-1791143697159]: 
+                    ↓Av [ngx.components.UIDynamicElement-1791327931799]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓AvC [ngx.components.UIAttribute-1791143697161]: 
+                      ↓AvC [ngx.components.UIAttribute-1791327931801]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:avatar
-                      ↓AvB [ngx.components.UIAttribute-1791143697163]: 
+                      ↓AvB [ngx.components.UIAttribute-1791327931803]: 
                         attrName: '[style.background]'
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: script:row.couleur
-                      ↓AvT [ngx.components.UIText-1791143697165]: 
+                      ↓AvT [ngx.components.UIText-1791327931805]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: script:row.initiales
-                    ↓WhoTxt [ngx.components.UIDynamicElement-1791143697167]: 
+                    ↓WhoTxt [ngx.components.UIDynamicElement-1791327931807]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: div
-                      ↓WhoN [ngx.components.UIDynamicElement-1791143697169]: 
+                      ↓WhoN [ngx.components.UIDynamicElement-1791327931809]: 
                         beanData: '{"ionBean":"DivTag"}'
                         tagName: div
-                        ↓WhoNC [ngx.components.UIAttribute-1791143697171]: 
+                        ↓WhoNC [ngx.components.UIAttribute-1791327931811]: 
                           attrName: class
                           attrValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: plain:person__name
-                        ↓WhoNT [ngx.components.UIText-1791143697173]: 
+                        ↓WhoNT [ngx.components.UIText-1791327931813]: 
                           textValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: script:row.nom
-                      ↓WhoS [ngx.components.UIDynamicElement-1791143697175]: 
+                      ↓WhoS [ngx.components.UIDynamicElement-1791327931815]: 
                         beanData: '{"ionBean":"DivTag"}'
                         tagName: div
-                        ↓WhoSC [ngx.components.UIAttribute-1791143697177]: 
+                        ↓WhoSC [ngx.components.UIAttribute-1791327931817]: 
                           attrName: class
                           attrValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: plain:person__sub mono
-                        ↓WhoST [ngx.components.UIText-1791143697179]: 
+                        ↓WhoST [ngx.components.UIText-1791327931819]: 
                           textValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: script:row.agent
-                ↓TdAgent [ngx.components.UIDynamicElement-1791143697181]: 
+                ↓TdAgent [ngx.components.UIDynamicElement-1791327932045]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓AgIf [ngx.components.UIControlDirective-1791143697183]: 
+                  ↓AgIf [ngx.components.UIControlDirective-1791327932047]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:row.agentManque
-                    ↓AgChip [ngx.components.UIDynamicElement-1791143697185]: 
+                    ↓AgChip [ngx.components.UIDynamicElement-1791327933589]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓AgChipC [ngx.components.UIAttribute-1791143697187]: 
+                      ↓AgChipC [ngx.components.UIAttribute-1791327933591]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:chip chip--warning
-                      ↓AgChipT [ngx.components.UIText-1791143697189]: 
+                      ↓AgChipT [ngx.components.UIText-1791327933593]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:Manquant
-                  ↓AgOk [ngx.components.UIControlDirective-1791143697191]: 
+                  ↓AgOk [ngx.components.UIControlDirective-1791327933595]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:!row.agentManque
-                    ↓Ag [ngx.components.UIDynamicElement-1791143697193]: 
+                    ↓Ag [ngx.components.UIDynamicElement-1791327933597]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓AgC [ngx.components.UIAttribute-1791143697195]: 
+                      ↓AgC [ngx.components.UIAttribute-1791327933599]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:mono
-                      ↓AgT [ngx.components.UIText-1791143697197]: 
+                      ↓AgT [ngx.components.UIText-1791327933601]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: script:row.agent
-                ↓TdProfil [ngx.components.UIDynamicElement-1791143697199]: 
+                ↓TdProfil [ngx.components.UIDynamicElement-1791327933827]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓PrIf [ngx.components.UIControlDirective-1791143697201]: 
+                  ↓PrIf [ngx.components.UIControlDirective-1791327933829]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:!!row.profil
-                    ↓PrChip [ngx.components.UIDynamicElement-1791143697203]: 
+                    ↓PrChip [ngx.components.UIDynamicElement-1791327933831]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓PrChipC [ngx.components.UIAttribute-1791143697205]: 
+                      ↓PrChipC [ngx.components.UIAttribute-1791327933833]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:chip chip--outline
-                      ↓PrChipT [ngx.components.UIText-1791143697207]: 
+                      ↓PrChipT [ngx.components.UIText-1791327933835]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: script:row.profil
-                  ↓PrNo [ngx.components.UIControlDirective-1791143697209]: 
+                  ↓PrNo [ngx.components.UIControlDirective-1791327933837]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:!row.profil
-                    ↓PrM [ngx.components.UIDynamicElement-1791143697211]: 
+                    ↓PrM [ngx.components.UIDynamicElement-1791327933839]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓PrMC [ngx.components.UIAttribute-1791143697213]: 
+                      ↓PrMC [ngx.components.UIAttribute-1791327933841]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:muted
-                      ↓PrMT [ngx.components.UIText-1791143697215]: 
+                      ↓PrMT [ngx.components.UIText-1791327933843]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:—
-                ↓TdRef [ngx.components.UIDynamicElement-1791143697217]: 
+                ↓TdRef [ngx.components.UIDynamicElement-1791327934069]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓RfNo [ngx.components.UIControlDirective-1791143697219]: 
+                  ↓RfNo [ngx.components.UIControlDirective-1791327934071]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:row.refKind === 'none'
-                    ↓RfNoC [ngx.components.UIDynamicElement-1791143697221]: 
+                    ↓RfNoC [ngx.components.UIDynamicElement-1791327934073]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓RfNoCC [ngx.components.UIAttribute-1791143697223]: 
+                      ↓RfNoCC [ngx.components.UIAttribute-1791327934075]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:chip chip--warning
-                      ↓RfNoT [ngx.components.UIText-1791143697225]: 
+                      ↓RfNoT [ngx.components.UIText-1791327934077]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:À définir
-                  ↓RfPa [ngx.components.UIControlDirective-1791143697227]: 
+                  ↓RfPa [ngx.components.UIControlDirective-1791327934079]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:row.refKind === 'partage'
-                    ↓RfPaC [ngx.components.UIDynamicElement-1791143697229]: 
+                    ↓RfPaC [ngx.components.UIDynamicElement-1791327934081]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: span
-                      ↓RfPaCC [ngx.components.UIAttribute-1791143697231]: 
+                      ↓RfPaCC [ngx.components.UIAttribute-1791327934083]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:chip chip--violet
-                      ↓RfPaT [ngx.components.UIText-1791143697233]: 
+                      ↓RfPaT [ngx.components.UIText-1791327934085]: 
                         textValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:Partagé
-                  ↓RfPe [ngx.components.UIControlDirective-1791143697235]: 
+                  ↓RfPe [ngx.components.UIControlDirective-1791327934087]: 
                     directiveName: If
                     directiveSource: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:row.refKind === 'person'
-                    ↓RfP [ngx.components.UIDynamicElement-1791143697237]: 
+                    ↓RfP [ngx.components.UIDynamicElement-1791327934089]: 
                       beanData: '{"ionBean":"DivTag"}'
                       tagName: div
-                      ↓RfPC [ngx.components.UIAttribute-1791143697239]: 
+                      ↓RfPC [ngx.components.UIAttribute-1791327934091]: 
                         attrName: class
                         attrValue: 
                           - xmlizable: 
                             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                             - MobileSmartSourceType: plain:person
-                      ↓RfAv [ngx.components.UIDynamicElement-1791143697241]: 
+                      ↓RfAv [ngx.components.UIDynamicElement-1791327934093]: 
                         beanData: '{"ionBean":"DivTag"}'
                         tagName: span
-                        ↓RfAvC [ngx.components.UIAttribute-1791143697243]: 
+                        ↓RfAvC [ngx.components.UIAttribute-1791327934095]: 
                           attrName: class
                           attrValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: plain:avatar avatar--sm
-                        ↓RfAvB [ngx.components.UIAttribute-1791143697245]: 
+                        ↓RfAvB [ngx.components.UIAttribute-1791327934097]: 
                           attrName: '[style.background]'
                           attrValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: script:row.refColor
-                        ↓RfAvT [ngx.components.UIText-1791143697247]: 
+                        ↓RfAvT [ngx.components.UIText-1791327934099]: 
                           textValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: script:row.refInit
-                      ↓RfN [ngx.components.UIDynamicElement-1791143697249]: 
+                      ↓RfN [ngx.components.UIDynamicElement-1791327934101]: 
                         beanData: '{"ionBean":"DivTag"}'
                         tagName: span
-                        ↓RfNC [ngx.components.UIAttribute-1791143697251]: 
+                        ↓RfNC [ngx.components.UIAttribute-1791327934103]: 
                           attrName: class
                           attrValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: plain:person__name
-                        ↓RfNT [ngx.components.UIText-1791143697253]: 
+                        ↓RfNT [ngx.components.UIText-1791327934105]: 
                           textValue: 
                             - xmlizable: 
                               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                               - MobileSmartSourceType: script:row.refNom
-                ↓TdRole [ngx.components.UIDynamicElement-1791143697255]: 
+                ↓TdRole [ngx.components.UIDynamicElement-1791327934331]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓Role [ngx.components.UIDynamicElement-1791143697257]: 
+                  ↓Role [ngx.components.UIDynamicElement-1791327934333]: 
                     beanData: '{"ionBean":"DivTag"}'
                     tagName: span
-                    ↓RoleC [ngx.components.UIAttribute-1791143697259]: 
+                    ↓RoleC [ngx.components.UIAttribute-1791327934335]: 
                       attrName: '[class]'
                       attrValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: script:row.roleCls
-                    ↓RoleT [ngx.components.UIText-1791143697261]: 
+                    ↓RoleT [ngx.components.UIText-1791327934337]: 
                       textValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: script:row.role
-                ↓TdScore [ngx.components.UIDynamicElement-1791144010686]: 
+                ↓TdOrdre [ngx.components.UIDynamicElement-1791327934563]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓TdScoreC [ngx.components.UIAttribute-1791144010688]: 
-                    attrName: class
-                    attrValue: 
-                      - xmlizable: 
-                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: plain:col-num
-                  ↓Sc [ngx.components.UIDynamicElement-1791144010690]: 
-                    beanData: '{"ionBean":"DivTag"}'
-                    tagName: span
-                    ↓ScC [ngx.components.UIAttribute-1791144010692]: 
-                      attrName: class
-                      attrValue: 
-                        - xmlizable: 
-                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                          - MobileSmartSourceType: plain:muted
-                    ↓ScT [ngx.components.UIText-1791144010694]: 
-                      textValue: 
-                        - xmlizable: 
-                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                          - MobileSmartSourceType: plain:—
-                ↓TdOrdre [ngx.components.UIDynamicElement-1791143697263]: 
-                  beanData: '{"ionBean":"DivTag"}'
-                  tagName: td
-                  ↓TdOrdreT [ngx.components.UIText-1791143697265]: 
+                  ↓TdOrdreT [ngx.components.UIText-1791327934565]: 
                     textValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: script:row.ordre
-                ↓TdEtat [ngx.components.UIDynamicElement-1791143697267]: 
+                ↓TdEtat [ngx.components.UIDynamicElement-1791327934791]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓Etat [ngx.components.UIDynamicElement-1791143697269]: 
+                  ↓Etat [ngx.components.UIDynamicElement-1791327934793]: 
                     beanData: '{"ionBean":"DivTag"}'
                     tagName: span
-                    ↓EtatC [ngx.components.UIAttribute-1791143697271]: 
+                    ↓EtatC [ngx.components.UIAttribute-1791327934795]: 
                       attrName: '[class]'
                       attrValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: script:row.etatCls
-                    ↓EtatT [ngx.components.UIText-1791143697273]: 
+                    ↓EtatT [ngx.components.UIText-1791327934797]: 
                       textValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: script:row.etat
-                ↓TdEdit [ngx.components.UIDynamicElement-1791143697275]: 
+                ↓TdEdit [ngx.components.UIDynamicElement-1791327935023]: 
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: td
-                  ↓TdEditC [ngx.components.UIAttribute-1791143697277]: 
+                  ↓TdEditC [ngx.components.UIAttribute-1791327935025]: 
                     attrName: class
                     attrValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                         - MobileSmartSourceType: plain:col-actions
-                  ↓Edit [ngx.components.UIDynamicElement-1791143697279]: 
+                  ↓Edit [ngx.components.UIDynamicElement-1791327935027]: 
                     beanData: '{"ionBean":"DivTag"}'
                     tagName: span
-                    ↓EditC [ngx.components.UIAttribute-1791143697281]: 
+                    ↓EditC [ngx.components.UIAttribute-1791327935029]: 
                       attrName: class
                       attrValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: plain:btn btn--ghost btn--icon btn--sm
-                    ↓EditT [ngx.components.UIText-1791143697283]: 
+                    ↓EditT [ngx.components.UIText-1791327935031]: 
                       textValue: 
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType

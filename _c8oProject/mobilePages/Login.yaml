@@ -1,4 +1,4 @@
-comment: 'Connexion : le code Anaïs doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit. Mot de passe = LDAP. Sans mot de passe (Mode_test), auth__login_test. Le menu rôle ne s''applique que si aucun login n''est saisi.'
+comment: 'Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be.auth__login. Le code agent doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit.'
 inAutoMenu: false
 scriptContent: 
   - xmlizable: 
@@ -8,43 +8,15 @@ scriptContent:
         '/*Begin_c8o_PageImport*/
         /*End_c8o_PageImport*/
         /*Begin_c8o_PageDeclaration*/
-        	pfModeTest: boolean = false;
-        	pfRolesTest: string[] = ["GESTIONNAIRE", "CONTRIBUTEUR", "LECTEUR"];
         /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
         /*End_c8o_PageConstructor*/
         /*Begin_c8o_PageInitialization*/
-        		this.pfChargerModeTest();
         /*End_c8o_PageInitialization*/
         /*Begin_c8o_PageFunction*/
-        	pfChargerModeTest() {
-        		var self = this;
-        		var p: any = this.c8o.callJsonObject("lib_common_be.Get_Mode_test", {});
-        		p.then(function(res) {
-        			var d = (res && res.data) || {};
-        			self.pfModeTest = d.modeTest === true || String(d.modeTest) === "true";
-        			try { self.ref.detectChanges(); } catch (e) {}
-        			return null;
-        		});
-        	}
         	pfConnecter(input): Promise<any> {
-        		var self = this;
         		var v = input || {};
-        		var login = String(v.login || "").trim();
-        		var testRole = String(v.testRole || "").trim();
-        		var test = this.pfModeTest && !v.password;
-        		if (test) {
-        			return this.pfAppel("PortefeuilleLCNC_be.auth__login_test", { user: login, testRole: login ? "" : testRole }).then(function(res) {
-        				if (res && res.error) return res;
-        				return self.pfAppel("PortefeuilleLCNC_be.auth__role_test", { testRole: "" }).then(function() { return res; });
-        			});
-        		}
-        		return this.pfAppel("lib_common_be.auth__login", { user: login, password: v.password || "", appName: "PORTEFEUILLE", socleRoles: "DEVELOP_INTERNES,DEVELOP_EXTERNES,UTIL_INTERNES,UTIL_EXTERNES,ADMIN-NATDSI" }).then(function(res) {
-        			if (!self.pfModeTest || (res && res.error) || login) return res;
-        			return self.pfAppel("PortefeuilleLCNC_be.auth__role_test", { testRole: testRole }).then(function(r) {
-        				return (r && r.error) ? r : res;
-        			});
-        		});
+        		return this.pfAppel("lib_common_be.auth__login", { user: String(v.login || "").trim(), password: v.password || "", appName: "PORTEFEUILLE", socleRoles: "DEVELOP_INTERNES,DEVELOP_EXTERNES,UTIL_INTERNES,UTIL_EXTERNES,ADMIN-NATDSI" });
         	}
         	pfAppel(seq, params): Promise<any> {
         		var self = this;
@@ -83,16 +55,6 @@ title: Connexion
         - xmlizable: 
           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
           - MobileSmartSourceType: script:'../img/M2A2H@2x.jpg'
-    ↓testMode [ngx.components.UIUseVariable-1791300000406]: 
-      varValue: 
-        - xmlizable: 
-          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-          - MobileSmartSourceType: script:this.pfModeTest
-    ↓roleOptions [ngx.components.UIUseVariable-1791300000407]: 
-      varValue: 
-        - xmlizable: 
-          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-          - MobileSmartSourceType: script:this.pfRolesTest
     ↓Event [ngx.components.UIControlEvent-1791300000410]: 
       attrName: (Connexion)
       eventName: Connexion
