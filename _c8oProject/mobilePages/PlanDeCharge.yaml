@@ -218,6 +218,8 @@ scriptContent:
         	_pendingFocusDayIso: string;
         	_pendingFocusEl: string;
         	_pendingScroll: string;
+        	_qfqDlHooked: boolean;
+        	ready: boolean;
         /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
         /*End_c8o_PageConstructor*/
@@ -229,6 +231,8 @@ scriptContent:
         		this.installerHookDeepLinkQfq();
         		if (this.view) return;
         		this.view = "grille";
+        		this.ready = false;
+        		this._qfqDlHooked = !!this._qfqDlHooked;
         		this.modal = "";
         		this.rows = [];
         		this.items = [];
@@ -4787,6 +4791,51 @@ scriptContent:
         	affAllerProjet() {
         		if (!this.affFiche || !this.affFiche.code) return;
         		this.aller("projets", this.affFiche.code);
+        	}
+        	aller(route, preset) {
+        		if (!route || route === "dashboard") {
+        			this.ouvrir("dashboard");
+        			return;
+        		}
+        		if (String(route).indexOf("logout") >= 0) {
+        			try { if (this.deconnecter) this.deconnecter(); } catch (eD) {}
+        			return;
+        		}
+        		if (route === "projets") {
+        			try {
+        				window.sessionStorage.setItem("pfc:vue", "projets");
+        				if (preset) window.sessionStorage.setItem("pfc:preset", String(preset));
+        				else window.sessionStorage.removeItem("pfc:preset");
+        			} catch (eP) {}
+        			this.routerProvider.navigateRoot("Projets", false, null);
+        			return;
+        		}
+        		if (route === "lignes") {
+        			try {
+        				window.sessionStorage.setItem("pfc:vue", "lignes");
+        				if (preset) window.sessionStorage.setItem("pfc:preset", String(preset));
+        				else window.sessionStorage.removeItem("pfc:preset");
+        			} catch (eL) {}
+        			this.routerProvider.navigateRoot("Collaborateurs", false, null);
+        			return;
+        		}
+        		if (route === "grille" || route === "plan") {
+        			try {
+        				window.sessionStorage.setItem("pfc:vue", "grille");
+        				if (preset) window.sessionStorage.setItem("pfc:preset", String(preset));
+        				else window.sessionStorage.removeItem("pfc:preset");
+        			} catch (eG) {}
+        			this.ouvrir("grille");
+        			return;
+        		}
+        		this.ouvrir(String(route));
+        	}
+        	ouvrirPill(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-route]") || n;
+        		var route = n && n.getAttribute ? n.getAttribute("data-route") : "";
+        		var preset = n && n.getAttribute ? n.getAttribute("data-preset") : "";
+        		this.aller(route, preset);
         	}
         /*End_c8o_PageFunction*/'
 segment: plan
