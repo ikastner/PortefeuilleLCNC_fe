@@ -605,6 +605,1597 @@ scriptContent:
         				focusDay: focusDay || undefined, focusEl: focusEl || undefined, scroll: scroll || undefined };
         		} catch (e) { return null; }
         	}
+        	weekDays(offset) {
+        		var l = this.monday(offset);
+        		var noms = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+        		return noms.map(function (_, i) { var d = new Date(l); d.setDate(l.getDate() + i); return d; });
+        	}
+        	parseISO(s) {
+        		var p = String(s || "").split("-");
+        		return new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1);
+        	}
+        	joursOuvres(from, to) {
+        		var out = [];
+        		var cur = new Date(from);
+        		cur.setHours(0, 0, 0, 0);
+        		var fin = new Date(to);
+        		fin.setHours(0, 0, 0, 0);
+        		if (cur > fin) { var tmp = cur; cur = fin; fin = tmp; }
+        		while (cur <= fin) {
+        			var dow = cur.getDay();
+        			if (dow !== 0 && dow !== 6) out.push(new Date(cur));
+        			cur.setDate(cur.getDate() + 1);
+        		}
+        		return out;
+        	}
+        	periodeCourante() {
+        		var from = this.periodFrom ? this.parseISO(this.periodFrom) : this.monday(0);
+        		var to = this.periodTo ? this.parseISO(this.periodTo) : this.weekDays(0)[4];
+        		return { from: from, to: to, days: this.joursOuvres(from, to) };
+        	}
+        	periodePrecedente() {
+        		var p = this.periodeCourante();
+        		var dec = this.decalagePeriode(p.from, p.to, -1);
+        		return { from: dec.from, to: dec.to, days: this.joursOuvres(dec.from, dec.to) };
+        	}
+        	decalagePeriode(from, to, dir) {
+        		var a = new Date(from.getTime());
+        		var b = new Date(to.getTime());
+        		a.setHours(0, 0, 0, 0);
+        		b.setHours(0, 0, 0, 0);
+        		if (a.getDay() === 1 && (b.getTime() - a.getTime()) === 4 * 86400000) {
+        			a.setDate(a.getDate() + dir * 7);
+        			b.setDate(b.getDate() + dir * 7);
+        			return { from: a, to: b };
+        		}
+        		var span = (b.getTime() - a.getTime()) + 86400000;
+        		return { from: new Date(a.getTime() + dir * span), to: new Date(b.getTime() + dir * span) };
+        	}
+        	libellePeriode(from, to) {
+        		var optsJ = { day: "numeric", month: "short" };
+        		var optsA = { day: "numeric", month: "short", year: "numeric" };
+        		if (this.iso(from) === this.iso(to)) return from.toLocaleDateString("fr-FR", optsA);
+        		if (from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth()) {
+        			return from.getDate() + " \u2013 " + to.toLocaleDateString("fr-FR", optsA);
+        		}
+        		if (from.getFullYear() === to.getFullYear()) {
+        			return from.toLocaleDateString("fr-FR", optsJ) + " \u2013 " + to.toLocaleDateString("fr-FR", optsA);
+        		}
+        		return from.toLocaleDateString("fr-FR", optsA) + " \u2013 " + to.toLocaleDateString("fr-FR", optsA);
+        	}
+        	wrapWidth() {
+        		var w = 900;
+        		try {
+        			var main = document.querySelector(".tdb .dash-main") as HTMLElement;
+        			var el = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        			if (main && main.clientWidth) w = main.clientWidth;
+        			else if (el && el.clientWidth) w = el.clientWidth;
+        		} catch (eW) {}
+        		return w;
+        	}
+        	dayPx(wrapW?, win?) {
+        		var w = wrapW || this.wrapWidth();
+        		return Math.max(88, Math.floor((w - 200 - 104) / Math.max(win || 5, 1)));
+        	}
+        	pasSemaineOuvres() {
+        		return 5;
+        	}
+        	fenetreVisible(nDays, wrapW?) {
+        		var n = Math.max(0, nDays || 0);
+        		this.assurerLayoutCss();
+        		this.assurerPlaceSemaine();
+        		// Toujours au plus 5 jours ouvrés visibles (lun–ven), jamais plus.
+        		if (n <= 0) return 5;
+        		return Math.min(5, n);
+        	}
+        	assurerPlaceSemaine() {
+        		var host = document.querySelector(".tdb") as HTMLElement;
+        		if (!host) return;
+        		var all = this._allDays || [];
+        		if (!all.length && this.periodeCourante) {
+        			try { all = this.periodeCourante().days || []; } catch (eP) { all = []; }
+        		}
+        		var isWeek = !!(all.length && all.length <= 5);
+        		if (isWeek) host.classList.add("tdb--week");
+        		else host.classList.remove("tdb--week");
+        		try {
+        			document.documentElement.style.setProperty("--dash-name-w", "200px");
+        			document.documentElement.style.setProperty("--dash-rate-w", "104px");
+        			if (isWeek) document.documentElement.style.setProperty("--dash-col-w", "minmax(72px, 1fr)");
+        		} catch (eL) {}
+        	}
+        	maxGridStart(nDays, win?) {
+        		return Math.max(0, nDays - (win || this.fenetreVisible(nDays)));
+        	}
+        	plageDepuisStart(days, start, win?) {
+        		win = win || this.fenetreVisible(days.length);
+        		start = Math.min(Math.max(0, start), this.maxGridStart(days.length, win));
+        		var slice = days.slice(start, start + win);
+        		return { start: start, win: win, days: slice, from: slice[0], to: slice[slice.length - 1] };
+        	}
+        	startDepuisRatio(days, ratio, win?) {
+        		win = win || this.fenetreVisible(days.length);
+        		if (days.length <= win) return 0;
+        		return Math.round(ratio * days.length - win / 2);
+        	}
+        	estPeriodeCourante() {
+        		var l = this.monday(0);
+        		var ven = new Date(l);
+        		ven.setDate(l.getDate() + 4);
+        		return this.periodFrom === this.iso(l) && this.periodTo === this.iso(ven);
+        	}
+        	titrePeriode(days) {
+        		if (this.estPeriodeCourante()) return "La p\u00e9riode de l\u2019\u00e9quipe en un coup d\u2019\u0153il";
+        		if (!days || !days.length) return "Aucune journ\u00e9e ouvr\u00e9e sur cette p\u00e9riode";
+        		var a = days[0].toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+        		if (days.length < 2) return "P\u00e9riode du " + a;
+        		var b = days[days.length - 1].toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+        		return "P\u00e9riode du " + a + " au " + b;
+        	}
+        	icoDash(name, size) {
+        		var d = name === "check" ? "M20 6 9 17l-5-5" : (name === "chevronDown" ? "m6 9 6 6 6-6" : "m9 18 6-6-6-6");
+        		return "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + size + "\" height=\"" + size + "\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"" + d + "\"></path></svg>";
+        	}
+        	centrerFriseSur(days, cible?) {
+        		if (!days || !days.length) { this.gridStart = 0; return; }
+        		var win = this.fenetreVisible(days.length);
+        		var iso = this.iso(cible || new Date());
+        		var idx = -1;
+        		var i;
+        		for (i = 0; i < days.length; i++) if (this.iso(days[i]) === iso) { idx = i; break; }
+        		if (idx < 0) return;
+        		this.gridStart = Math.max(0, Math.min(idx - Math.floor(win / 2), this.maxGridStart(days.length, win)));
+        	}
+        	nomJourCourt(d) {
+        		return ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][d.getDay()];
+        	}
+        	setPeriode(from, to) {
+        		var self = this;
+        		var a = new Date(from); a.setHours(0, 0, 0, 0);
+        		var b = new Date(to); b.setHours(0, 0, 0, 0);
+        		if (a > b) { var x = a; a = b; b = x; }
+        		this.periodFrom = this.iso(a);
+        		this.periodTo = this.iso(b);
+        		this.focusDay = null;
+        		this.focusEl = "";
+        		this._winCache = {};
+        		var days = this.joursOuvres(a, b);
+        		var today = this.iso(new Date());
+        		if (days.some(function (d) { return self.iso(d) === today; })) this.centrerFriseSur(days);
+        		else this.gridStart = 0;
+        		this.armSkeleton();
+        		if (this.ionViewDidEnter) this.ionViewDidEnter();
+        		else this.chargerSemaine();
+        	}
+        	decalerPeriode(dir) {
+        		var p = this.periodeCourante();
+        		var dec = this.decalagePeriode(p.from, p.to, dir);
+        		this.setPeriode(dec.from, dec.to);
+        	}
+        	assurerLayoutCss() {
+        		var el = document.getElementById("tdb-layout-css") as HTMLStyleElement;
+        		if (!el) {
+        			el = document.createElement("style");
+        			el.id = "tdb-layout-css";
+        			document.head.appendChild(el);
+        		}
+        		el.textContent = ""
+        			+ ".tdb .dash-layout{grid-template-columns:minmax(0,1fr) minmax(248px,272px)!important;gap:var(--s-4,16px)!important}"
+        			+ ".tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr) minmax(232px,256px)!important;gap:14px!important}"
+        			+ ".tdb.tdb--week .dash-aside{min-width:0}"
+        			+ ".tdb.tdb--week .dash-side{padding:16px 18px!important}"
+        			+ ".tdb.tdb--week .dash-row,.tdb.tdb--week .dash-head-pin .dash-row--head{"
+        			+ "grid-template-columns:var(--dash-name-w,200px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,104px)!important}"
+        			+ ".tdb .dash-row,.tdb .dash-head-pin .dash-row--head{"
+        			+ "grid-template-columns:var(--dash-name-w,200px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,104px)}"
+        			+ "@media (max-width:1280px){.tdb .dash-layout,.tdb.tdb--week .dash-layout{"
+        			+ "grid-template-columns:minmax(0,1fr) minmax(220px,240px)!important}}"
+        			+ "@media (max-width:1100px){.tdb .dash-layout,.tdb.tdb--week .dash-layout{"
+        			+ "grid-template-columns:minmax(0,1fr) minmax(200px,220px)!important}}"
+        			+ "@media (max-width:980px){.tdb .dash-layout,.tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr)!important}"
+        			+ ".tdb .dash-aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}}"+ ".tdb .card.dash-main,.tdb .dash-main.card{display:flex!important;flex-direction:column!important;max-height:calc(100dvh - 88px)!important;overflow:hidden!important;border-radius:18px!important;background:#fff!important}"+ ".tdb .dash-stick{position:relative!important;top:auto!important;z-index:3!important;flex:0 0 auto!important;background:#fff!important;border-radius:18px 18px 0 0!important}"+ ".tdb .dash-stick .dash-toolbar,.tdb .dash-stick .dash-frise-nav{position:relative!important;top:auto!important;background:#fff!important}"+ ".tdb .dash-frise-nav{flex:none;background:#fff!important;border-bottom:1px solid #E6EAF2}"+ ".tdb .dash-grid-wrap,.tdb .dash-grid-wrap--film{position:relative!important;top:auto!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;background:#fff!important}"+ ".tdb .dash-grid-wrap .dash-row--head{position:sticky!important;top:0!important;z-index:6!important;background:#fff!important;box-shadow:0 1px 0 #E6EAF2}"+ ".tdb .dash-comments{display:flex!important;flex-direction:column!important;max-height:440px!important;overflow:hidden!important;min-height:0}"+ ".tdb .dash-comments__head{flex:none}"+ ".tdb .dash-comments__list{flex:1 1 auto;min-height:0;overflow-y:auto!important}";
+        	}
+        	assurerSkelCss() {
+        		this.assurerLayoutCss();
+        		if (document.getElementById("tdb-skel-css")) return;
+        		var el = document.createElement("style");
+        		el.id = "tdb-skel-css";
+        		el.textContent = ""
+        			+ ".tdb .dash-grid-wrap.is-skel{cursor:progress}"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-cell{"
+        			+ "visibility:visible!important;color:transparent!important;"
+        			+ "background:#EEF1F4!important;border-color:transparent!important;"
+        			+ "box-shadow:none!important;pointer-events:none!important;position:relative}"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-cell>*{opacity:0!important}"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-cell::after{"
+        			+ "content:\"\";position:absolute;left:12%;right:18%;top:50%;height:8px;margin-top:-4px;"
+        			+ "border-radius:6px;background:linear-gradient(90deg,#E6E9EC 0%,#F8F9FA 45%,#E6E9EC 100%);"
+        			+ "background-size:220% 100%;animation:dash-skel-shimmer 1.1s ease-in-out infinite}"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-dayhead strong,"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-dayhead span{"
+        			+ "color:transparent!important;border-radius:6px;"
+        			+ "background:linear-gradient(90deg,#E6E9EC 0%,#F8F9FA 45%,#E6E9EC 100%);"
+        			+ "background-size:220% 100%;animation:dash-skel-shimmer 1.1s ease-in-out infinite}"
+        			+ ".tdb .dash-head-pin.is-skel .dash-dayhead strong,"
+        			+ ".tdb .dash-head-pin.is-skel .dash-dayhead span{"
+        			+ "color:transparent!important;border-radius:6px;"
+        			+ "background:linear-gradient(90deg,#E6E9EC 0%,#F8F9FA 45%,#E6E9EC 100%);"
+        			+ "background-size:220% 100%;animation:dash-skel-shimmer 1.1s ease-in-out infinite}"
+        			+ "@keyframes dash-skel-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}"
+        			+ "@media (prefers-reduced-motion:reduce){"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-cell::after,"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-dayhead strong,"
+        			+ ".tdb .dash-grid-wrap.is-skel .dash-dayhead span,"
+        			+ ".tdb .dash-head-pin.is-skel .dash-dayhead strong,"
+        			+ ".tdb .dash-head-pin.is-skel .dash-dayhead span{animation:none;background:#E6E9EC}}"
+        			+ ".tdb .tdb-skel{min-height:70vh}";
+        		document.head.appendChild(el);
+        	}
+        	armSkeleton() {
+        		var self = this;
+        		this.assurerSkelCss();
+        		clearTimeout(this._skelT);
+        		this._loadT0 = Date.now();
+        		this.loading = true;
+        		var paint = function () {
+        			var wrap = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        			if (wrap) {
+        				wrap.classList.add("is-skel");
+        				var grid = wrap.querySelector(".dash-grid") as HTMLElement;
+        				if (grid) grid.classList.add("dash-grid--skel");
+        			}
+        			var pin = document.querySelector(".tdb .dash-head-pin") as HTMLElement;
+        			if (pin) pin.classList.add("is-skel");
+        		};
+        		paint();
+        		this._skelT = setTimeout(paint, 0);
+        		try { this.rafraichir(); } catch (eS) {}
+        	}
+        	desarmerSkeleton(immediat?) {
+        		var self = this;
+        		var min = immediat ? 0 : 420;
+        		var elapsed = Date.now() - (this._loadT0 || 0);
+        		var wait = Math.max(0, min - elapsed);
+        		clearTimeout(this._skelT);
+        		this._skelT = setTimeout(function () {
+        			self.loading = false;
+        			var wrap = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        			if (wrap) {
+        				wrap.classList.remove("is-skel");
+        				var grid = wrap.querySelector(".dash-grid") as HTMLElement;
+        				if (grid) grid.classList.remove("dash-grid--skel");
+        			}
+        			var pin = document.querySelector(".tdb .dash-head-pin") as HTMLElement;
+        			if (pin) pin.classList.remove("is-skel");
+        			try { self.rafraichir(); } catch (eD) {}
+        		}, wait);
+        	}
+        	peindreSkelLive() {
+        		this.assurerSkelCss();
+        		this.loading = true;
+        		var wrap = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        		if (wrap) {
+        			wrap.classList.add("is-skel");
+        			var grid = wrap.querySelector(".dash-grid") as HTMLElement;
+        			if (grid) grid.classList.add("dash-grid--skel");
+        		}
+        		var pin = document.querySelector(".tdb .dash-head-pin") as HTMLElement;
+        		if (pin) pin.classList.add("is-skel");
+        	}
+        	syncCapaciteFrise(smooth?) {
+        		var root = document.querySelector(".tdb .dash-cap.dash-cap--scroll") as HTMLElement;
+        		if (!root) return;
+        		var start = this.gridStart != null ? this.gridStart : (this._winStart || 0);
+        		var nodes = root.querySelectorAll(".dash-cap__day");
+        		if (!nodes.length) return;
+        		var target = null as HTMLElement;
+        		var i;
+        		for (i = 0; i < nodes.length; i++) {
+        			var di = Number((nodes[i] as HTMLElement).getAttribute("data-day"));
+        			if (!isNaN(di) && di >= start) { target = nodes[i] as HTMLElement; break; }
+        		}
+        		if (!target) target = nodes[nodes.length - 1] as HTMLElement;
+        		var left = Math.max(0, target.offsetLeft - 4);
+        		if (typeof root.scrollTo === "function") {
+        			root.scrollTo({ left: left, behavior: smooth ? "smooth" : "auto" });
+        		} else {
+        			root.scrollLeft = left;
+        		}
+        	}
+        	fenetreKey(start, win) {
+        		var q = (this.recherche || []).map(function (it) { return it && it.value != null ? String(it.value) : ""; }).join(",");
+        		return start + ":" + win + ":" + (this.profil || "") + ":" + q;
+        	}
+        	commitFenetre(start, smooth?, rebuild?) {
+        		var all = this._allDays || this.periodeCourante().days;
+        		var win = this.fenetreVisible(all.length, this.wrapWidth());
+        		var maxStart = this.maxGridStart(all.length, win);
+        		this.gridStart = Math.min(Math.max(0, Math.round(start)), maxStart);
+        		if (rebuild) {
+        			this.reconstruire();
+        			return;
+        		}
+        		var host = document.querySelector(".dash-frise-nav") as any;
+        		if (host && host._paint) host._paint(this.gridStart);
+        		this.syncCapaciteFrise(false);
+        	}
+        	allerFilm(start, smooth) {
+        		var wrap = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        		if (!wrap) return;
+        		wrap.scrollLeft = 0;
+        		var grid = wrap.querySelector(".dash-grid") as HTMLElement;
+        		if (grid) {
+        			grid.style.minWidth = "100%";
+        			grid.style.width = "100%";
+        		}
+        	}
+        	prechargerVoisins() {
+        		var self = this;
+        		var all = this._allDays || [];
+        		var win = this.fenetreVisible(all.length || 1);
+        		var maxStart = this.maxGridStart(all.length, win);
+        		[this.gridStart - win, this.gridStart + win].forEach(function (s) {
+        			s = Math.min(Math.max(0, s), maxStart);
+        			var key = self.fenetreKey(s, win);
+        			self._winCache = self._winCache || {};
+        			if (self._winCache[key]) return;
+        			setTimeout(function () {
+        				if (self._winCache[key]) return;
+        				var slice = all.slice(s, s + win);
+        				self._winCache[key] = self.analyser(slice, self.items || [], self.hol || {}, true);
+        				self.evictCache();
+        			}, 0);
+        		});
+        	}
+        	appliquerFrise() {
+        		var self = this;
+        		var wrap = document.querySelector(".tdb .dash-grid-wrap") as any;
+        		if (!wrap || !wrap.parentElement) return;
+        		var parent = wrap.parentElement;
+        		var host = parent.querySelector(".dash-frise-nav") as any;
+        		if (!host) {
+        			host = document.createElement("div") as any;
+        			parent.insertBefore(host, wrap);
+        		}
+        		if (host._unbind) { try { host._unbind(); } catch (eU) {} host._unbind = null; }
+        		var all = this._allDays || [];
+        		var win = this.fenetreVisible(all.length || 1, this.wrapWidth());
+        		var short = !all.length || all.length <= win;
+        		host.setAttribute("aria-label", "Navigation de la frise");
+        		if (short) {
+        			host.className = "dash-frise-nav dash-frise-nav--short";
+        			var lab = all.length ? this.libellePeriode(all[0], all[all.length - 1]) : "";
+        			var numS = all.length > 1 ? all.length + " j" : (all.length ? "1 j" : "0 j");
+        			var chevS = this.icoDash("chevronRight", 16);
+        			var caretS = this.icoDash("chevronDown", 14);
+        			host.innerHTML =
+        				"<div class=\"dash-week\">" +
+        				"<button type=\"button\" class=\"dash-week__btn\" data-period-dir=\"-1\" aria-label=\"P\u00e9riode pr\u00e9c\u00e9dente\"><span style=\"display:inline-flex;transform:rotate(180deg)\">" + chevS + "</span></button>" +
+        				"<button type=\"button\" class=\"dash-week__label\" data-period=\"1\" aria-haspopup=\"dialog\" aria-label=\"Choisir une p\u00e9riode\" title=\"Choisir une p\u00e9riode\">" +
+        				"<span class=\"dash-week__num\">" + numS + "</span>" +
+        				"<span class=\"dash-week__range\" aria-live=\"polite\">" + lab + "</span>" +
+        				"<span class=\"dash-week__caret\">" + caretS + "</span></button>" +
+        				"<button type=\"button\" class=\"dash-week__btn\" data-period-dir=\"1\" aria-label=\"P\u00e9riode suivante\">" + chevS + "</button>" +
+        				"</div>";
+        			var onClickShort = function (ev) {
+        				var t = ev.target as HTMLElement;
+        				var btn = t && t.closest ? t.closest("button") as HTMLElement : null;
+        				if (!btn || !host.contains(btn)) return;
+        				if (btn.getAttribute("data-period")) {
+        					self.wpToggle({ currentTarget: btn, target: btn });
+        					return;
+        				}
+        				var pdir = Number(btn.getAttribute("data-period-dir") || 0);
+        				if (pdir) self.decalerPeriode(pdir);
+        			};
+        			host.addEventListener("click", onClickShort);
+        			host._unbind = function () { host.removeEventListener("click", onClickShort); };
+        			this.monterScroll();
+        			return;
+        		}
+        		host.className = "dash-frise-nav";
+        		var chev = this.icoDash("chevronRight", 16);
+        		var caret = this.icoDash("chevronDown", 14);
+        		var todayIso = this.iso(new Date());
+        		var todayOn = all.some(function (d) { return self.iso(d) === todayIso; });
+        		var todayBtn = todayOn ? "<button type=\"button\" class=\"dash-week__today\" data-today=\"1\">Aujourd\u2019hui</button>" : "";
+        		host.innerHTML =
+        			"<div class=\"dash-week\">" +
+        			"<button type=\"button\" class=\"dash-week__btn\" data-dir=\"-1\" aria-label=\"Jours pr\u00e9c\u00e9dents\"><span style=\"display:inline-flex;transform:rotate(180deg)\">" + chev + "</span></button>" +
+        			"<button type=\"button\" class=\"dash-week__label\" data-period=\"1\" aria-haspopup=\"dialog\" aria-label=\"Choisir une p\u00e9riode\" title=\"Choisir une p\u00e9riode\">" +
+        			"<span class=\"dash-week__num\"></span>" +
+        			"<span class=\"dash-week__range\" aria-live=\"polite\"></span>" +
+        			"<span class=\"dash-week__caret\">" + caret + "</span></button>" +
+        			"<button type=\"button\" class=\"dash-week__btn\" data-dir=\"1\" aria-label=\"Jours suivants\">" + chev + "</button>" +
+        			"</div>" +
+        			"<div class=\"dash-frise-nav__controls\">" +
+        			"<div class=\"dash-frise-scrub\" role=\"slider\" tabindex=\"0\" aria-label=\"Parcourir la p\u00e9riode\" aria-valuemin=\"1\" aria-valuemax=\"" + all.length + "\"><span class=\"dash-frise-scrub__track\"></span><span class=\"dash-frise-scrub__thumb\"></span></div>" +
+        			todayBtn +
+        			"</div>";
+        		var thumb = host.querySelector(".dash-frise-scrub__thumb") as HTMLElement;
+        		var scrub = host.querySelector(".dash-frise-scrub") as HTMLElement;
+        		var range = host.querySelector(".dash-week__range") as HTMLElement;
+        		var numEl = host.querySelector(".dash-week__num") as HTMLElement;
+        		var btnPrev = host.querySelector("[data-dir=\"-1\"]") as HTMLButtonElement;
+        		var btnNext = host.querySelector("[data-dir=\"1\"]") as HTMLButtonElement;
+        		var dragging = false;
+        		var idle: any = 0;
+        		var lastLabel = "";
+        		var lastNum = "";
+        		(function calerLargeurRange() {
+        			if (!range) return;
+        			var probe = document.createElement("span");
+        			var cs = window.getComputedStyle(range);
+        			probe.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font:" + (cs.font || "500 13px Roboto,Helvetica,Arial,sans-serif") + ";font-variant-numeric:tabular-nums;letter-spacing:" + (cs.letterSpacing || "normal") + ";";
+        			// Gabarit compact (même mois) : évite d''élargir pour les libellés croisés rares
+        			probe.textContent = "28 \u2013 30 sept. 2026";
+        			document.body.appendChild(probe);
+        			var w = Math.ceil(probe.offsetWidth + 1) + "px";
+        			document.body.removeChild(probe);
+        			range.style.setProperty("--dash-week-range-w", w);
+        			range.style.width = w;
+        			range.style.minWidth = w;
+        			range.style.maxWidth = w;
+        		})();
+        		var peindreChrome = function (plage) {
+        			if (!plage || !plage.from) return;
+        			var days = self._allDays || [];
+        			var label = self.libellePeriode(plage.from, plage.to);
+        			var num = plage.days.length > 1 ? plage.days.length + " j" : "1 j";
+        			var pctLeft = days.length ? (plage.start / days.length) * 100 : 0;
+        			var pctW = days.length ? (plage.days.length / days.length) * 100 : 100;
+        			if (thumb) {
+        				thumb.style.left = pctLeft + "%";
+        				thumb.style.width = Math.max(pctW, 6) + "%";
+        			}
+        			if (numEl && num !== lastNum) { lastNum = num; numEl.textContent = num; }
+        			if (range && label !== lastLabel) { lastLabel = label; range.textContent = label; }
+        			if (scrub) {
+        				scrub.setAttribute("aria-valuenow", String(plage.start + 1));
+        				scrub.setAttribute("aria-valuetext", label);
+        			}
+        			if (!dragging) {
+        				if (btnPrev) btnPrev.disabled = plage.start <= 0;
+        				if (btnNext) btnNext.disabled = plage.start + plage.days.length >= days.length;
+        			}
+        		};
+        		var dragIdle = 0 as any;
+        		var lastDragStart = self.gridStart || 0;
+        		var planifier = function (start) {
+        			self.commitFenetre(start, false, false);
+        		};
+        		var ratioFromEvent = function (e) {
+        			var r = scrub.getBoundingClientRect();
+        			return Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(r.width, 1)));
+        		};
+        		var rebuildIdle = function () {
+        			if (!dragging) return;
+        			self._scrubKeepFrise = true;
+        			self.commitFenetre(lastDragStart, false, true);
+        		};
+        		var onMove = function (e) {
+        			if (!dragging) return;
+        			var days = self._allDays || [];
+        			var wnow = self.fenetreVisible(days.length || 1, self.wrapWidth());
+        			lastDragStart = self.startDepuisRatio(days, ratioFromEvent(e), wnow);
+        			self.peindreSkelLive();
+        			planifier(lastDragStart);
+        			clearTimeout(dragIdle);
+        			dragIdle = setTimeout(rebuildIdle, 180);
+        		};
+        		var onUp = function (e) {
+        			if (!dragging) return;
+        			dragging = false;
+        			self._scrubDragging = false;
+        			clearTimeout(dragIdle);
+        			if (scrub) scrub.classList.remove("is-dragging");
+        			window.removeEventListener("pointermove", onMove);
+        			window.removeEventListener("pointerup", onUp);
+        			var days = self._allDays || [];
+        			var wnow = self.fenetreVisible(days.length || 1, self.wrapWidth());
+        			self._scrubKeepFrise = false;
+        			self.commitFenetre(self.startDepuisRatio(days, ratioFromEvent(e), wnow), false, true);
+        		};
+        		var onDown = function (e) {
+        			if ((e as any).button != null && (e as any).button !== 0) return;
+        			dragging = true;
+        			self._scrubDragging = true;
+        			if (scrub) {
+        				scrub.classList.add("is-dragging");
+        				if (scrub.setPointerCapture) scrub.setPointerCapture((e as any).pointerId);
+        			}
+        			window.addEventListener("pointermove", onMove);
+        			window.addEventListener("pointerup", onUp);
+        			onMove(e);
+        			e.preventDefault();
+        		};
+        		var onKey = function (e: any) {
+        			var days = self._allDays || [];
+        			var wnow = self.fenetreVisible(days.length || 1);
+        			var pas = self.pasSemaineOuvres ? self.pasSemaineOuvres() : 5;
+        			if (e.key === "ArrowLeft") { self.commitFenetre((self.gridStart || 0) - pas, false, true); e.preventDefault(); }
+        			else if (e.key === "ArrowRight") { self.commitFenetre((self.gridStart || 0) + pas, false, true); e.preventDefault(); }
+        			else if (e.key === "Home") { self.commitFenetre(0, false, true); e.preventDefault(); }
+        			else if (e.key === "End") { self.commitFenetre(self.maxGridStart(days.length, wnow), false, true); e.preventDefault(); }
+        			else if (e.key === "PageUp") { self.commitFenetre((self.gridStart || 0) - wnow, false, true); e.preventDefault(); }
+        			else if (e.key === "PageDown") { self.commitFenetre((self.gridStart || 0) + wnow, false, true); e.preventDefault(); }
+        		};
+        		var onClick = function (ev) {
+        			var t = ev.target as HTMLElement;
+        			var btn = t && t.closest ? t.closest("button") as HTMLElement : null;
+        			if (!btn || !host.contains(btn)) return;
+        			if (btn.getAttribute("data-period")) {
+        				self.wpToggle({ currentTarget: btn, target: btn });
+        				return;
+        			}
+        			if (btn.getAttribute("data-today")) {
+        				self.centrerFriseSur(self._allDays || []);
+        				self.commitFenetre(self.gridStart || 0, false, true);
+        				return;
+        			}
+        			var dir = Number(btn.getAttribute("data-dir") || 0);
+        			if (!dir) return;
+        			var days = self._allDays || [];
+        			var pas = self.pasSemaineOuvres ? self.pasSemaineOuvres() : 5;
+        			self.commitFenetre((self.gridStart || 0) + dir * pas, false, true);
+        		};
+        		if (scrub) {
+        			scrub.addEventListener("pointerdown", onDown);
+        			scrub.addEventListener("keydown", onKey);
+        		}
+        		host.addEventListener("click", onClick);
+        		host._unbind = function () {
+        			if (scrub) {
+        				scrub.removeEventListener("pointerdown", onDown);
+        				scrub.removeEventListener("keydown", onKey);
+        			}
+        			host.removeEventListener("click", onClick);
+        			window.removeEventListener("pointermove", onMove);
+        			window.removeEventListener("pointerup", onUp);
+        			clearTimeout(idle);
+        			clearTimeout(dragIdle);
+        		};
+        		host._paint = function (start) {
+        			var days = self._allDays || [];
+        			var wnow = self.fenetreVisible(days.length || 1, self.wrapWidth());
+        			peindreChrome(self.plageDepuisStart(days, start, wnow));
+        		};
+        		host._paint(this.gridStart || 0);
+        		this.monterScroll();
+        	}
+        	monterScroll() {
+        		var self = this;
+        		var wrap = document.querySelector(".tdb .dash-grid-wrap") as any;
+        		var grid = wrap ? wrap.querySelector(".dash-grid") as any : null;
+        		if (!wrap || !grid) return;
+        		var old = wrap.querySelector(".dash-grid-sizer");
+        		if (old && old.parentElement) old.parentElement.removeChild(old);
+        		wrap.classList.remove("dash-grid-wrap--virt");
+        		wrap.classList.add("dash-grid-wrap--film");
+        		grid.classList.add("dash-grid--film");
+        		grid.style.position = "relative";
+        		grid.style.left = "";
+        		grid.style.top = "";
+        		grid.style.zIndex = "";
+        		var all = this._allDays || [];
+        		var vis = this._winDays && this._winDays.length ? this._winDays : all;
+        		var nCols = Math.max(vis.length, 1);
+        		var isWeek = !!(this._allDays && this._allDays.length <= 5);
+        		this.assurerPlaceSemaine();
+        		var colW = isWeek || nCols <= 5 ? "minmax(72px, 1fr)" : "minmax(104px, 1fr)";
+        		var nameW = "200px";
+        		var rateW = "104px";
+        		var colsTpl = nameW + " repeat(" + nCols + ", " + colW + ") " + rateW;
+        		wrap.style.maxWidth = "100%";
+        		wrap.style.overflowX = "auto";
+        		wrap.style.scrollbarGutter = "stable";
+        		wrap.scrollLeft = 0;
+        		grid.style.minWidth = "100%";
+        		grid.style.width = "100%";
+        		grid.style.setProperty("--dash-cols", String(nCols));
+        		grid.style.setProperty("--dash-col-w", colW);
+        		grid.style.setProperty("--dash-name-w", nameW);
+        		grid.style.setProperty("--dash-rate-w", rateW);
+        		document.documentElement.style.setProperty("--dash-cols", String(nCols));
+        		document.documentElement.style.setProperty("--dash-col-w", colW);
+        		document.documentElement.style.setProperty("--dash-name-w", nameW);
+        		document.documentElement.style.setProperty("--dash-rate-w", rateW);
+        		document.documentElement.style.setProperty("--dash-film", "100%");
+        		Array.prototype.forEach.call(grid.querySelectorAll(".dash-row"), function (row: any) {
+        			row.style.setProperty("grid-template-columns", colsTpl, "important");
+        		});
+        		Array.prototype.forEach.call(grid.querySelectorAll(".dash-profil"), function (badge: any) {
+        			if (badge.parentElement) badge.parentElement.removeChild(badge);
+        		});
+        		Array.prototype.forEach.call(grid.querySelectorAll(".dash-group"), function (node: any) {
+        			if (!node.querySelector(".dash-group__label")) {
+        				var label = document.createElement("span");
+        				label.className = "dash-group__label";
+        				while (node.firstChild) label.appendChild(node.firstChild);
+        				node.appendChild(label);
+        			}
+        			var lab = node.querySelector(".dash-group__label") as HTMLElement;
+        			var nom = lab ? String((lab.childNodes[0] && lab.childNodes[0].textContent) || "").trim() : "";
+        			var couleur = "#1A428A";
+        			var liste = self.profils || [];
+        			for (var ip = 0; ip < liste.length; ip++) {
+        				if (liste[ip].libelle === nom || liste[ip].code === nom) {
+        					if (liste[ip].couleur) couleur = String(liste[ip].couleur);
+        					break;
+        				}
+        			}
+        			if (!lab) return;
+        			lab.style.background = self.alpha(couleur, 0.18);
+        			lab.style.color = couleur;
+        			lab.style.border = "1px solid " + self.alpha(couleur, 0.45);
+        		});
+        		if (!wrap._filmBound) {
+        			wrap._filmBound = true;
+        			wrap.addEventListener("scroll", function () {
+        				var pin = wrap.parentElement ? wrap.parentElement.querySelector(".dash-head-pin") as any : null;
+        				if (pin) pin.scrollLeft = wrap.scrollLeft;
+        			});
+        		}
+        		if (typeof (window as any).ResizeObserver !== "undefined" && !wrap._ro) {
+        			var lastW = wrap.clientWidth;
+        			wrap._ro = new (window as any).ResizeObserver(function () {
+        				if (Math.abs(wrap.clientWidth - lastW) < 8) return;
+        				lastW = wrap.clientWidth;
+        				self.appliquerFrise();
+        			});
+        			wrap._ro.observe(wrap);
+        		}
+        		var friseH = wrap.parentElement ? wrap.parentElement.querySelector(".dash-frise-nav") as HTMLElement : null;
+        if (friseH) document.documentElement.style.setProperty("--dash-frise-h", friseH.offsetHeight + "px");
+        var barH = document.querySelector(".tdb .dash-toolbar") as HTMLElement;
+        if (barH) document.documentElement.style.setProperty("--qfq-bar", barH.offsetHeight + "px");
+        var headInGrid = grid.querySelector(".dash-row--head") as HTMLElement;
+                Array.prototype.forEach.call(document.querySelectorAll(".tdb .dash-head-pin .dash-row--head"), function (h: any) {
+                    if (!headInGrid) {
+                        var first = grid.querySelector(".dash-row, .dash-group");
+                        if (first) grid.insertBefore(h, first);
+                        else grid.appendChild(h);
+                        headInGrid = h;
+                    } else if (h !== headInGrid && h.parentElement) {
+                        h.parentElement.removeChild(h);
+                    }
+                });
+                Array.prototype.forEach.call(document.querySelectorAll(".tdb .dash-head-pin"), function (p: any) {
+                    if (p.parentElement) p.parentElement.removeChild(p);
+                });
+                if (headInGrid) {
+                    headInGrid.style.width = "100%";
+                    headInGrid.style.minWidth = "100%";
+                    headInGrid.style.boxSizing = "border-box";
+                    headInGrid.style.setProperty("grid-template-columns", colsTpl, "important");
+                    headInGrid.style.position = "sticky";
+                    headInGrid.style.top = "0px";
+                    headInGrid.style.zIndex = "6";
+                    headInGrid.style.background = "#fff";
+                }
+                var mainStick = wrap.parentElement;
+        var stick = mainStick ? mainStick.querySelector(".dash-stick") as any : null;
+        var barStick = mainStick ? mainStick.querySelector(".dash-toolbar") as HTMLElement : null;
+        var friseStick = mainStick ? mainStick.querySelector(".dash-frise-nav") as HTMLElement : null;
+        if (mainStick && (barStick || friseStick)) {
+        if (!stick) {
+        stick = document.createElement("div");
+        stick.className = "dash-stick";
+        var anchor = barStick || friseStick;
+        mainStick.insertBefore(stick, anchor);
+        }
+        if (barStick && barStick.parentElement !== stick) stick.appendChild(barStick);
+        if (friseStick && friseStick.parentElement !== stick) stick.appendChild(friseStick);
+        document.documentElement.style.setProperty("--dash-stick-h", stick.offsetHeight + "px");
+        }
+        this.allerFilm(this.gridStart || 0, false);
+        	}
+        	presetsPeriode() {
+        		var now = new Date();
+        		now.setHours(0, 0, 0, 0);
+        		var l = this.monday(0);
+        		var ven = new Date(l);
+        		ven.setDate(l.getDate() + 4);
+        		var debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
+        		var finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        		var debut2 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        		var trim = Math.floor(now.getMonth() / 3) * 3;
+        		return [
+        			{ label: "Cette semaine", from: l, to: ven },
+        			{ label: "Ce mois", from: debutMois, to: finMois },
+        			{ label: "2 mois", from: debut2, to: finMois },
+        			{ label: "Ce trimestre", from: new Date(now.getFullYear(), trim, 1), to: new Date(now.getFullYear(), trim + 3, 0) },
+        			{ label: "Cette ann\u00e9e", from: new Date(now.getFullYear(), 0, 1), to: new Date(now.getFullYear(), 11, 31) }
+        		];
+        	}
+        	monterPeriode() {
+        		var pop = document.querySelector(".dash-wp") as HTMLElement;
+        		if (!pop) return;
+        		var old = pop.querySelector(".dash-period-picker");
+        		if (old && old.parentElement) old.parentElement.removeChild(old);
+        		var self = this;
+        		var box = document.createElement("div");
+        		box.className = "dash-period-picker";
+        		var check = this.icoDash("check", 14);
+        		var html = "<p class=\"dash-period-picker__title\">Choisir une p\u00e9riode</p><div class=\"dash-period-picker__presets\">";
+        		this.presetsPeriode().forEach(function (p, i) {
+        			var on = self.iso(p.from) === self.periodFrom && self.iso(p.to) === self.periodTo;
+        			html += "<button type=\"button\" data-preset=\"" + i + "\" class=\"dash-period-picker__preset" + (on ? " is-current" : "") + "\">" + p.label + (on ? check : "") + "</button>";
+        		});
+        		html += "</div><div class=\"dash-period-picker__custom\"><label>Du<input type=\"date\" data-from value=\"" + (self.periodFrom || "") + "\"></label><label>Au<input type=\"date\" data-to value=\"" + (self.periodTo || "") + "\"></label><button type=\"button\" class=\"btn btn--primary btn--sm\" data-apply>Appliquer</button></div>";
+        		box.innerHTML = html;
+        		pop.insertBefore(box, pop.firstChild);
+        		box.addEventListener("click", function (ev) {
+        			var t = ev.target as HTMLElement;
+        			var b = t && t.closest ? t.closest("button") as HTMLElement : null;
+        			if (!b || !box.contains(b)) return;
+        			ev.stopPropagation();
+        			if (b.getAttribute("data-apply") != null) {
+        				var fEl = box.querySelector("[data-from]") as HTMLInputElement;
+        				var tEl = box.querySelector("[data-to]") as HTMLInputElement;
+        				if (!fEl.value || !tEl.value) return;
+        				self.wpOpen = false;
+        				self.setPeriode(self.parseISO(fEl.value), self.parseISO(tEl.value));
+        				return;
+        			}
+        			var idx = b.getAttribute("data-preset");
+        			if (idx == null) return;
+        			var p = self.presetsPeriode()[Number(idx)];
+        			if (!p) return;
+        			self.wpOpen = false;
+        			self.setPeriode(p.from, p.to);
+        		});
+        	}
+        	evictCache() {
+        		var cache = this._winCache || {};
+        		var keys = Object.keys(cache);
+        		var keep = this.fenetreKey(this.gridStart || 0, this.dashCols || 5);
+        		while (keys.length > 5) {
+        			var drop = keys[0] === keep ? keys[1] : keys[0];
+        			if (!drop) break;
+        			delete cache[drop];
+        			keys = Object.keys(cache);
+        		}
+        	}
+        	joursApercu() {
+        		var from = String(this.affStart || this.periodFrom || "");
+        		var to = String(this.affEnd || from);
+        		if (!from) {
+        			var lundi = this.monday(0);
+        			from = this.iso(lundi);
+        			var ven = new Date(lundi);
+        			ven.setDate(lundi.getDate() + 4);
+        			to = this.iso(ven);
+        		}
+        		if (!to) to = from;
+        		if (from > to) { var swap = from; from = to; to = swap; }
+        		return this.affDays(from, to).map(function (iso) { return new Date(iso + "T12:00:00"); });
+        	}
+        	numSemaine(d) {
+        		var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        		t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+        		return Math.ceil((((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000) + 1) / 7);
+        	}
+        	fmtJ(demi) {
+        		var v = Math.round((demi / 2) * 100) / 100;
+        		return String(v).replace(".", ",") + " j";
+        	}
+        	fmtCoef(v) {
+        		var n = Math.round(Number(v) * 100) / 100;
+        		return String(n).replace(".", ",");
+        	}
+        	plur(n, mot) { return n + " " + mot + (n > 1 ? "s" : ""); }
+        	norm(v) { return String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+        	initiales(name) {
+        		var parts = String(name || "?").trim().split(/[\s-]+/);
+        		return (((parts[0] || "")[0] || "?") + ((parts[1] || "")[0] || (parts[0] || "")[1] || "")).toUpperCase();
+        	}
+        	elementOf(code) {
+        		var i, list = this.elements || [];
+        		for (i = 0; i < list.length; i++) if (list[i].code === code) return list[i];
+        		return null;
+        	}
+        	ligneOf(cle) {
+        		var i, list = this.lignes || [];
+        		for (i = 0; i < list.length; i++) if (list[i].cle === cle) return list[i];
+        		return null;
+        	}
+        	couleurProjet(el, code) {
+        		var c = el && String(el.couleur || "").trim();
+        		if (c) return c;
+        		var palette = ["#1A428A", "#0F6E56", "#8A4B08", "#6B3FA0", "#1D6F8A", "#8B194D", "#006FB7", "#B23A48", "#3D6B2F", "#5A4FCF"];
+        		var s = String(code || "");
+        		var n = 0;
+        		var i;
+        		for (i = 0; i < s.length; i++) n = (n + s.charCodeAt(i)) % palette.length;
+        		return palette[n];
+        	}
+        	nomLigne(cle) { var l = this.ligneOf(cle); return l ? (l.libelle || l.cle) : cle; }
+        	typeStyle(code) {
+        		var i, list = this.types || [];
+        		for (i = 0; i < list.length; i++) {
+        			if (list[i].code !== code) continue;
+        			var fond = list[i].couleurFond || "#8B194D";
+        			return { bg: this.alpha(fond, 0.22), color: "#1A2332", border: this.alpha(fond, 0.55) };
+        		}
+        		return null;
+        	}
+        	kindOf(it) {
+        		if (!it) return "libre";
+        		if (it.type === "ABSENCE" || it.type === "ABSENCE_PREV") return "absence";
+        		if (it.type === "FORMATION" || it.type === "SEMINAIRE") return "formation";
+        		if (it.type === "OFF") return "repos";
+        		if (it.type === "PROJET") return "projet";
+        		if (it.type) return "nature";
+        		return "libre";
+        	}
+        
+        	charger() {
+        		var self = this;
+        		this.ready = false;
+        		this.armSkeleton();
+        		this.appel("Referentiel_Lire", {}).then(function (out) {
+        			var d = self.doc(out);
+        			self.profils = self.asList(d.profils);
+        			self.elements = self.asList(d.elements);
+        			self.types = self.asList(d.types);
+        			self.participants = self.asList(d.participants);
+        			self.lignes = self.asList(d.lignes);
+        			self.syncChrome();
+        			self.ionViewDidEnter();
+        		}, function (err) {
+        			self.message = String((err && err.message) || err);
+        			self.ready = true;
+        			self.loading = false;
+        			clearTimeout(self._skelT);
+        			self.rafraichir();
+        		});
+        	}
+        	syncChrome() {
+        		var els = this.elements || [];
+        		var lig = this.lignes || [];
+        		var ports = this.participants || [];
+        		var projets = 0;
+        		var gens = 0;
+        		var seen = {};
+        		var seenL = {};
+        		var i;
+        		var j;
+        		for (i = 0; i < els.length; i++) {
+        			var el = els[i];
+        			if (!this.onFlag(el.actif == null ? "true" : el.actif)) continue;
+        			var hasP = false;
+        			for (j = 0; j < ports.length; j++) if (ports[j].codeElement === el.code) hasP = true;
+        			if (!el.chefProjet || !hasP) { if (!seen[el.code]) { seen[el.code] = 1; projets++; } }
+        		}
+        		for (i = 0; i < lig.length; i++) {
+        			var l = lig[i];
+        			if (!this.onFlag(l.actif == null ? "true" : l.actif)) continue;
+        			if (!l.referent || !l.codeRole) { if (!seenL[l.cle]) { seenL[l.cle] = 1; gens++; } }
+        		}
+        		this.badgeProjets = projets;
+        		this.badgeLignes = gens;
+        		this.pfaUserName = this.nomBarre();
+        		this.pfaUserRole = this.libelleRole();
+        		if (this.pfaUserRole) {
+        			try { window.sessionStorage.setItem("pfc:userRole", this.pfaUserRole); } catch (eRole) {}
+        		}
+        	}
+        	chargerSemaine() {
+        		var self = this;
+        		this.armSkeleton();
+        		var cur = this.periodeCourante();
+        		var prev = this.periodePrecedente();
+        		var cle = this.cleActeur || "";
+        		this.appel("Grille_Lire", { dateFrom: this.iso(cur.from), dateTo: this.iso(cur.to), cleActeur: cle }).then(function (out) {
+        			var d = self.doc(out);
+        			if (d.acteur) self.cleActeur = String(d.acteur);
+        			self.items = self.asList(d.items);
+        			self.hol = {};
+        			self.asList(d.feries).forEach(function (f) { if (f.jour) self.hol[String(f.jour)] = f.libelle || "Ferie"; });
+        			self.droits = self.asList(d.droits).map(function (x) {
+        				if (typeof x === "string") return x;
+        				return String(x.code_droit || x.codeDroit || x.value || "");
+        			}).filter(function (x) { return x; });
+        			self.canAdmin = self.has("GERER_REFERENTIEL");
+        			self.appel("Grille_Lire", { dateFrom: self.iso(prev.from), dateTo: self.iso(prev.to), cleActeur: self.cleActeur || cle }).then(function (out2) {
+        				var d2 = self.doc(out2);
+        				self.prevItems = self.asList(d2.items);
+        				self.holPrev = {};
+        				self.asList(d2.feries).forEach(function (f) { if (f.jour) self.holPrev[String(f.jour)] = f.libelle || "Ferie"; });
+        				self.reconstruire();
+        			}, function () {
+        				self.prevItems = [];
+        				self.holPrev = {};
+        				self.reconstruire();
+        			});
+        		}, function (err) {
+        			self.message = String((err && err.message) || err);
+        			self.ready = true;
+        			self.loading = false;
+        			clearTimeout(self._skelT);
+        			self.rafraichir();
+        		});
+        	}
+        	analyser(days, items, holidays, filtre) {
+        		var self = this;
+        		var profil = filtre ? (this.profil || "") : "";
+        		var choisis = {};
+        		if (filtre) {
+        			(this.recherche || []).forEach(function (it) {
+        				var key = it && it.value != null ? String(it.value) : "";
+        				if (key) choisis[key] = true;
+        			});
+        		}
+        		var restreint = filtre && Object.keys(choisis).length > 0;
+        		var people = (this.lignes || []).filter(function (l) {
+        			if (!self.onFlag(l.actif == null ? "true" : l.actif)) return false;
+        			if (profil && l.codeProfil !== profil) return false;
+        			if (restreint && !choisis[String(l.cle)]) return false;
+        			return true;
+        		});
+        		people.sort(function (a, b) {
+        			function ordre(code) {
+        				var i, list = self.profils || [];
+        				for (i = 0; i < list.length; i++) if (list[i].code === code) return Number(list[i].ordre) || 0;
+        				return 99;
+        			}
+        			var d = ordre(a.codeProfil) - ordre(b.codeProfil);
+        			if (d) return d;
+        			return (Number(a.ordre) || 0) - (Number(b.ordre) || 0) || String(a.libelle || a.cle).localeCompare(String(b.libelle || b.cle), "fr");
+        		});
+        		var total: any = { ouvrees: 0, projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, projets: {}, personnes: [], jours: days.map(function () { return { projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, ferie: false, ferieLabel: "" }; }) };
+        		people.forEach(function (l) {
+        			var p: any = { ligne: l, slots: [], projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, ouvrees: 0 };
+        			days.forEach(function (day, di) {
+        				var key = self.iso(day);
+        				if (holidays[key]) {
+        					p.slots.push({ kind: "ferie" }, { kind: "ferie" });
+        					total.jours[di].ferie = true;
+        					total.jours[di].ferieLabel = holidays[key] || "Ferie";
+        					return;
+        				}
+        				var dayItems = items.filter(function (it) { return it.rowId === l.cle && it.start === key; });
+        				var half = [null, null];
+        				dayItems.forEach(function (it) {
+        					var v = { kind: self.kindOf(it), type: it.type || "", element: it.codeElement, label: it.label, commentaire: self.texteCommentaire(it.commentaire || it.filCorps), premier: self.texteCommentaire(it.filCorps || ""), count: Number(it.commentCount) || 0, auteur: String(it.filAuteur || "").trim() };
+        					if (it.period === "JOURNEE" || !it.period) { half[0] = v; half[1] = v; }
+        					else half[it.period === "MATIN" ? 0 : 1] = v;
+        				});
+        				[0, 1].forEach(function (h) {
+        					var s = half[h] || { kind: "libre" };
+        					p.slots.push(s);
+        					p.ouvrees++;
+        					var bucket = s.kind === "repos" ? "repos" : (s.kind === "nature" ? "formation" : s.kind);
+        					if (total.jours[di][bucket] != null) total.jours[di][bucket]++;
+        					if (s.kind === "repos") { p.repos++; total.repos++; }
+        					if (s.kind === "projet") {
+        						p.projet++;
+        						var pr = total.projets[s.element] || (total.projets[s.element] = { demi: 0, label: s.label || s.element, gens: {} });
+        						pr.demi++;
+        						pr.gens[l.cle] = true;
+        					} else if (s.kind === "libre") p.libre++;
+        					else if (s.kind === "absence") p.absence++;
+        					else if (s.kind === "formation" || s.kind === "nature") p.formation++;
+        				});
+        			});
+        			["ouvrees", "projet", "libre", "absence", "formation"].forEach(function (k) { total[k] += p[k]; });
+        			p.absent = p.absence + p.formation;
+        			p.taux = p.ouvrees ? Math.round(p.projet / p.ouvrees * 100) : 0;
+        			total.personnes.push(p);
+        		});
+        		total.taux = total.ouvrees ? Math.round(total.projet / total.ouvrees * 100) : 0;
+        		return total;
+        	}
+        	segments(slots) {
+        		var segs = [];
+        		slots.forEach(function (s, i) {
+        			var last = segs[segs.length - 1];
+        			if (last && last.kind === s.kind && last.type === s.type && last.element === s.element && !(s.kind === "libre" && i % 2 === 0)) last.len += 1;
+        			else segs.push({ start: i, len: 1, kind: s.kind, type: s.type || "", element: s.element || "", label: s.label || "" });
+        		});
+        		return segs;
+        	}
+        	resume(slots, kind) {
+        		var JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"];
+        		var etat = [0, 1, 2, 3, 4].map(function (d) {
+        			if (slots[d * 2] && slots[d * 2].kind === "ferie") return "ferie";
+        			var m = slots[d * 2] && slots[d * 2].kind === kind;
+        			var a = slots[d * 2 + 1] && slots[d * 2 + 1].kind === kind;
+        			return m && a ? "jour" : m ? "matin" : a ? "aprem" : null;
+        		});
+        		var ouvres = etat.filter(function (e) { return e !== "ferie"; });
+        		if (ouvres.length && ouvres.every(function (e) { return e === "jour"; })) return "toute la semaine";
+        		var parts = [];
+        		var d;
+        		for (d = 0; d < 5; d++) {
+        			if (!etat[d] || etat[d] === "ferie") continue;
+        			if (etat[d] === "jour") {
+        				var f = d;
+        				while (f + 1 < 5 && etat[f + 1] === "jour") f++;
+        				parts.push(f > d ? JOURS[d] + " au " + JOURS[f] : JOURS[d]);
+        				d = f;
+        			} else parts.push(JOURS[d] + (etat[d] === "matin" ? " matin" : " apr\u00e8s-midi"));
+        		}
+        		return parts.join(", ");
+        	}
+        	capTexte(s) { s = String(s || ""); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+        	bande(slots, kinds, days) {
+        		var self = this;
+        		return days.map(function (d, i) {
+        			return {
+        				today: self.iso(d) === self.iso(new Date()),
+        				cells: [0, 1].map(function (k) {
+        					var slot = slots[i * 2 + k] || { kind: "" };
+        					var cls = kinds.indexOf(slot.kind) >= 0 ? "is-" + slot.kind : (slot.kind === "ferie" ? "is-ferie" : "");
+        					return { cls: cls };
+        				})
+        			};
+        		});
+        	}
+        
+        	chipsOf(slots, kinds) {
+        		var out = [];
+        		var nDays = Math.floor((slots || []).length / 2);
+        		var d;
+        		for (d = 0; d < nDays; d++) {
+        			var m = slots[d * 2] || { kind: "" };
+        			var a = slots[d * 2 + 1] || { kind: "" };
+        			if (m.kind === "ferie") continue;
+        			var mk = kinds.indexOf(m.kind) >= 0 ? m.kind : "";
+        			var ak = kinds.indexOf(a.kind) >= 0 ? a.kind : "";
+        			var court = nDays === 1 ? "Journ\u00e9e" : ("J" + (d + 1));
+        			if (mk && ak && mk === ak) out.push({ kind: mk, label: court });
+        			else {
+        				if (mk) out.push({ kind: mk, label: nDays === 1 ? "Matin" : (court + " matin") });
+        				if (ak) out.push({ kind: ak, label: nDays === 1 ? "Apr\u00e8s-midi" : (court + " apm") });
+        			}
+        		}
+        		if (out.length >= 3 && out.length === nDays && out.every(function (c) { return c.kind === out[0].kind && c.label.indexOf(" ") < 0; })) {
+        			return [{ cls: "dash-chip is-" + out[0].kind, label: "Toute la p\u00e9riode" }];
+        		}
+        		if (out.length > 8) return [{ cls: "dash-chip is-" + out[0].kind, label: this.plur(out.length, "cr\u00e9neau") }];
+        		return out.map(function (c) { return { cls: "dash-chip is-" + c.kind, label: c.label }; });
+        	}
+        	vueJour(total, dayIndex) {
+        		var out: any = { ouvrees: 0, projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, taux: 0, projets: {}, personnes: [] };
+        		var i = Number(dayIndex);
+        		if (!total || i < 0) return out;
+        		(total.personnes || []).forEach(function (p) {
+        			var slots = [p.slots[i * 2] || { kind: "ferie" }, p.slots[i * 2 + 1] || { kind: "ferie" }];
+        			var np: any = { ligne: p.ligne, slots: slots, projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, ouvrees: 0 };
+        			slots.forEach(function (s) {
+        				if (!s || s.kind === "ferie") return;
+        				np.ouvrees++;
+        				if (s.kind === "projet") {
+        					np.projet++;
+        					var pr = out.projets[s.element] || (out.projets[s.element] = { demi: 0, label: s.label || s.element, gens: {} });
+        					pr.demi++;
+        					pr.gens[p.ligne.cle] = true;
+        				} else if (s.kind === "libre") np.libre++;
+        				else if (s.kind === "absence") np.absence++;
+        				else if (s.kind === "formation" || s.kind === "nature") np.formation++;
+        				else if (s.kind === "repos") np.repos++;
+        			});
+        			np.absent = np.absence + np.formation;
+        			np.taux = np.ouvrees ? Math.round(np.projet / np.ouvrees * 100) : 0;
+        			["ouvrees", "projet", "libre", "absence", "formation", "repos"].forEach(function (k) { out[k] += np[k]; });
+        			if (np.ouvrees || np.repos) out.personnes.push(np);
+        		});
+        		out.taux = out.ouvrees ? Math.round(out.projet / out.ouvrees * 100) : 0;
+        		return out;
+        	}
+        	reconstruire() {
+        		var self = this;
+        		var LIB = { absence: "Absence", formation: "Formation", libre: "Libre", ferie: "Ferie", repos: "Repos" };
+        		var plage = this.periodeCourante();
+        		var allDays = plage.days.length ? plage.days : this.weekDays(0);
+        		var prevP = this.periodePrecedente();
+        		var cur = this.analyser(allDays, this.items || [], this.hol || {}, true);
+        		var prev = this.analyser(prevP.days, this.prevItems || [], this.holPrev || {}, true);
+        		var win = this.fenetreVisible(allDays.length);
+        		var maxStart = Math.max(0, allDays.length - win);
+        		this.gridStart = Math.min(Math.max(0, this.gridStart || 0), maxStart);
+        		var g0 = this.gridStart || 0;
+        		var days = allDays.length > win ? allDays.slice(g0, g0 + win) : allDays;
+        		if (allDays.length <= win) g0 = 0;
+        		this._allDays = allDays;
+        		this._winDays = days;
+        		this._winStart = g0;
+        		this.dashCols = days.length;
+        		this.assurerPlaceSemaine();
+        		try {
+        			var isWeekRec = !!(allDays && allDays.length <= 5);
+        			var colWRec = isWeekRec || days.length <= 5 ? "minmax(72px, 1fr)" : "minmax(104px, 1fr)";
+        			document.documentElement.style.setProperty("--dash-n", String(days.length));
+        			document.documentElement.style.setProperty("--dash-cols", String(days.length));
+        			document.documentElement.style.setProperty("--dash-col-w", colWRec);
+        			document.documentElement.style.setProperty("--dash-rate", String(2 + days.length));
+        			document.documentElement.style.setProperty("--dash-film", "100%");
+        		} catch (eC) {}
+        		var curGrid = cur;
+        		this.weekNum = (allDays.length > 1 ? allDays.length + " j" : "1 j");
+        		this.weekRange = this.libellePeriode(plage.from, plage.to);
+        		this.friseLabel = this.weekRange;
+        		this.friseOn = allDays.length > win;
+        		this.weekTitle = this.titrePeriode(allDays);
+        		this.showBack = !this.estPeriodeCourante();
+        		var todayIso = this.iso(new Date());
+        		var sig = [this.periodFrom, this.periodTo, cur.taux, cur.projet, cur.libre, cur.absence, cur.formation, cur.repos, cur.personnes.length].join("|");
+        		cur.jours.forEach(function (d) { sig += "|" + [d.projet, d.libre, d.absence, d.formation, d.repos, d.ferie ? 1 : 0].join(","); });
+        		if (sig !== this.semaineSig) {
+        			this.semaineSig = sig;
+        			var dt = cur.taux - prev.taux;
+        			var insights: any[] = [{
+        				icon: "gauge",
+        				before: "L\u2019\u00e9quipe est affect\u00e9e \u00e0 ",
+        				strong: cur.taux + " %",
+        				after: dt ? (" (" + (dt > 0 ? "+" : "\u2212") + Math.abs(dt) + " pts par rapport \u00e0 la p\u00e9riode pr\u00e9c\u00e9dente).") : ", comme la p\u00e9riode pr\u00e9c\u00e9dente.",
+        				clickable: false,
+        				act: "",
+        				key: "",
+        				day: ""
+        			}];
+        			var topCode = "";
+        			var top = null;
+        			Object.keys(cur.projets).forEach(function (c) { if (!top || cur.projets[c].demi > top.demi) { top = cur.projets[c]; topCode = c; } });
+        			var topEl = topCode ? this.elementOf(topCode) : null;
+        			if (topEl) insights.push({ icon: "folder", before: "", strong: topEl.libelle || top.label || topCode, after: " concentre le plus d\u2019effort : " + this.fmtJ(top.demi) + " sur " + this.plur(Object.keys(top.gens || {}).length, "personne") + ".", clickable: true, act: "projet", key: topCode, day: "" });
+        			var libresJ = cur.jours.map(function (d, i) { return { i: i, v: d.libre, ferie: d.ferie }; }).filter(function (d) { return !d.ferie; }).sort(function (a, b) { return b.v - a.v; });
+        			if (libresJ.length && libresJ[0].v && allDays[libresJ[0].i]) {
+        				var jd = allDays[libresJ[0].i];
+        				var jour = self.nomJourCourt(jd).toLowerCase() + " " + jd.getDate();
+        				insights.push({ icon: "calendar", before: "", strong: this.fmtJ(cur.libre), mid: " restent \u00e0 planifier, surtout le ", strong2: jour, after: " (" + this.fmtJ(libresJ[0].v) + ").", clickable: true, act: "jour", key: "", day: String(libresJ[0].i) });
+        			} else insights.push({ icon: "check", before: "Toute l\u2019\u00e9quipe est planifi\u00e9e sur la p\u00e9riode.", strong: "", after: "", clickable: false, act: "", key: "", day: "" });
+        			var absents = cur.personnes.filter(function (p) { return p.absent; });
+        			if (absents.length) {
+        				var full = absents.filter(function (p) { return p.ouvrees && p.absent >= p.ouvrees; });
+        				insights.push({ icon: "user", before: "", strong: this.plur(absents.length, "personne"), after: " en absence ou en formation sur la p\u00e9riode" + (full.length ? ", dont " + full.map(function (p) { return p.ligne.libelle || p.ligne.cle; }).join(", ") + " sur toute la p\u00e9riode" : "") + ".", clickable: false, act: "", key: "", day: "" });
+        			}
+        			this.insights = insights;
+        			var totalHalves = (cur.personnes.length * 2) || 1;
+        			function slice(cls, v) {
+        				if (!v) return null;
+        				var pct = v / totalHalves * 100;
+        				if (pct > 0 && pct < 4) pct = 4;
+        				return { cls: cls, h: pct + "%" };
+        			}
+        			var stepCap = allDays.length > 31 ? Math.ceil(allDays.length / 31) : 1;
+        			this.capDays = allDays.filter(function (_, i) { return i % stepCap === 0; }).map(function (day, idx) {
+        				var i = idx * stepCap;
+        				var d = cur.jours[i] || { projet: 0, libre: 0, absence: 0, formation: 0, repos: 0, ferie: false };
+        				var pctP = Math.round(d.projet / totalHalves * 100);
+        				var slices = d.ferie ? [{ cls: "is-ferie", h: "100%" }] : [slice("is-formation", d.formation), slice("is-absence", d.absence), slice("is-libre", d.libre), slice("is-repos", d.repos), slice("is-projet", d.projet)].filter(Boolean);
+        				var win0b = self._winStart || 0;
+        				var win1b = win0b + (self._winDays ? self._winDays.length : 0);
+        				return {
+        					i: String(i),
+        					pct: d.ferie ? "Ferie" : (pctP + " %"),
+        					short: self.nomJourCourt(day).charAt(0),
+        					num: String(day.getDate()),
+        					today: self.iso(day) === todayIso,
+        					focus: self.focusDay === i,
+        					inWin: i >= win0b && i < win1b,
+        					slices: slices
+        				};
+        			});
+        			this.showRepos = cur.repos > 0;
+        			function kpi(label, value, delta, goodUp, unit) {
+        				var tone = !delta ? "flat" : ((delta > 0) === goodUp ? "good" : "bad");
+        				var txt = !delta ? "Stable" : ((delta > 0 ? "\u25b2 +" : "\u25bc \u2212") + self.fmtCoef(Math.abs(delta)) + unit);
+        				return { label: label, value: value, delta: txt, tone: tone };
+        			}
+        			var absNow = cur.absence + cur.formation;
+        			var absPrev = prev.absence + prev.formation;
+        			this.kpis = [
+        				kpi("Taux d\u2019affectation", cur.taux + " %", cur.taux - prev.taux, true, " pts"),
+        				kpi("Effort projet", this.fmtJ(cur.projet), (cur.projet - prev.projet) / 2, true, " j"),
+        				kpi("\u00c0 planifier", this.fmtJ(cur.libre), (cur.libre - prev.libre) / 2, false, " j"),
+        				kpi("Absences / formations", this.fmtJ(absNow), (absNow - absPrev) / 2, false, " j")
+        			];
+        		} else if (this.capDays && this.capDays.length) {
+        			var win0 = this._winStart || 0;
+        			var win1 = win0 + (this._winDays ? this._winDays.length : 0);
+        			this.capDays.forEach(function (d) {
+        				var di = Number(d.i);
+        				d.focus = self.focusDay === di;
+        				d.inWin = di >= win0 && di < win1;
+        			});
+        		}
+        		var vueK = this.focusDay != null ? this.vueJour(cur, this.focusDay) : cur;
+        		var vueP = this.focusDay != null ? this.vueJour(prev, this.focusDay) : prev;
+        		if (!vueK) vueK = cur;
+        		if (!vueP) vueP = prev;
+        		if (!vueK.projets) vueK.projets = {};
+        		if (!vueK.personnes) vueK.personnes = [];
+        		var focusKey = this.focusDay == null ? "" : String(this.focusDay);
+        		var needKpi = sig !== this._kpiSig || focusKey !== this._focusSig;
+        		if (needKpi) {
+        			this._kpiSig = sig;
+        			this._focusSig = focusKey;
+        			function kpiK(label, value, delta, goodUp, unit) {
+        				var tone = !delta ? "flat" : ((delta > 0) === goodUp ? "good" : "bad");
+        				var txt = !delta ? "Stable" : ((delta > 0 ? "\u25b2 +" : "\u25bc \u2212") + self.fmtCoef(Math.abs(delta)) + unit);
+        				return { label: label, value: value, delta: txt, tone: tone };
+        			}
+        			var absNowK = vueK.absence + vueK.formation;
+        			var absPrevK = vueP.absence + vueP.formation;
+        			this.kpis = [
+        				kpiK("Taux d\u2019affectation", vueK.taux + " %", vueK.taux - vueP.taux, true, " pts"),
+        				kpiK("Effort projet", this.fmtJ(vueK.projet), (vueK.projet - vueP.projet) / 2, true, " j"),
+        				kpiK("\u00c0 planifier", this.fmtJ(vueK.libre), (vueK.libre - vueP.libre) / 2, false, " j"),
+        				kpiK("Absences / formations", this.fmtJ(absNowK), (absNowK - absPrevK) / 2, false, " j")
+        			];
+        		}
+        		this.collabCount = this.plur(cur.personnes.length, "collaborateur");
+        		var winStart = this._winStart || 0;
+        		this.headDays = days.map(function (d, i) {
+        			var today = self.iso(d) === todayIso;
+        			var abs = winStart + i;
+        			var jd = curGrid.jours[abs] || curGrid.jours[i];
+        			return {
+        				col: String(2 + i),
+        				label: self.nomJourCourt(d) + " " + d.getDate(),
+        				sub: today ? "Aujourd\u2019hui" : ((jd && jd.ferieLabel) || d.toLocaleDateString("fr-FR", { month: "short" })),
+        				today: today,
+        				focus: self.focusDay === abs
+        			};
+        		});
+        		var rows = [];
+        		var groupe = null;
+        		curGrid.personnes.forEach(function (p) {
+        			var l = p.ligne;
+        			var gname = l.profil || l.codeProfil || "Sans profil";
+        			if (gname !== groupe) {
+        				groupe = gname;
+        				var n = cur.personnes.filter(function (x) { return (x.ligne.profil || x.ligne.codeProfil || "Sans profil") === gname; }).length;
+        				rows.push({ kind: "group", label: gname, n: String(n), cle: "", nom: "", initiales: "", couleur: "", ref: "", refMissing: false, taux: "", rateW: "0%", rateCls: "", bgs: [], segs: [] });
+        			}
+        			var ref = !l.referent ? "R\u00e9f\u00e9rent \u00e0 d\u00e9finir" : (l.referent === "PARTAGE" ? "R\u00e9f\u00e9rent partag\u00e9" : ("R\u00e9f\u00e9rent : " + self.nomLigne(l.referent)));
+        			var slot0 = winStart * 2;
+        			var segs = (self.cells ? (p.slots || []).slice(slot0, slot0 + days.length * 2).map(function (s, i) {
+        				var elc = s.kind === "projet" ? self.elementOf(s.element) : null;
+        				var jour = Math.floor(i / 2);
+        				var absI = slot0 + i;
+        				var absJour = winStart + jour;
+        				var match = !!(self.focusEl && s.element === self.focusEl);
+        				var inDay = self.focusDay === absJour;
+        				var today = self.iso(days[jour]) === todayIso;
+        				var note = !!(s.commentaire || s.count);
+        				var paint = s.kind === "nature" ? self.typeStyle(s.type) : null;
+        				var tipMemes = (p.slots || []).filter(function (x) { return (x.kind || "libre") === (s.kind || "libre") && (x.element || "") === (s.element || "") && (x.type || "") === (s.type || ""); }).length;
+        				var tipLib = elc ? (elc.libelle || s.label || "Projet") : (s.label || LIB[s.kind] || "Libre");
+        				var tipType = elc ? self.affLc(elc.lcNc) : (LIB[s.kind] || s.label || "");
+        				var tipStatut = elc ? String(elc.statutCatalogue || elc.statut || "") : "";
+        				var tipJour = days[jour].toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+        				self.tipData = self.tipData || {};
+        				self.tipData[l.cle + "|" + absI] = {
+        					lib: tipLib,
+        					type: tipType,
+        					statut: tipStatut,
+        					meta: tipType,
+        					couleur: elc && elc.couleur ? elc.couleur : (paint ? (paint.color || paint.border || "") : ""),
+        					kind: s.kind || "libre",
+        					date: tipJour.charAt(0).toUpperCase() + tipJour.slice(1) + (i % 2 ? " \u00b7 apr\u00e8s-midi" : " \u00b7 matin"),
+        					nom: l.libelle || l.nom || l.cle,
+        					chef: elc && elc.chefProjet ? self.nomLigne(elc.chefProjet) : "",
+        					semaine: (s.kind === "ferie" || s.kind === "repos") ? "" : self.fmtJ(tipMemes),
+        					note: (s.count || s.commentaire) ? self.plur(Math.max(Number(s.count) || 0, 1), "message") : "",
+        					premier: String(s.premier || s.commentaire || "").trim(),
+        					auteur: String(s.auteur || "").trim(),
+        					hint: (s.kind === "ferie" || s.kind === "repos") ? "" : ((s.kind || "libre") === "libre" ? "Cliquer pour affecter" : "Cliquer pour modifier ou commenter")
+        				};
+        				return {
+        					cls: "dash-cell dash-cell--" + (s.kind || "libre") + (match ? " is-match" : "") + (inDay ? " is-day" : "") + (today ? " is-today" : "") + (note ? " has-comment" : "") + (i % 2 ? " is-pm" : " is-am"),
+        					label: elc ? (elc.libelle || s.label || "Projet") : (s.label || LIB[s.kind] || "Libre"),
+        					note: note,
+        					titre: "",
+        					col: String(2 + Math.floor(i / 2)),
+        					row: String((i % 2) + 1),
+        					bg: elc && elc.couleur ? self.alpha(elc.couleur, 0.18) : (paint ? paint.bg : ""),
+        					border: elc && elc.couleur ? self.alpha(elc.couleur, 0.45) : (paint ? paint.border : ""),
+        					color: paint ? paint.color : "",
+        					cle: l.cle,
+        					start: String(absI),
+        					len: "1",
+        					kind: s.kind || "libre",
+        					el: s.kind === "projet" ? (s.element || "") : ""
+        				};
+        			}) : self.segments(p.slots).filter(function (sg) {
+        				var a = sg.start, b = sg.start + sg.len;
+        				return b > slot0 && a < slot0 + days.length * 2;
+        			}).map(function (sg) {
+        				var el = sg.kind === "projet" ? self.elementOf(sg.element) : null;
+        				var from = Math.floor(sg.start / 2);
+        				var to = Math.floor((sg.start + sg.len - 1) / 2);
+        				var match = !!(self.focusEl && sg.element === self.focusEl);
+        				var inDay = self.focusDay != null && from <= self.focusDay && to >= self.focusDay;
+        				var cls = "dash-seg dash-seg--" + sg.kind + (sg.len === 1 ? " is-half" : "") + (match ? " is-match" : "") + (inDay ? " is-day" : "");
+        				var locStart = Math.max(0, sg.start - slot0);
+        				var locEnd = Math.min(days.length * 2, sg.start + sg.len - slot0);
+        				var locLen = Math.max(1, locEnd - locStart);
+        				return {
+        					cls: cls,
+        					label: el ? (el.libelle || sg.label || sg.element) : (sg.label || LIB[sg.kind] || sg.kind),
+        					col: (2 + locStart) + " / span " + locLen,
+        					bg: el && el.couleur ? self.alpha(el.couleur, 0.16) : "",
+        					border: el && el.couleur ? self.alpha(el.couleur, 0.5) : "",
+        					cle: l.cle,
+        					start: String(sg.start),
+        					len: String(sg.len),
+        					kind: sg.kind,
+        					el: sg.kind === "projet" ? (sg.element || "") : ""
+        				};
+        			}));
+        			rows.push({
+        				kind: "person",
+        				label: "",
+        				n: "",
+        				cle: l.cle,
+        				nom: l.libelle || l.cle,
+        				initiales: self.initiales(l.libelle || l.cle),
+        				couleur: l.couleur || "#1A428A",
+        				ref: ref,
+        				refMissing: !l.referent,
+        				taux: p.taux + " %",
+        				rateW: p.taux + "%",
+        				rateCls: p.taux >= 80 ? "is-high" : (p.taux < 50 ? "is-low" : ""),
+        				bgs: self.cells ? [] : days.map(function (d, i) {
+        					return { col: (2 + i * 2) + " / span 2", today: self.iso(d) === todayIso, focus: self.focusDay === (winStart + i) };
+        				}),
+        				segs: segs
+        			});
+        		});
+        		this.gridRows = rows;
+        		var visibles = {};
+        		cur.personnes.forEach(function (p) { visibles[String(p.ligne.cle)] = p.ligne; });
+        		var comments = [];
+        		(this.items || []).forEach(function (it) {
+        			var ligne = visibles[String(it.rowId)];
+        			if (!ligne) return;
+        			var texte = self.texteCommentaire(it.commentaire || it.filCorps);
+        			var n = Number(it.commentCount) || 0;
+        			if (!texte && !n) return;
+        			if (self.focusEl && String(it.codeElement || "") !== self.focusEl) return;
+        			if (self.focusDay != null && allDays[self.focusDay] && String(it.start || "").slice(0, 10) !== self.iso(allDays[self.focusDay])) return;
+        			var quand = "";
+        			try { quand = new Date(String(it.start) + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }); } catch (eD) { quand = String(it.start || ""); }
+        			quand = quand ? quand.charAt(0).toUpperCase() + quand.slice(1) : "";
+        			var periode = it.period === "MATIN" ? "matin" : it.period === "APREM" ? "après-midi" : "journée";
+        			comments.push({
+        				cle: ligne.cle,
+        				nom: ligne.libelle || ligne.cle,
+        				initiales: self.initiales(ligne.libelle || ligne.cle),
+        				couleur: ligne.couleur || "#1A428A",
+        				meta: quand + " · " + periode + " · " + (it.label || it.type || ""),
+        				texte: texte || (n > 1 ? n + " commentaires" : "1 commentaire"),
+        				jour: String(it.start || "")
+        			});
+        		});
+        		comments.sort(function (a, b) { return a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : String(a.nom).localeCompare(String(b.nom), "fr"); });
+        		this.commentaires = comments;
+        		this.commentairesVides = !comments.length;
+        		var portee = this.focusDay != null ? "ce jour" : "la p\u00e9riode";
+        		this.commentairesMeta = comments.length ? this.plur(comments.length, "commentaire") + " sur " + portee : "Aucun sur " + portee;
+        		this.commentairesMessage = this.focusEl ? ("Aucun commentaire sur ce projet sur " + portee + ".") : ("Aucun commentaire sur les affectations de " + portee + ".");
+        		this.gridEmpty = !cur.personnes.length;
+        		var effortRows = Object.keys(vueK.projets).map(function (c) {
+        			var el = self.elementOf(c);
+        			return { code: c, label: (el && el.libelle) || vueK.projets[c].label || c, couleur: self.couleurProjet(el, c), demi: vueK.projets[c].demi, gens: Object.keys(vueK.projets[c].gens || {}).map(function (cle) { return self.nomLigne(cle); }).join(", "), locked: self.focusEl === c };
+        		}).sort(function (a, b) { return b.demi - a.demi; });
+        		var effortTotal = effortRows.reduce(function (t, r) { return t + r.demi; }, 0) || 1;
+        		this.effortStack = effortRows.map(function (r) { return { w: (r.demi / effortTotal * 100) + "%", couleur: r.couleur }; });
+        		this.efforts = effortRows.map(function (r) {
+        			return { code: r.code, label: r.label, couleur: r.couleur, gens: r.gens, val: self.fmtJ(r.demi), pct: Math.round(r.demi / effortTotal * 100) + " %", locked: r.locked };
+        		});
+        		this.effortEmpty = !this.efforts.length;
+        		this.stripJours = days.map(function (d) {
+        			return { label: self.nomJourCourt(d), today: self.iso(d) === todayIso };
+        		});
+        		var dispo = vueK.personnes.filter(function (p) { return p.libre; }).sort(function (a, b) { return b.libre - a.libre || String(a.ligne.libelle || "").localeCompare(String(b.ligne.libelle || ""), "fr"); });
+        		this.dispos = dispo.map(function (p) {
+        			return { cle: p.ligne.cle, nom: p.ligne.libelle || p.ligne.cle, initiales: self.initiales(p.ligne.libelle || p.ligne.cle), couleur: p.ligne.couleur || "#1A428A", val: self.fmtJ(p.libre), chips: self.chipsOf(p.slots, ["libre"]) };
+        		});
+        		this.dispoEmpty = !this.dispos.length;
+        		this.dispoMeta = this.fmtJ(vueK.libre) + " \u00e0 planifier" + (this.focusDay != null ? " ce jour" : "");
+        		var absRows = vueK.personnes.filter(function (p) { return p.absent; }).sort(function (a, b) { return b.absent - a.absent || String(a.ligne.libelle || "").localeCompare(String(b.ligne.libelle || ""), "fr"); });
+        		var semaine = absRows.filter(function (p) { return p.ouvrees && p.absent >= p.ouvrees; }).length;
+        		this.absences = absRows.map(function (p) {
+        			return { cle: p.ligne.cle, nom: p.ligne.libelle || p.ligne.cle, initiales: self.initiales(p.ligne.libelle || p.ligne.cle), couleur: p.ligne.couleur || "#1A428A", val: self.fmtJ(p.absent), chips: self.chipsOf(p.slots, ["absence", "formation"]) };
+        		});
+        		this.absEmpty = !this.absences.length;
+        		this.absMeta = this.plur(absRows.length, "personne") + (semaine ? (" \u00b7 " + semaine + (this.focusDay != null ? " toute la journ\u00e9e" : " toute la p\u00e9riode")) : "");
+        		var actifs = (this.lignes || []).filter(function (l) { return self.onFlag(l.actif == null ? "true" : l.actif); });
+        		var els = (this.elements || []).filter(function (e) { return self.onFlag(e.actif == null ? "true" : e.actif); });
+        		function countParticipant(code) {
+        			return (self.participants || []).filter(function (p) { return p.codeElement === code; }).length;
+        		}
+        		var pills = [];
+        		var sansRole = actifs.filter(function (l) { return !l.codeRole; }).length;
+        		var sansRef = actifs.filter(function (l) { return !l.referent; }).length;
+        		var sansChef = els.filter(function (e) { return !e.chefProjet; }).length;
+        		var sansPort = els.filter(function (e) { return !countParticipant(e.code); }).length;
+        		if (sansRole) pills.push({ n: String(sansRole), label: "sans r\u00f4le", route: "lignes", preset: "role" });
+        		if (sansRef) pills.push({ n: String(sansRef), label: "sans r\u00e9f\u00e9rent", route: "lignes", preset: "ref" });
+        		if (sansChef) pills.push({ n: String(sansChef), label: "projets sans chef", route: "projets", preset: "chef" });
+        		if (sansPort) pills.push({ n: String(sansPort), label: "projets sans participant", route: "projets", preset: "participant" });
+        		this.pills = pills;
+        		this.showPills = !!(this.canAdmin && pills.length);
+        		var chips = [{ value: "", label: "Tous" }];
+        		(this.profils || []).filter(function (pr) { return actifs.some(function (l) { return l.codeProfil === pr.code; }); }).forEach(function (pr) {
+        			chips.push({ value: pr.code, label: pr.libelle || pr.code });
+        		});
+        		this.profilChips = chips;
+        		this.collabOpts = (this.lignes || []).filter(function (l) {
+        			return self.onFlag(l.actif == null ? "true" : l.actif);
+        		}).map(function (l) {
+        			return { display: l.libelle || l.cle, value: String(l.cle), search: String(l.libelle || "") + " " + String(l.cle || "") };
+        		}).sort(function (a, b) { return String(a.display).localeCompare(String(b.display), "fr"); });
+        		this.focusProjetOn = !!this.focusEl;
+        		var fel = this.focusEl ? this.elementOf(this.focusEl) : null;
+        		this.focusProjetLabel = this.focusEl ? ("Projet : " + (fel ? fel.libelle : this.focusEl)) : "";
+        		this.focusJourOn = this.focusDay != null;
+        		this.focusJourLabel = (this.focusDay != null && this._allDays && this._allDays[this.focusDay]) ? (this.nomJourCourt(this._allDays[this.focusDay]) + " " + this._allDays[this.focusDay].getDate()) : "";
+        		this.ready = true;
+        		this.message = "";
+        		this.syncChrome();
+        		this.rafraichir();
+        		var selfC = this;
+        		var keepFrise = !!this._scrubKeepFrise;
+        		this._scrubKeepFrise = false;
+        		setTimeout(function () {
+        			if (keepFrise) {
+        				var hostF = document.querySelector(".dash-frise-nav") as any;
+        				if (hostF && hostF._paint) hostF._paint(selfC.gridStart || 0);
+        				selfC.calerCommentaires();
+        				requestAnimationFrame(function () {
+        					selfC.monterScroll();
+        					var w2 = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        					if (w2) w2.scrollLeft = 0;
+        					selfC.syncCapaciteFrise(false);
+        					selfC.desarmerSkeleton(true);
+        				});
+        				return;
+        			}
+        			if (selfC.loading) {
+        				selfC.assurerSkelCss();
+        				var w0 = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        				if (w0) {
+        					w0.classList.add("is-skel");
+        					var g0 = w0.querySelector(".dash-grid") as HTMLElement;
+        					if (g0) g0.classList.add("dash-grid--skel");
+        				}
+        				var p0 = document.querySelector(".tdb .dash-head-pin") as HTMLElement;
+        				if (p0) p0.classList.add("is-skel");
+        			}
+        			selfC.appliquerFrise();
+        			selfC.calerCommentaires();
+        			requestAnimationFrame(function () {
+        				selfC.monterScroll();
+        				var w2 = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        				if (w2) w2.scrollLeft = 0;
+        				if (selfC.loading) {
+        					w2 = document.querySelector(".tdb .dash-grid-wrap") as HTMLElement;
+        					if (w2) w2.classList.add("is-skel");
+        					var p2 = document.querySelector(".tdb .dash-head-pin") as HTMLElement;
+        					if (p2) p2.classList.add("is-skel");
+        				}
+        				selfC.syncCapaciteFrise(true);
+        				selfC.desarmerSkeleton();
+        			});
+        		}, 0);
+        	}
+        	noeud(event) {
+        		var n = event && (event.currentTarget || event.target);
+        		if (n && n.nodeType === 3) n = n.parentElement;
+        		return n;
+        	}
+        	wpToggle(event) {
+        		if (this.wpOpen) { this.wpFermer(); return; }
+        		var n = this.noeud(event);
+        		var r = n && n.getBoundingClientRect ? n.getBoundingClientRect() : null;
+        		var w = 300;
+        		this.wpTop = (r ? r.bottom + 6 : 120) + "px";
+        		this.wpLeft = (r ? Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) : 24) + "px";
+        		var d = this.periodFrom ? this.parseISO(this.periodFrom) : this.monday(0);
+        		this.wpY = d.getFullYear();
+        		this.wpM = d.getMonth();
+        		this.wpConstruire();
+        		this.wpOpen = true;
+        		this.rafraichir();
+        		var selfWp = this;
+        		setTimeout(function () { selfWp.monterPeriode(); }, 40);
+        	}
+        	wpNav(delta) {
+        		var m = this.wpM + delta;
+        		this.wpY += Math.floor(m / 12);
+        		this.wpM = ((m % 12) + 12) % 12;
+        		this.wpConstruire();
+        		this.rafraichir();
+        	}
+        	wpConstruire() {
+        		var debut = new Date(this.wpY, this.wpM, 1);
+        		var fin = new Date(this.wpY, this.wpM + 1, 0);
+        		var dow = debut.getDay();
+        		var cur = new Date(debut);
+        		cur.setDate(debut.getDate() + (dow === 0 ? -6 : 1 - dow));
+        		var ref = this.monday(0).getTime();
+        		var out = [];
+        		while (cur <= fin) {
+        			var ven = new Date(cur);
+        			ven.setDate(cur.getDate() + 4);
+        			if (ven >= debut) {
+        				var off = Math.round((cur.getTime() - ref) / 604800000);
+        				var finTxt = ven.getDate() + " " + ven.toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
+        				var range = cur.getMonth() === ven.getMonth() ? cur.getDate() + " \u2013 " + finTxt : cur.getDate() + " " + cur.toLocaleDateString("fr-FR", { month: "short" }) + " \u2013 " + finTxt;
+        				out.push({ off: off, num: "S" + this.numSemaine(cur), range: range, current: this.iso(cur) === this.periodFrom && this.iso(ven) === this.periodTo, today: off === 0 });
+        			}
+        			cur.setDate(cur.getDate() + 7);
+        		}
+        		this.wpWeeks = out;
+        		var t = debut.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+        		this.wpMoisLabel = t.charAt(0).toUpperCase() + t.slice(1);
+        	}
+        	wpChoisir(event) {
+        		var n = this.noeud(event);
+        		var off = Number(n && n.getAttribute ? n.getAttribute("data-off") : NaN);
+        		this.wpOpen = false;
+        		if (isNaN(off)) { this.rafraichir(); return; }
+        		var lundi = this.monday(off);
+        		var ven = new Date(lundi);
+        		ven.setDate(lundi.getDate() + 4);
+        		this.setPeriode(lundi, ven);
+        	}
+        	wpFermer() {
+        		this.wpOpen = false;
+        		this.rafraichir();
+        	}
+        	semaine(delta) {
+        		if (delta === 0) {
+        			var l = this.monday(0);
+        			var f = new Date(l);
+        			f.setDate(l.getDate() + 4);
+        			this.setPeriode(l, f);
+        			return;
+        		}
+        		this.decalerPeriode(delta);
+        	}
+        	setProfil(event) {
+        		var v = event && event.value != null ? event.value : "";
+        		this.profil = String(v);
+        		this.reconstruire();
+        	}
+        	setRecherche() {
+        		this.reconstruire();
+        	}
+        	resetFiltres() {
+        		this.q = "";
+        		this.recherche = [];
+        		this.profil = "";
+        		this.reconstruire();
+        	}
+        	focusJour(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-day]") || n;
+        		var day = Number(n && n.getAttribute ? n.getAttribute("data-day") : -1);
+        		if (isNaN(day) || day < 0) return;
+        		this.focusDay = this.focusDay === day ? null : day;
+        		if (this.focusDay != null) {
+        			var allN = (this._allDays || []).length || 1;
+        			var winF = this.fenetreVisible(allN);
+        			if (day < (this.gridStart || 0) || day >= (this.gridStart || 0) + winF) this.gridStart = day - Math.floor(winF / 2);
+        		}
+        		this.reconstruire();
+        	}
+        	focusProjet(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-el]") || n;
+        		var code = n && n.getAttribute ? (n.getAttribute("data-el") || "") : "";
+        		this.focusEl = this.focusEl === code ? "" : code;
+        		this.reconstruire();
+        	}
+        	clearProjet() { this.focusEl = ""; this.reconstruire(); }
+        	clearJour() { this.focusDay = null; this.reconstruire(); }
         	fixTrimestre() {
         		var d = new Date();
         		var q = Math.floor(d.getMonth() / 3) + 1;
@@ -925,7 +2516,7 @@ scriptContent:
         	}
         	fermer() { this.modal = ""; this.refresh(); }
         	setType(code) { this.saisie.codeType = code; if (code !== "PROJET") this.saisie.libelleElement = ""; this.refresh(); }
-        	setPeriode(code) { this.saisie.periode = code; this.refresh(); }
+        	setPeriodeSaisie(code) { this.saisie.periode = code; this.refresh(); }
         	choisirProjet(event) {
         		var lib = event && event.currentTarget ? event.currentTarget.getAttribute("data-libelle") : "";
         		this.saisie.libelleElement = lib || "";
