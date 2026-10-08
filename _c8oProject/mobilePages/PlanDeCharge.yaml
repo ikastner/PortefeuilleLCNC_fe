@@ -490,10 +490,13 @@ scriptContent:
         		this.badgeProjets = projets;
         		this.badgeLignes = gens;
         	}
+        	rafraichir() {
+        		try { this.ref.detectChanges(); } catch (e) {}
+        	}
         	refresh() {
         		this.pfaSyncChrome();
         		try { var admin = this.pfaAdmin(); if (admin) admin.paint(this); } catch (e2) {}
-        		try { this.ref.detectChanges(); } catch (e) {}
+        		this.rafraichir();
         	}
         	pfaBoot() {
         		var self = this;
@@ -2334,6 +2337,10 @@ scriptContent:
         	has(code) {
         		return (this.droits || []).indexOf(code) >= 0;
         	}
+        	onFlag(v) {
+        		var s = String(v == null ? "" : v).toLowerCase();
+        		return s === "true" || s === "t" || s === "1";
+        	}
         	asList(v) {
         		if (v == null) return [];
         		if (Object.prototype.toString.call(v) === "[object Array]") return v;
@@ -2684,6 +2691,9 @@ scriptContent:
         		this.canAdmin = this.has("GERER_REFERENTIEL");
         		try { window.sessionStorage.setItem("pfc:canAdmin", this.canAdmin ? "1" : "0"); } catch (eA) {}
         		this.loading = false;
+        		this.hol = this.holidays || {};
+        		try { this.syncChrome(); } catch (eSc) {}
+        		try { this.reconstruire(); } catch (eRe) {}
         		if (this.pfVueRestore) {
         			var vr = this.pfVueRestore;
         			this.pfVueRestore = "";
