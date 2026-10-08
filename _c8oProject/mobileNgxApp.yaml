@@ -59,6 +59,7 @@ componentScriptContent:
         '
 tplProjectName: mobilebuilder_tpl_8_4_0_ngx
 ↓PfaSidebar [ngx.components.UISharedRegularComponent-1795600510400]: 🗏 mobileSharedComponents/PfaSidebar.yaml
+↓DashWeekNav [ngx.components.UISharedRegularComponent-1791451900052]: 🗏 mobileSharedComponents/DashWeekNav.yaml
 ↓PlanDeCharge [ngx.components.PageComponent-1790692690587]: 🗏 mobilePages/PlanDeCharge.yaml
 ↓TableauDeBord [ngx.components.PageComponent-1795702000000]: 🗏 mobilePages/TableauDeBord.yaml
 ↓Login [ngx.components.PageComponent-1791300000399]: 🗏 mobilePages/Login.yaml

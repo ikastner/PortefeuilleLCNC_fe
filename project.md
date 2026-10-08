@@ -82,12 +82,12 @@ Describes the mobile application global properties
 Collaborateurs
 </p></blockquote></details>
 
-<details><summary><b>Login</b> : Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be</summary><blockquote><p>
+<details><summary><b>Login</b> : Connexion via PortefeuilleLCNC_be</summary><blockquote><p>
 
 
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") Login
 
-Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be.auth__login. Le code agent doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit.
+Connexion via PortefeuilleLCNC_be.Auth_Login. SI : LDAP. Mac hors SI (symbole Portefeuille_Auth_HorsSI) : code agent + role PFC sans mot de passe. Les droits viennent de PFC_LigneRole, ou du role choisi en hors SI.
 </p></blockquote></details>
 
 <details><summary><b>PlanDeCharge</b> : Ecran portefeuille LCNC</summary><blockquote><p>
@@ -114,12 +114,12 @@ Catalogue projets et hors projet.
 Rôles et droits
 </p></blockquote></details>
 
-<details><summary><b>TableauDeBord</b> : Tableau de bord de la semaine, en balises Convertigo</summary><blockquote><p>
+<details><summary><b>TableauDeBord</b> : Tableau de bord période libre (from/to, presets), KPIs pleine période, grille empilée fenêtrée et frise (idle 120 ms, cache ±1)</summary><blockquote><p>
 
 
 ### ![](https://github.com/convertigo/convertigo/blob/develop/engine/src/com/twinsoft/convertigo/beans/ngx/components/images/pagecomponent_color_16x16.png?raw=true "PageComponent") TableauDeBord
 
-Tableau de bord de la semaine, en balises Convertigo
+Tableau de bord période libre (from/to, presets), KPIs pleine période, grille empilée fenêtrée et frise (idle 120 ms, cache ±1).
 </p></blockquote></details>
 </p></blockquote></details>
 

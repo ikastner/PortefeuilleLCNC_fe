@@ -1,0 +1,557 @@
+scriptContent: 
+  - xmlizable: 
+    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+      →: |
+        '/*Begin_c8o_CompDeclaration*/
+        	weekNum: string = "5 j";
+        	weekRange: string = "";
+        	disabledPrev: boolean = false;
+        	disabledNext: boolean = false;
+        	isOpen: boolean = false;
+        	showToday: boolean = false;
+        	compact: boolean = false;
+        /*End_c8o_CompDeclaration*/
+        /*Begin_c8o_CompInitialization*/
+        /*End_c8o_CompInitialization*/
+        /*Begin_c8o_CompAfterViewInit*/
+        /*End_c8o_CompAfterViewInit*/
+        /*Begin_c8o_CompFunction*/
+        	onPrev() {
+        		if (this.disabledPrev) return;
+        		if (this.prev && this.prev.emit) this.prev.emit(true);
+        	}
+        	onNext() {
+        		if (this.disabledNext) return;
+        		if (this.next && this.next.emit) this.next.emit(true);
+        	}
+        	onOpen(event) {
+        		if (this.openPeriod && this.openPeriod.emit) this.openPeriod.emit(event);
+        	}
+        	onToday() {
+        		if (this.today && this.today.emit) this.today.emit(true);
+        	}
+        /*End_c8o_CompFunction*/
+        '
+↓Style [ngx.components.UIStyle-1791451901652]: 
+  styleContent: 
+    - xmlizable: 
+      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+        →: |
+          '.dash-week{
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid var(--c-border-soft, #DDE3F0);
+            border-radius: 999px;
+            background: var(--c-white, #fff);
+            box-sizing: border-box;
+          }
+          .dash-week__btn{
+            display: inline-grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--c-primary, #1A428A);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: background .15s ease;
+          }
+          .dash-week__btn:hover{ background: var(--c-primary-1, #EFF4FF); }
+          .dash-week__btn:disabled{ opacity: .45; cursor: not-allowed; }
+          .dash-week__btn svg{ display: block; }
+          .dash-week__label{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            height: 32px;
+            padding: 0 8px 0 6px;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            font: 500 14px Roboto, Helvetica, Arial, sans-serif;
+            color: var(--c-text-2, #495057);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: background .15s ease;
+          }
+          .dash-week__label:hover,
+          .dash-week__label.is-open{ background: var(--c-primary-1, #EFF4FF); }
+          .dash-week__num{
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--c-primary, #1A428A);
+            color: var(--c-white, #fff);
+            font-family: Montserrat, Segoe UI, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+          }
+          .dash-week__range{
+            display: inline-block;
+            width: var(--dash-week-range-w, 9.25rem);
+            min-width: var(--dash-week-range-w, 9.25rem);
+            max-width: var(--dash-week-range-w, 9.25rem);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            text-align: left;
+            box-sizing: border-box;
+          }
+          .dash-week__caret{
+            display: inline-flex;
+            color: var(--c-muted, #6C757D);
+          }
+          .dash-week__caret svg{ display: block; }
+          .dash-week__today{
+            height: 32px;
+            padding: 0 12px;
+            margin-left: 4px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--c-primary-1, #EFF4FF);
+            color: var(--c-primary, #1A428A);
+            font: 600 13px Roboto, Helvetica, Arial, sans-serif;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+          }
+          .dash-week__today:hover{ background: var(--c-primary-2, #DBE7FF); }
+          .dash-week--compact .dash-week__label{ height: 30px; padding: 0 8px 0 6px; font-size: 13px; gap: 6px; }
+          .dash-week--compact .dash-week__num{ padding: 2px 7px; font-size: 11px; }'
+↓weekNum [ngx.components.UICompVariable-1791451901654]: 
+  value: 5 j
+↓weekRange [ngx.components.UICompVariable-1791451901656]: 
+  value: 
+↓disabledPrev [ngx.components.UICompVariable-1791451901658]: 
+  value: false
+↓disabledNext [ngx.components.UICompVariable-1791451901660]: 
+  value: false
+↓isOpen [ngx.components.UICompVariable-1791451901662]: 
+  value: false
+↓showToday [ngx.components.UICompVariable-1791451901664]: 
+  value: false
+↓compact [ngx.components.UICompVariable-1791451901666]: 
+  value: false
+↓prev [ngx.components.UICompEvent-1791451901668]: 
+  attrName: prev
+↓next [ngx.components.UICompEvent-1791451901670]: 
+  attrName: next
+↓openPeriod [ngx.components.UICompEvent-1791451901672]: 
+  attrName: openPeriod
+↓today [ngx.components.UICompEvent-1791451901674]: 
+  attrName: today
+↓Root [ngx.components.UIDynamicElement-1791451901676]: 
+  beanData: '{"ionBean":"DivTag"}'
+  tagName: div
+  ↓RootClass [ngx.components.UIAttribute-1791451903240]: 
+    attrName: class
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: 'script:''dash-week'' + (this.compact ? '' dash-week--compact'' : '''')'
+  ↓Prev [ngx.components.UIDynamicElement-1791451959965]: 
+    beanData: '{"ionBean":"DivTag"}'
+    tagName: button
+    ↓PrevC [ngx.components.UIAttribute-1791451959967]: 
+      attrName: class
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:dash-week__btn dash-week__btn--prev
+    ↓PrevType [ngx.components.UIAttribute-1791451959969]: 
+      attrName: type
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:button
+    ↓PrevAl [ngx.components.UIAttribute-1791451959971]: 
+      attrName: aria-label
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Période précédente
+    ↓PrevDis [ngx.components.UIAttribute-1791451959973]: 
+      attrName: '[disabled]'
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.disabledPrev
+    ↓PrevClick [ngx.components.UIControlEvent-1791451959975]: 
+      ↓PrevClickDo [ngx.components.UICustomAction-1791451960509]: 
+        actionValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+              →: |
+                this.onPrev();
+                resolve(true);
+    ↓PrevIco [ngx.components.UIDynamicElement-1791451960511]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: span
+      ↓PrevIcoC [ngx.components.UIAttribute-1791451960513]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:dash-week__chevron dash-week__chevron--prev
+      ↓PrevIcoSvg [ngx.components.UIDynamicElement-1791451960515]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: svg
+        ↓PrevIcoW [ngx.components.UIAttribute-1791451960517]: 
+          attrName: width
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:16
+        ↓PrevIcoH [ngx.components.UIAttribute-1791451960519]: 
+          attrName: height
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:16
+        ↓PrevIcoVb [ngx.components.UIAttribute-1791451960521]: 
+          attrName: viewBox
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:0 0 24 24
+        ↓PrevIcoFl [ngx.components.UIAttribute-1791451960523]: 
+          attrName: fill
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:none
+        ↓PrevIcoSt [ngx.components.UIAttribute-1791451960525]: 
+          attrName: stroke
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:currentColor
+        ↓PrevIcoSw [ngx.components.UIAttribute-1791451960527]: 
+          attrName: stroke-width
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:2
+        ↓PrevIcoLc [ngx.components.UIAttribute-1791451960529]: 
+          attrName: stroke-linecap
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:round
+        ↓PrevIcoLj [ngx.components.UIAttribute-1791451960531]: 
+          attrName: stroke-linejoin
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:round
+        ↓PrevIcoPath [ngx.components.UIDynamicElement-1791451960533]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: path
+          ↓PrevIcoD [ngx.components.UIAttribute-1791451960535]: 
+            attrName: d
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:m9 18 6-6-6-6
+  ↓Label [ngx.components.UIDynamicElement-1791451960537]: 
+    beanData: '{"ionBean":"DivTag"}'
+    tagName: button
+    ↓LabelC [ngx.components.UIAttribute-1791451960539]: 
+      attrName: class
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:dash-week__label
+    ↓LabelType [ngx.components.UIAttribute-1791451960541]: 
+      attrName: type
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:button
+    ↓LabelAl [ngx.components.UIAttribute-1791451960543]: 
+      attrName: aria-label
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Choisir une période
+    ↓LabelTi [ngx.components.UIAttribute-1791451960545]: 
+      attrName: title
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Choisir une période
+    ↓LabelHp [ngx.components.UIAttribute-1791451960547]: 
+      attrName: aria-haspopup
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:dialog
+    ↓LabelEx [ngx.components.UIAttribute-1791451960549]: 
+      attrName: '[attr.aria-expanded]'
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: 'script:this.isOpen ? ''true'' : ''false'''
+    ↓LabelOp [ngx.components.UIAttribute-1791451960551]: 
+      attrName: '[class.is-open]'
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.isOpen
+    ↓LabelClick [ngx.components.UIControlEvent-1791451960553]: 
+      ↓LabelClickDo [ngx.components.UICustomAction-1791451960555]: 
+        actionValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+              →: |
+                this.onOpen(event);
+                resolve(true);
+    ↓Num [ngx.components.UIDynamicElement-1791451960557]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: span
+      ↓NumC [ngx.components.UIAttribute-1791451960559]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:dash-week__num
+      ↓NumT [ngx.components.UIText-1791451960561]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: script:this.weekNum
+    ↓Range [ngx.components.UIDynamicElement-1791451960563]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: span
+      ↓RangeLive [ngx.components.UIAttribute-1791451960565]: 
+        attrName: aria-live
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:polite
+      ↓RangeT [ngx.components.UIText-1791451960567]: 
+        textValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: script:this.weekRange
+    ↓Caret [ngx.components.UIDynamicElement-1791451960569]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: span
+      ↓CaretC [ngx.components.UIAttribute-1791451960571]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:dash-week__caret
+      ↓CaretSvg [ngx.components.UIDynamicElement-1791451960573]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: svg
+        ↓CaretW [ngx.components.UIAttribute-1791451960575]: 
+          attrName: width
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:14
+        ↓CaretH [ngx.components.UIAttribute-1791451960577]: 
+          attrName: height
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:14
+        ↓CaretVb [ngx.components.UIAttribute-1791451960579]: 
+          attrName: viewBox
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:0 0 24 24
+        ↓CaretFl [ngx.components.UIAttribute-1791451960581]: 
+          attrName: fill
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:none
+        ↓CaretSt [ngx.components.UIAttribute-1791451960583]: 
+          attrName: stroke
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:currentColor
+        ↓CaretSw [ngx.components.UIAttribute-1791451960585]: 
+          attrName: stroke-width
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:2
+        ↓CaretLc [ngx.components.UIAttribute-1791451960587]: 
+          attrName: stroke-linecap
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:round
+        ↓CaretLj [ngx.components.UIAttribute-1791451960589]: 
+          attrName: stroke-linejoin
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:round
+        ↓CaretPath [ngx.components.UIDynamicElement-1791451960591]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: path
+          ↓CaretD [ngx.components.UIAttribute-1791451960593]: 
+            attrName: d
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:m6 9 6 6 6-6
+  ↓Next [ngx.components.UIDynamicElement-1791451960595]: 
+    beanData: '{"ionBean":"DivTag"}'
+    tagName: button
+    ↓NextC [ngx.components.UIAttribute-1791451960597]: 
+      attrName: class
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:dash-week__btn dash-week__btn--next
+    ↓NextType [ngx.components.UIAttribute-1791451960599]: 
+      attrName: type
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:button
+    ↓NextAl [ngx.components.UIAttribute-1791451960601]: 
+      attrName: aria-label
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Période suivante
+    ↓NextDis [ngx.components.UIAttribute-1791451960603]: 
+      attrName: '[disabled]'
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.disabledNext
+    ↓NextClick [ngx.components.UIControlEvent-1791451960605]: 
+      ↓NextClickDo [ngx.components.UICustomAction-1791451960607]: 
+        actionValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+              →: |
+                this.onNext();
+                resolve(true);
+    ↓NextIco [ngx.components.UIDynamicElement-1791451960609]: 
+      beanData: '{"ionBean":"DivTag"}'
+      tagName: span
+      ↓NextIcoC [ngx.components.UIAttribute-1791451960611]: 
+        attrName: class
+        attrValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+            - MobileSmartSourceType: plain:dash-week__chevron
+      ↓NextIcoSvg [ngx.components.UIDynamicElement-1791451960613]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: svg
+        ↓NextIcoW [ngx.components.UIAttribute-1791451960615]: 
+          attrName: width
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:16
+        ↓NextIcoH [ngx.components.UIAttribute-1791451960617]: 
+          attrName: height
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:16
+        ↓NextIcoVb [ngx.components.UIAttribute-1791451960619]: 
+          attrName: viewBox
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:0 0 24 24
+        ↓NextIcoFl [ngx.components.UIAttribute-1791451960621]: 
+          attrName: fill
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:none
+        ↓NextIcoSt [ngx.components.UIAttribute-1791451960623]: 
+          attrName: stroke
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:currentColor
+        ↓NextIcoSw [ngx.components.UIAttribute-1791451960625]: 
+          attrName: stroke-width
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:2
+        ↓NextIcoLc [ngx.components.UIAttribute-1791451960627]: 
+          attrName: stroke-linecap
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:round
+        ↓NextIcoLj [ngx.components.UIAttribute-1791451960629]: 
+          attrName: stroke-linejoin
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:round
+        ↓NextIcoPath [ngx.components.UIDynamicElement-1791451960631]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: path
+          ↓NextIcoD [ngx.components.UIAttribute-1791451960633]: 
+            attrName: d
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:m9 18 6-6-6-6
+  ↓Today [ngx.components.UIDynamicElement-1791451960635]: 
+    beanData: '{"ionBean":"DivTag"}'
+    tagName: button
+    ↓TodayC [ngx.components.UIAttribute-1791451960637]: 
+      attrName: class
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:dash-week__today
+    ↓TodayType [ngx.components.UIAttribute-1791451960639]: 
+      attrName: type
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:button
+    ↓TodayHide [ngx.components.UIAttribute-1791451960641]: 
+      attrName: '[hidden]'
+      attrValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:!this.showToday
+    ↓TodayClick [ngx.components.UIControlEvent-1791451960643]: 
+      ↓TodayClickDo [ngx.components.UICustomAction-1791451960645]: 
+        actionValue: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+              →: |
+                this.onToday();
+                resolve(true);
+    ↓TodayT [ngx.components.UIText-1791451960647]: 
+      textValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: plain:Cette semaine
