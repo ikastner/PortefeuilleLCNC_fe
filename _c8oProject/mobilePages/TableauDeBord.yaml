@@ -2133,6 +2133,15 @@ scriptContent:
         		if (sansRef) pills.push({ n: String(sansRef), label: "sans r\u00e9f\u00e9rent", route: "lignes", preset: "ref" });
         		if (sansChef) pills.push({ n: String(sansChef), label: "projets sans chef", route: "projets", preset: "chef" });
         		if (sansPort) pills.push({ n: String(sansPort), label: "projets sans participant", route: "projets", preset: "participant" });
+        		var nOver = (cur.personnes || []).filter(function (p) { return (p.taux || 0) > 100; }).length;
+        		if (nOver > 0) {
+        			pills.push({
+        				n: String(nOver),
+        				label: "en surcharge",
+        				route: "grille",
+        				preset: "surcharge"
+        			});
+        		}
         		this.pills = pills;
         		this.showPills = !!(this.canAdmin && pills.length);
         		var chips = [{ value: "", label: "Tous" }];
