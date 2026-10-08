@@ -18,7 +18,7 @@ scriptContent:
         			style.textContent = face("Montserrat", 700, "montserrat-latin-700-normal.woff2") + face("Roboto", 400, "roboto-latin-400-normal.woff2");
         			document.head.appendChild(style);
         		}
-        		document.documentElement.style.setProperty("--pfa-side", "264px");
+        		document.documentElement.style.setProperty("--pfa-side", "220px");
         		/*End_c8o_CompInitialization*/
         /*Begin_c8o_CompAfterViewInit*/
         		var unlockNav = function () {
@@ -49,7 +49,7 @@ scriptContent:
         		var opening = this.folded === true;
         		if (opening && side) side.classList.remove("is-settled");
         		this.folded = !this.folded;
-        		var pad = this.folded ? "76px" : "264px";
+        		var pad = this.folded ? "76px" : "220px";
         		var content: any = document.querySelector("ion-content.pfc-page");
         		if (content) content.style.setProperty("--pfa-pad", pad);
         		document.documentElement.style.setProperty("--pfa-side", pad);
@@ -772,7 +772,7 @@ scriptContent:
             left: 0;
             top: 0;
             bottom: 0;
-            width: 264px;
+            width: 220px;
             display: flex;
             flex-direction: column;
             gap: 24px;
@@ -793,8 +793,8 @@ scriptContent:
             padding: 0;
           }
           .sidebar__logo {
-            height: 36px;
-            width: 36px;
+            height: 24px;
+            width: 24px;
             object-fit: contain;
             flex: 0 0 auto;
           }

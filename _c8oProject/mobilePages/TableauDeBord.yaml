@@ -250,7 +250,7 @@ scriptContent:
         					+ ".dash-grid--film .dash-cell-rate{right:0;box-shadow:-8px 0 12px -10px rgba(18,47,98,.18)}"
         					+ ".dash-grid--film .dash-row--head .dash-cell-name,.dash-grid--film .dash-row--head .dash-cell-rate{z-index:6;background:#fff}"
         					+ ".dash-grid--film .dash-row:not(.dash-row--head):hover .dash-cell-name,.dash-grid--film .dash-row:not(.dash-row--head):hover .dash-cell-rate{background:#f4f7ff}"
-        					+ ".dash-group__label{position:sticky;left:20px;display:inline-flex;align-items:center;gap:8px}"+ ".dash-stick{position:sticky;top:var(--qfq-stick, 12px);z-index:40;background:#fff;margin:0;padding:0}"+ ".tdb .dash-main .dash-stick .dash-toolbar.dash-toolbar,.tdb .dash-main .dash-stick .dash-frise-nav,.tdb .dash-main .dash-stick .dash-head-pin{position:relative !important;top:auto !important;margin:0 !important;border:0 !important;box-shadow:none !important;background:#fff !important}"+ ".dash-head-pin{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-shadow:0 1px 0 #E6EAF2}"+ ".dash-head-pin::-webkit-scrollbar{display:none;height:0}"+ ".tdb .dash-main .dash-head-pin .dash-row.dash-row--head{position:relative !important;top:auto !important;z-index:1 !important;margin:0 !important;background:#fff !important}"+ ".dash-head-pin .dash-cell-name,.dash-head-pin .dash-cell-rate{position:sticky;z-index:2;background:#fff}"+ ".dash-head-pin .dash-cell-name{left:0}"+ ".dash-head-pin .dash-cell-rate{right:0}"+ ".dash-group__label{display:inline-flex;align-items:center;gap:8px;height:26px;padding:0 4px 0 10px;border-radius:999px;font:500 12px Roboto,Helvetica,Arial,sans-serif;letter-spacing:0;text-transform:none}"+ ".dash-group__label span{margin:0 0 0 2px;padding:0 7px;height:18px;border-radius:999px;background:#F8F9FA;color:#495057;font:500 11px Roboto,Helvetica,Arial,sans-serif;letter-spacing:0;display:inline-flex;align-items:center}";
+        					+ ".dash-group__label{position:sticky;left:20px;display:inline-flex;align-items:center;gap:8px}"+ ".dash-stick{position:relative;top:auto;z-index:2;background:#fff;margin:0;padding:0}"+ ".tdb .dash-main .dash-stick .dash-toolbar.dash-toolbar,.tdb .dash-main .dash-stick .dash-frise-nav,.tdb .dash-main .dash-stick .dash-head-pin{position:relative !important;top:auto !important;margin:0 !important;border:0 !important;box-shadow:none !important;background:#fff !important}"+ ".dash-head-pin{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-shadow:0 1px 0 #E6EAF2}"+ ".dash-head-pin::-webkit-scrollbar{display:none;height:0}"+ ".tdb .dash-main .dash-head-pin .dash-row.dash-row--head{position:relative !important;top:auto !important;z-index:1 !important;margin:0 !important;background:#fff !important}"+ ".dash-head-pin .dash-cell-name,.dash-head-pin .dash-cell-rate{position:sticky;z-index:2;background:#fff}"+ ".dash-head-pin .dash-cell-name{left:0}"+ ".dash-head-pin .dash-cell-rate{right:0}"+ ".dash-group__label{display:inline-flex;align-items:center;gap:8px;height:26px;padding:0 4px 0 10px;border-radius:999px;font:500 12px Roboto,Helvetica,Arial,sans-serif;letter-spacing:0;text-transform:none}"+ ".dash-group__label span{margin:0 0 0 2px;padding:0 7px;height:18px;border-radius:999px;background:#F8F9FA;color:#495057;font:500 11px Roboto,Helvetica,Arial,sans-serif;letter-spacing:0;display:inline-flex;align-items:center}";
         				document.head.appendChild(pxCss);
         			}
         
@@ -379,7 +379,7 @@ scriptContent:
         				main.classList.toggle("is-stuck", stuck);
         				document.documentElement.classList.toggle("qfq-stuck", stuck);
         				var cover = document.getElementById("qfq-veil") as HTMLElement;
-        				cover.style.display = "none";
+        				if (cover) cover.style.display = "none";
         			};
         			var suivreScroll = function () {
         				var content = document.querySelector("ion-content.pfc-page") as any;
@@ -755,7 +755,7 @@ scriptContent:
         	}
         	dayPx(wrapW?, win?) {
         		var w = wrapW || this.wrapWidth();
-        		return Math.max(88, Math.floor((w - 200 - 104) / Math.max(win || 7, 1)));
+        		return Math.max(88, Math.floor((w - 200 - 104) / Math.max(win || 5, 1)));
         	}
         	pasSemaineOuvres() {
         		return 5;
@@ -764,15 +764,9 @@ scriptContent:
         		var n = Math.max(0, nDays || 0);
         		this.assurerLayoutCss();
         		this.assurerPlaceSemaine();
-        		// Semaine (≤ 5 j ouvrés) : toujours toute la période, jamais sous 5 j.
-        		if (n > 0 && n <= 5) return n;
-        		var w = wrapW != null && wrapW !== undefined ? wrapW : this.wrapWidth();
-        		var nameW = 168;
-        		var rateW = 96;
-        		var colMin = 88;
-        		var fit = Math.floor((w - nameW - rateW) / colMin);
-        		var win = fit > 0 ? fit : 5;
-        		return Math.max(5, Math.min(n, win));
+        		// Toujours au plus 5 jours ouvrés visibles (lun–ven), jamais plus.
+        		if (n <= 0) return 5;
+        		return Math.min(5, n);
         	}
         	assurerPlaceSemaine() {
         		var host = document.querySelector(".tdb") as HTMLElement;
@@ -785,9 +779,9 @@ scriptContent:
         		if (isWeek) host.classList.add("tdb--week");
         		else host.classList.remove("tdb--week");
         		try {
-        			document.documentElement.style.setProperty("--dash-name-w", isWeek ? "168px" : "200px");
-        			document.documentElement.style.setProperty("--dash-rate-w", isWeek ? "96px" : "104px");
-        			if (isWeek) document.documentElement.style.setProperty("--dash-col-w", "minmax(80px, 1fr)");
+        			document.documentElement.style.setProperty("--dash-name-w", "200px");
+        			document.documentElement.style.setProperty("--dash-rate-w", "104px");
+        			if (isWeek) document.documentElement.style.setProperty("--dash-col-w", "minmax(72px, 1fr)");
         		} catch (eL) {}
         	}
         	maxGridStart(nDays, win?) {
@@ -859,25 +853,27 @@ scriptContent:
         		this.setPeriode(dec.from, dec.to);
         	}
         	assurerLayoutCss() {
-        		if (document.getElementById("tdb-layout-css")) return;
-        		var el = document.createElement("style");
-        		el.id = "tdb-layout-css";
+        		var el = document.getElementById("tdb-layout-css") as HTMLStyleElement;
+        		if (!el) {
+        			el = document.createElement("style");
+        			el.id = "tdb-layout-css";
+        			document.head.appendChild(el);
+        		}
         		el.textContent = ""
-        			+ ".tdb .dash-layout{grid-template-columns:minmax(0,1fr) minmax(200px,260px)!important;gap:12px!important}"
-        			+ ".tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr) minmax(168px,220px)!important;gap:10px!important}"
+        			+ ".tdb .dash-layout{grid-template-columns:minmax(0,1fr) minmax(248px,272px)!important;gap:var(--s-4,16px)!important}"
+        			+ ".tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr) minmax(232px,256px)!important;gap:14px!important}"
         			+ ".tdb.tdb--week .dash-aside{min-width:0}"
-        			+ ".tdb.tdb--week .dash-side{padding:12px 12px!important}"
-        			+ ".tdb.tdb--week .dash-side__head h3{font-size:13px!important}"
-        			+ ".tdb.tdb--week .dash-effort__name,.tdb.tdb--week .dash-effort__val{font-size:12.5px!important}"
+        			+ ".tdb.tdb--week .dash-side{padding:16px 18px!important}"
         			+ ".tdb.tdb--week .dash-row,.tdb.tdb--week .dash-head-pin .dash-row--head{"
-        			+ "grid-template-columns:var(--dash-name-w,168px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,96px)!important}"
+        			+ "grid-template-columns:var(--dash-name-w,200px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,104px)!important}"
         			+ ".tdb .dash-row,.tdb .dash-head-pin .dash-row--head{"
         			+ "grid-template-columns:var(--dash-name-w,200px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,104px)}"
-        			+ "@media (max-width:1200px){.tdb .dash-layout{grid-template-columns:minmax(0,1fr) minmax(168px,210px)!important}"
-        			+ ".tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr) 180px!important}}"
-        			+ "@media (max-width:980px){.tdb .dash-layout{grid-template-columns:minmax(0,1fr)!important}"
-        			+ ".tdb .dash-aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:12px}}";
-        		document.head.appendChild(el);
+        			+ "@media (max-width:1280px){.tdb .dash-layout,.tdb.tdb--week .dash-layout{"
+        			+ "grid-template-columns:minmax(0,1fr) minmax(220px,240px)!important}}"
+        			+ "@media (max-width:1100px){.tdb .dash-layout,.tdb.tdb--week .dash-layout{"
+        			+ "grid-template-columns:minmax(0,1fr) minmax(200px,220px)!important}}"
+        			+ "@media (max-width:980px){.tdb .dash-layout,.tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr)!important}"
+        			+ ".tdb .dash-aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px}}"+ ".tdb .card.dash-main,.tdb .dash-main.card{display:flex!important;flex-direction:column!important;max-height:calc(100dvh - 88px)!important;overflow:hidden!important;border-radius:18px!important;background:#fff!important}"+ ".tdb .dash-stick{position:relative!important;top:auto!important;z-index:3!important;flex:0 0 auto!important;background:#fff!important;border-radius:18px 18px 0 0!important}"+ ".tdb .dash-stick .dash-toolbar,.tdb .dash-stick .dash-frise-nav{position:relative!important;top:auto!important;background:#fff!important}"+ ".tdb .dash-frise-nav{flex:none;background:#fff!important;border-bottom:1px solid #E6EAF2}"+ ".tdb .dash-grid-wrap,.tdb .dash-grid-wrap--film{position:relative!important;top:auto!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;background:#fff!important}"+ ".tdb .dash-grid-wrap .dash-row--head{position:sticky!important;top:0!important;z-index:6!important;background:#fff!important;box-shadow:0 1px 0 #E6EAF2}"+ ".tdb .dash-comments{display:flex!important;flex-direction:column!important;max-height:440px!important;overflow:hidden!important;min-height:0}"+ ".tdb .dash-comments__head{flex:none}"+ ".tdb .dash-comments__list{flex:1 1 auto;min-height:0;overflow-y:auto!important}";
         	}
         	assurerSkelCss() {
         		this.assurerLayoutCss();
@@ -1266,17 +1262,28 @@ scriptContent:
         		var nCols = Math.max(vis.length, 1);
         		var isWeek = !!(this._allDays && this._allDays.length <= 5);
         		this.assurerPlaceSemaine();
-        		var colW = isWeek || nCols <= 5 ? "minmax(80px, 1fr)" : "minmax(104px, 1fr)";
+        		var colW = isWeek || nCols <= 5 ? "minmax(72px, 1fr)" : "minmax(104px, 1fr)";
+        		var nameW = "200px";
+        		var rateW = "104px";
+        		var colsTpl = nameW + " repeat(" + nCols + ", " + colW + ") " + rateW;
         		wrap.style.maxWidth = "100%";
         		wrap.style.overflowX = "auto";
+        		wrap.style.scrollbarGutter = "stable";
         		wrap.scrollLeft = 0;
         		grid.style.minWidth = "100%";
         		grid.style.width = "100%";
         		grid.style.setProperty("--dash-cols", String(nCols));
         		grid.style.setProperty("--dash-col-w", colW);
+        		grid.style.setProperty("--dash-name-w", nameW);
+        		grid.style.setProperty("--dash-rate-w", rateW);
         		document.documentElement.style.setProperty("--dash-cols", String(nCols));
         		document.documentElement.style.setProperty("--dash-col-w", colW);
+        		document.documentElement.style.setProperty("--dash-name-w", nameW);
+        		document.documentElement.style.setProperty("--dash-rate-w", rateW);
         		document.documentElement.style.setProperty("--dash-film", "100%");
+        		Array.prototype.forEach.call(grid.querySelectorAll(".dash-row"), function (row: any) {
+        			row.style.setProperty("grid-template-columns", colsTpl, "important");
+        		});
         		Array.prototype.forEach.call(grid.querySelectorAll(".dash-profil"), function (badge: any) {
         			if (badge.parentElement) badge.parentElement.removeChild(badge);
         		});
@@ -1322,75 +1329,43 @@ scriptContent:
         if (friseH) document.documentElement.style.setProperty("--dash-frise-h", friseH.offsetHeight + "px");
         var barH = document.querySelector(".tdb .dash-toolbar") as HTMLElement;
         if (barH) document.documentElement.style.setProperty("--qfq-bar", barH.offsetHeight + "px");
-        var parentPin = wrap.parentElement;
-        var pin = parentPin ? parentPin.querySelector(".dash-head-pin") as any : null;
-        var liveHead = grid.querySelector(".dash-row--head") as HTMLElement;
-        if (parentPin && (liveHead || pin)) {
-        if (!pin) {
-        pin = document.createElement("div");
-        pin.className = "dash-head-pin";
-        parentPin.insertBefore(pin, wrap);
-        }
-        var parked = pin.querySelector(".dash-row--head") as HTMLElement;
-        liveHead = grid.querySelector(".dash-row--head") as HTMLElement;
-        var head: HTMLElement = null;
-        if (liveHead && parked && liveHead !== parked) {
-        if (parked.parentElement) parked.parentElement.removeChild(parked);
-        pin.appendChild(liveHead);
-        head = liveHead;
-        } else if (liveHead) {
-        if (liveHead.parentElement !== pin) pin.appendChild(liveHead);
-        head = liveHead;
-        } else {
-        head = parked;
-        }
-        if (head) {
-        var nColsPin = Math.max(vis.length, 1);
-        pin.style.setProperty("--dash-cols", String(nColsPin));
-        pin.style.setProperty("--dash-col-w", "minmax(104px, 1fr)");
-        pin.style.width = "100%";
-        pin.style.minHeight = "52px";
-        pin.style.display = "block";
-        pin.scrollLeft = 0;
-        head.style.minWidth = "100%";
-        head.style.width = "100%";
-        head.style.display = "";
-        head.style.setProperty("--dash-cols", String(nColsPin));
-        head.style.setProperty("--dash-col-w", "minmax(104px, 1fr)");
-        document.documentElement.style.setProperty("--dash-head-h", Math.max(head.offsetHeight, 52) + "px");
-        }
-        if (!pin._sync) {
-        pin._sync = true;
-        var lockPin = false;
-        wrap.addEventListener("scroll", function () {
-        if (lockPin) return;
-        lockPin = true;
-        pin.scrollLeft = wrap.scrollLeft;
-        lockPin = false;
-        });
-        pin.addEventListener("scroll", function () {
-        if (lockPin) return;
-        lockPin = true;
-        wrap.scrollLeft = pin.scrollLeft;
-        lockPin = false;
-        });
-        }
-        if (pin.scrollLeft !== wrap.scrollLeft) pin.scrollLeft = wrap.scrollLeft;
-        }
-        var mainStick = wrap.parentElement;
+        var headInGrid = grid.querySelector(".dash-row--head") as HTMLElement;
+                Array.prototype.forEach.call(document.querySelectorAll(".tdb .dash-head-pin .dash-row--head"), function (h: any) {
+                    if (!headInGrid) {
+                        var first = grid.querySelector(".dash-row, .dash-group");
+                        if (first) grid.insertBefore(h, first);
+                        else grid.appendChild(h);
+                        headInGrid = h;
+                    } else if (h !== headInGrid && h.parentElement) {
+                        h.parentElement.removeChild(h);
+                    }
+                });
+                Array.prototype.forEach.call(document.querySelectorAll(".tdb .dash-head-pin"), function (p: any) {
+                    if (p.parentElement) p.parentElement.removeChild(p);
+                });
+                if (headInGrid) {
+                    headInGrid.style.width = "100%";
+                    headInGrid.style.minWidth = "100%";
+                    headInGrid.style.boxSizing = "border-box";
+                    headInGrid.style.setProperty("grid-template-columns", colsTpl, "important");
+                    headInGrid.style.position = "sticky";
+                    headInGrid.style.top = "0px";
+                    headInGrid.style.zIndex = "6";
+                    headInGrid.style.background = "#fff";
+                }
+                var mainStick = wrap.parentElement;
         var stick = mainStick ? mainStick.querySelector(".dash-stick") as any : null;
         var barStick = mainStick ? mainStick.querySelector(".dash-toolbar") as HTMLElement : null;
         var friseStick = mainStick ? mainStick.querySelector(".dash-frise-nav") as HTMLElement : null;
-        if (mainStick && (barStick || friseStick || pin)) {
+        if (mainStick && (barStick || friseStick)) {
         if (!stick) {
         stick = document.createElement("div");
         stick.className = "dash-stick";
-        var anchor = barStick || friseStick || pin;
+        var anchor = barStick || friseStick;
         mainStick.insertBefore(stick, anchor);
         }
         if (barStick && barStick.parentElement !== stick) stick.appendChild(barStick);
         if (friseStick && friseStick.parentElement !== stick) stick.appendChild(friseStick);
-        if (pin && pin.parentElement !== stick) stick.appendChild(pin);
         document.documentElement.style.setProperty("--dash-stick-h", stick.offsetHeight + "px");
         }
         this.allerFilm(this.gridStart || 0, false);
@@ -1844,9 +1819,11 @@ scriptContent:
         		this.dashCols = days.length;
         		this.assurerPlaceSemaine();
         		try {
+        			var isWeekRec = !!(allDays && allDays.length <= 5);
+        			var colWRec = isWeekRec || days.length <= 5 ? "minmax(72px, 1fr)" : "minmax(104px, 1fr)";
         			document.documentElement.style.setProperty("--dash-n", String(days.length));
         			document.documentElement.style.setProperty("--dash-cols", String(days.length));
-        			document.documentElement.style.setProperty("--dash-col-w", "minmax(104px, 1fr)");
+        			document.documentElement.style.setProperty("--dash-col-w", colWRec);
         			document.documentElement.style.setProperty("--dash-rate", String(2 + days.length));
         			document.documentElement.style.setProperty("--dash-film", "100%");
         		} catch (eC) {}
@@ -10246,12 +10223,12 @@ title: Tableau de bord
           /* Mise en page principale */
           .tdb .dash-layout{
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+            grid-template-columns: minmax(0, 1fr) minmax(248px, 272px);
             gap: 12px;
             align-items: start;
           }
           .tdb.tdb--week .dash-layout{
-            grid-template-columns: minmax(0, 1fr) minmax(168px, 220px);
+            grid-template-columns: minmax(0, 1fr) minmax(232px, 256px);
             gap: 10px;
           }
           
@@ -10291,7 +10268,7 @@ title: Tableau de bord
           
           .tdb .dash-row{
             display: grid;
-            grid-template-columns: 200px repeat(var(--dash-cols), var(--dash-col-w)) 104px;
+            grid-template-columns: var(--dash-name-w, 200px) repeat(var(--dash-cols), var(--dash-col-w)) var(--dash-rate-w, 104px);
             grid-template-rows: 46px;
             border-bottom: 1px solid var(--c-grey-1);
             transition: background var(--t-fast);
@@ -11118,12 +11095,12 @@ title: Tableau de bord
           .tdb .dash-main{overflow:visible !important;display:block !important;max-height:none !important;border-radius:18px !important;background:#fff !important;padding:0 !important}
           .tdb .qfq-sentinel{height:1px;margin:0;padding:0;overflow:hidden;pointer-events:none}
           .tdb .dash-grid-wrap{overflow:visible !important;max-height:none !important;min-height:0 !important;flex:none !important}
-          .tdb .dash-toolbar{position:sticky !important;top:var(--qfq-stick, 12px) !important;z-index:40 !important;background:#fff !important;border-radius:18px 18px 0 0 !important;box-shadow:none !important;border-top:0 !important;border-left:0 !important;border-right:0 !important}
+          .tdb .dash-toolbar{position:relative !important;top:auto !important;z-index:3 !important;background:#fff !important;border-radius:18px 18px 0 0 !important;box-shadow:none !important;border-top:0 !important;border-left:0 !important;border-right:0 !important}
           .tdb .dash-toolbar.is-stuck{box-shadow:0 -18px 0 18px #F4F7FB !important}
-          .tdb .dash-toolbar.is-stuck::before{content:"";position:absolute;left:-18px;right:-18px;bottom:100%;height:400px;background:#F4F7FB;pointer-events:none}
+          .tdb .dash-toolbar.is-stuck::before{content:none!important;display:none!important}
           .tdb .dash-main.is-stuck,
           html.qfq-stuck .tdb .dash-main{border-color:transparent !important;box-shadow:none !important;outline:none !important;filter:none !important}
-          .tdb .dash-row--head{position:sticky !important;top:calc(var(--qfq-stick, 12px) + var(--qfq-bar, 70px) - 1px) !important;z-index:39 !important;background:#fff !important;box-shadow:0 1px 0 #E6EAF2 !important}
+          .tdb .dash-row--head{position:sticky !important;top:0 !important;z-index:6 !important;background:#fff !important;box-shadow:0 1px 0 #E6EAF2 !important}
           .tdb .dash-row--head .dash-dayhead,
           .tdb .dash-row--head .dash-cell-name,
           .tdb .dash-row--head .dash-cell-rate{background:#fff !important}
@@ -11155,14 +11132,14 @@ title: Tableau de bord
           }
           .tdb .dash-row{
             display: grid;
-            grid-template-columns: 200px repeat(var(--dash-cols), var(--dash-col-w)) 104px;
+            grid-template-columns: var(--dash-name-w, 200px) repeat(var(--dash-cols), var(--dash-col-w)) var(--dash-rate-w, 104px);
             grid-template-rows: 46px;
           }
           .tdb .dash-cell-rate{ grid-column: calc(2 + var(--dash-cols)); }
           .tdb .dash-grid--vertical{ min-width: 0; }
           .tdb .dash-grid--vertical .dash-row:not(.dash-row--head),
           .tdb .dash-grid--vertical .dash-row--head{
-            grid-template-columns: 200px repeat(var(--dash-cols), var(--dash-col-w)) 104px !important;
+            grid-template-columns: var(--dash-name-w, 200px) repeat(var(--dash-cols), var(--dash-col-w)) var(--dash-rate-w, 104px) !important;
           }
           .tdb .dash-grid--vertical .dash-row:not(.dash-row--head){ grid-template-rows: 28px 28px; }
           .tdb .dash-grid--vertical .dash-row--head{ grid-template-rows: 52px; }
@@ -11421,18 +11398,19 @@ title: Tableau de bord
           .tdb .dash-cap--scroll .dash-cap__day{ flex: 0 0 36px; }
           
           .tdb .dash-grid-wrap.dash-grid-wrap--film{
+            position: relative !important;
+            top: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
             overflow: auto !important;
-            position: sticky !important;
-            top: calc(var(--qfq-stick, 12px) + var(--dash-stick-h, 160px) - 1px) !important;
-            max-height: calc(100vh - var(--qfq-stick, 12px) - var(--dash-stick-h, 160px) - 8px) !important;
-            z-index: 1;
+            background: #fff !important;
           }
           .tdb .dash-grid.dash-grid--film{
             position: relative !important;
             left: auto !important;
             width: max(100%, var(--dash-film, 100%));
             min-width: var(--dash-film, 0);
-            --dash-col-w: minmax(104px, 1fr);
           }
           .tdb .dash-grid--film .dash-cell-name,
           .tdb .dash-grid--film .dash-cell-rate{
@@ -11482,6 +11460,171 @@ title: Tableau de bord
           .tdb .dash-stick .dash-head-pin{
             margin: 0 !important;
             border: 0 !important;
+          }
+          
+          
+          /* Arrondi haut QFQ + alignement semaine */
+          .tdb .card.dash-main,
+          .tdb .dash-main.card {
+            border-radius: 18px !important;
+            background: #fff !important;
+          }
+          .tdb .dash-stick {
+            border-radius: 18px 18px 0 0 !important;
+            overflow: hidden;
+            background: #fff;
+          }
+          .tdb .dash-stick .dash-toolbar {
+            border-radius: 18px 18px 0 0 !important;
+          }
+          .tdb .dash-grid-wrap--film {
+            scrollbar-gutter: stable;
+          }
+          
+          
+          /* Fix alignement header/corps + fond opaque QFQ */
+          .tdb .dash-stick {
+            position: sticky !important;
+            top: var(--qfq-stick, 12px) !important;
+            z-index: 50 !important;
+            background: #fff !important;
+            border-radius: 18px 18px 0 0 !important;
+            overflow: hidden;
+            isolation: isolate;
+          }
+          .tdb .dash-stick .dash-toolbar,
+          .tdb .dash-stick .dash-frise-nav,
+          .tdb .dash-stick .dash-head-pin {
+            background: #fff !important;
+          }
+          .tdb .card.dash-main,
+          .tdb .dash-main.card {
+            background: #fff !important;
+            border-radius: 18px !important;
+            isolation: isolate;
+            z-index: 2;
+          }
+          .tdb .dash-grid-wrap--film {
+            z-index: 1 !important;
+            background: #fff;
+          }
+          .tdb .dash-grid--vertical .dash-row,
+          .tdb .dash-grid--vertical .dash-row--head,
+          .tdb .dash-head-pin .dash-row--head {
+            grid-template-columns: var(--dash-name-w, 200px) repeat(var(--dash-cols), var(--dash-col-w)) var(--dash-rate-w, 104px) !important;
+          }
+          #qfq-veil {
+            background: #F4F7FB !important;
+          }
+          
+          
+          /* QFQ : scroll interne, dates dans la meme grille */
+          .tdb .card.dash-main,
+          .tdb .dash-main.card {
+            display: flex !important;
+            flex-direction: column !important;
+            max-height: calc(100dvh - 88px) !important;
+            overflow: hidden !important;
+            border-radius: 18px !important;
+            background: #fff !important;
+          }
+          .tdb .dash-stick {
+            position: relative !important;
+            top: auto !important;
+            z-index: 2 !important;
+            flex: none;
+            background: #fff !important;
+            border-radius: 18px 18px 0 0;
+          }
+          .tdb .dash-grid-wrap,
+          .tdb .dash-grid-wrap.dash-grid-wrap--film {
+            position: relative !important;
+            top: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: auto !important;
+            background: #fff !important;
+          }
+          .tdb .dash-grid-wrap .dash-row--head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 6 !important;
+            background: #fff !important;
+          }
+          .tdb .dash-comments {
+            display: flex !important;
+            flex-direction: column !important;
+            max-height: 440px !important;
+            min-height: 0;
+            overflow: hidden !important;
+          }
+          .tdb .dash-comments__head { flex: none; }
+          .tdb .dash-comments__list {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto !important;
+          }
+          
+          
+          /* Sidebar sync (logo réduit → --pfa-side 220px) est géré par PfaSidebar */
+          
+          /* Maquette QFQ : toolbar+frise hors scroll, dates sticky dans la grille */
+          .tdb .card.dash-main,
+          .tdb .dash-main.card {
+            display: flex !important;
+            flex-direction: column !important;
+            max-height: calc(100dvh - 88px) !important;
+            overflow: hidden !important;
+            border-radius: 18px !important;
+            background: #fff !important;
+          }
+          .tdb .dash-stick {
+            position: relative !important;
+            top: auto !important;
+            z-index: 3 !important;
+            flex: 0 0 auto !important;
+            background: #fff !important;
+            border-radius: 18px 18px 0 0 !important;
+          }
+          .tdb .dash-stick .dash-toolbar,
+          .tdb .dash-stick .dash-frise-nav {
+            position: relative !important;
+            top: auto !important;
+            background: #fff !important;
+          }
+          .tdb .dash-frise-nav {
+            flex: none;
+            background: #fff !important;
+          }
+          .tdb .dash-grid-wrap,
+          .tdb .dash-grid-wrap.dash-grid-wrap--film {
+            position: relative !important;
+            top: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: auto !important;
+            background: #fff !important;
+          }
+          .tdb .dash-grid-wrap .dash-row--head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 6 !important;
+            background: #fff !important;
+            box-shadow: 0 1px 0 #E6EAF2;
+          }
+          .tdb .dash-comments {
+            display: flex !important;
+            flex-direction: column !important;
+            max-height: 440px !important;
+            min-height: 0;
+            overflow: hidden !important;
+          }
+          .tdb .dash-comments__list {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto !important;
           }
           '
 ↓PageEvent [ngx.components.UIPageEvent-1791141759900]: 
