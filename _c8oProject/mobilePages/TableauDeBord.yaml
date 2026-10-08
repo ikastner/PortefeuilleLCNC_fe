@@ -407,6 +407,8 @@ scriptContent:
         		this.pageSub = "La p\u00e9riode de l\u2019\u00e9quipe : ce qu\u2019il faut retenir et o\u00f9 agir.";
         		try { window.sessionStorage.setItem("pfc:tdb", "v2"); } catch (eV) {}
         		this.ready = false;
+        		this.assurerLayoutCss();
+        		this.assurerPlaceSemaine();
         		this.armSkeleton();
         		this.message = "";
         		this.offset = 0;
@@ -759,9 +761,34 @@ scriptContent:
         		return 5;
         	}
         	fenetreVisible(nDays, wrapW?) {
+        		var n = Math.max(0, nDays || 0);
+        		this.assurerLayoutCss();
+        		this.assurerPlaceSemaine();
+        		// Semaine (≤ 5 j ouvrés) : toujours toute la période, jamais sous 5 j.
+        		if (n > 0 && n <= 5) return n;
         		var w = wrapW != null && wrapW !== undefined ? wrapW : this.wrapWidth();
-        		var fit = Math.floor((w - 200 - 104) / 104);
-        		return Math.max(1, Math.min(nDays, fit > 0 ? fit : 1));
+        		var nameW = 168;
+        		var rateW = 96;
+        		var colMin = 88;
+        		var fit = Math.floor((w - nameW - rateW) / colMin);
+        		var win = fit > 0 ? fit : 5;
+        		return Math.max(5, Math.min(n, win));
+        	}
+        	assurerPlaceSemaine() {
+        		var host = document.querySelector(".tdb") as HTMLElement;
+        		if (!host) return;
+        		var all = this._allDays || [];
+        		if (!all.length && this.periodeCourante) {
+        			try { all = this.periodeCourante().days || []; } catch (eP) { all = []; }
+        		}
+        		var isWeek = !!(all.length && all.length <= 5);
+        		if (isWeek) host.classList.add("tdb--week");
+        		else host.classList.remove("tdb--week");
+        		try {
+        			document.documentElement.style.setProperty("--dash-name-w", isWeek ? "168px" : "200px");
+        			document.documentElement.style.setProperty("--dash-rate-w", isWeek ? "96px" : "104px");
+        			if (isWeek) document.documentElement.style.setProperty("--dash-col-w", "minmax(80px, 1fr)");
+        		} catch (eL) {}
         	}
         	maxGridStart(nDays, win?) {
         		return Math.max(0, nDays - (win || this.fenetreVisible(nDays)));
@@ -831,7 +858,29 @@ scriptContent:
         		var dec = this.decalagePeriode(p.from, p.to, dir);
         		this.setPeriode(dec.from, dec.to);
         	}
+        	assurerLayoutCss() {
+        		if (document.getElementById("tdb-layout-css")) return;
+        		var el = document.createElement("style");
+        		el.id = "tdb-layout-css";
+        		el.textContent = ""
+        			+ ".tdb .dash-layout{grid-template-columns:minmax(0,1fr) minmax(200px,260px)!important;gap:12px!important}"
+        			+ ".tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr) minmax(168px,220px)!important;gap:10px!important}"
+        			+ ".tdb.tdb--week .dash-aside{min-width:0}"
+        			+ ".tdb.tdb--week .dash-side{padding:12px 12px!important}"
+        			+ ".tdb.tdb--week .dash-side__head h3{font-size:13px!important}"
+        			+ ".tdb.tdb--week .dash-effort__name,.tdb.tdb--week .dash-effort__val{font-size:12.5px!important}"
+        			+ ".tdb.tdb--week .dash-row,.tdb.tdb--week .dash-head-pin .dash-row--head{"
+        			+ "grid-template-columns:var(--dash-name-w,168px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,96px)!important}"
+        			+ ".tdb .dash-row,.tdb .dash-head-pin .dash-row--head{"
+        			+ "grid-template-columns:var(--dash-name-w,200px) repeat(var(--dash-cols),var(--dash-col-w)) var(--dash-rate-w,104px)}"
+        			+ "@media (max-width:1200px){.tdb .dash-layout{grid-template-columns:minmax(0,1fr) minmax(168px,210px)!important}"
+        			+ ".tdb.tdb--week .dash-layout{grid-template-columns:minmax(0,1fr) 180px!important}}"
+        			+ "@media (max-width:980px){.tdb .dash-layout{grid-template-columns:minmax(0,1fr)!important}"
+        			+ ".tdb .dash-aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:12px}}";
+        		document.head.appendChild(el);
+        	}
         	assurerSkelCss() {
+        		this.assurerLayoutCss();
         		if (document.getElementById("tdb-skel-css")) return;
         		var el = document.createElement("style");
         		el.id = "tdb-skel-css";
@@ -1215,16 +1264,18 @@ scriptContent:
         		var all = this._allDays || [];
         		var vis = this._winDays && this._winDays.length ? this._winDays : all;
         		var nCols = Math.max(vis.length, 1);
-        		var film = (200 + nCols * 104 + 104) + "px";
+        		var isWeek = !!(this._allDays && this._allDays.length <= 5);
+        		this.assurerPlaceSemaine();
+        		var colW = isWeek || nCols <= 5 ? "minmax(80px, 1fr)" : "minmax(104px, 1fr)";
         		wrap.style.maxWidth = "100%";
         		wrap.style.overflowX = "auto";
         		wrap.scrollLeft = 0;
         		grid.style.minWidth = "100%";
         		grid.style.width = "100%";
         		grid.style.setProperty("--dash-cols", String(nCols));
-        		grid.style.setProperty("--dash-col-w", "minmax(104px, 1fr)");
+        		grid.style.setProperty("--dash-col-w", colW);
         		document.documentElement.style.setProperty("--dash-cols", String(nCols));
-        		document.documentElement.style.setProperty("--dash-col-w", "minmax(104px, 1fr)");
+        		document.documentElement.style.setProperty("--dash-col-w", colW);
         		document.documentElement.style.setProperty("--dash-film", "100%");
         		Array.prototype.forEach.call(grid.querySelectorAll(".dash-profil"), function (badge: any) {
         			if (badge.parentElement) badge.parentElement.removeChild(badge);
@@ -1791,6 +1842,7 @@ scriptContent:
         		this._winDays = days;
         		this._winStart = g0;
         		this.dashCols = days.length;
+        		this.assurerPlaceSemaine();
         		try {
         			document.documentElement.style.setProperty("--dash-n", String(days.length));
         			document.documentElement.style.setProperty("--dash-cols", String(days.length));
@@ -10194,9 +10246,13 @@ title: Tableau de bord
           /* Mise en page principale */
           .tdb .dash-layout{
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 340px;
-            gap: var(--s-4);
+            grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+            gap: 12px;
             align-items: start;
+          }
+          .tdb.tdb--week .dash-layout{
+            grid-template-columns: minmax(0, 1fr) minmax(168px, 220px);
+            gap: 10px;
           }
           
           .tdb .dash-main{ padding: 0; overflow: hidden; }
