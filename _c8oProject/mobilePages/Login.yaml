@@ -38,12 +38,49 @@ scriptContent:
         			return res;
         		});
         	}
+        	pfExtraireUser(node, depth?) {
+        		if (!node || (depth || 0) > 6) return null;
+        		var u = node.user;
+        		if (u && (u.codeAgent || u.role)) return u;
+        		if (node.document) {
+        			var a = this.pfExtraireUser(node.document, (depth || 0) + 1);
+        			if (a) return a;
+        		}
+        		if (node.sequence) {
+        			var b = this.pfExtraireUser(node.sequence, (depth || 0) + 1);
+        			if (b) return b;
+        		}
+        		return null;
+        	}
+        	pfExtraireErreur(node, depth?) {
+        		if (!node || (depth || 0) > 6) return null;
+        		if (node.error) return node.error;
+        		if (node.document) {
+        			var a = this.pfExtraireErreur(node.document, (depth || 0) + 1);
+        			if (a) return a;
+        		}
+        		if (node.sequence) {
+        			var b = this.pfExtraireErreur(node.sequence, (depth || 0) + 1);
+        			if (b) return b;
+        		}
+        		return null;
+        	}
         	pfConnecter(input): Promise<any> {
+        		var self = this;
         		var v = input || {};
         		return this.pfAppel("PortefeuilleLCNC_be.Auth_Login", {
         			user: String(v.login || "").trim(),
         			password: v.password || "",
         			testRole: v.testRole || ""
+        		}).then(function (res) {
+        			var root = res || {};
+        			var err = self.pfExtraireErreur(root) || root.error;
+        			if (err) return { error: err, document: root.document || root };
+        			var user = self.pfExtraireUser(root);
+        			if (user && user.role != null && Object.prototype.toString.call(user.role) !== "[object Array]") {
+        				user.role = [user.role];
+        			}
+        			return { user: user, document: root.document || root };
         		});
         	}
         	pfAppel(seq, params): Promise<any> {
