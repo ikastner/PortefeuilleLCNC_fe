@@ -5158,7 +5158,7 @@ title: Plan de charge
           textValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: plain:Grille d'affectation quotidienne des collaborateurs.
+              - MobileSmartSourceType: plain:Qui fait quoi sur la période
     ↓Actions [ngx.components.UIDynamicElement-1791128185181]: 
       beanData: '{"ionBean":"DivTag"}'
       tagName: div
