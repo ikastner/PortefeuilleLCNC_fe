@@ -1894,18 +1894,18 @@ scriptContent:
         				};
         			});
         			this.showRepos = cur.repos > 0;
-        			function kpi(label, value, delta, goodUp, unit) {
+        			function kpi(label, value, delta, goodUp, unit, key, raw) {
         				var tone = !delta ? "flat" : ((delta > 0) === goodUp ? "good" : "bad");
         				var txt = !delta ? "Stable" : ((delta > 0 ? "\u25b2 +" : "\u25bc \u2212") + self.fmtCoef(Math.abs(delta)) + unit);
-        				return { label: label, value: value, delta: txt, tone: tone };
+        				return { label: label, value: value, delta: txt, tone: tone, key: key || "", raw: raw == null ? null : raw };
         			}
         			var absNow = cur.absence + cur.formation;
         			var absPrev = prev.absence + prev.formation;
         			this.kpis = [
-        				kpi("Taux d\u2019affectation", cur.taux + " %", cur.taux - prev.taux, true, " pts"),
-        				kpi("Effort projet", this.fmtJ(cur.projet), (cur.projet - prev.projet) / 2, true, " j"),
-        				kpi("\u00c0 planifier", this.fmtJ(cur.libre), (cur.libre - prev.libre) / 2, false, " j"),
-        				kpi("Absences / formations", this.fmtJ(absNow), (absNow - absPrev) / 2, false, " j")
+        				kpi("Taux d\u2019affectation", cur.taux + " %", cur.taux - prev.taux, true, " pts", "", null),
+        				kpi("Effort projet", this.fmtJ(cur.projet), (cur.projet - prev.projet) / 2, true, " j", "", null),
+        				kpi("\u00c0 planifier", this.fmtJ(cur.libre), (cur.libre - prev.libre) / 2, false, " j", "libre", cur.libre),
+        				kpi("Absences / formations", this.fmtJ(absNow), (absNow - absPrev) / 2, false, " j", "", null)
         			];
         		} else if (this.capDays && this.capDays.length) {
         			var win0 = this._winStart || 0;
@@ -1927,18 +1927,18 @@ scriptContent:
         		if (needKpi) {
         			this._kpiSig = sig;
         			this._focusSig = focusKey;
-        			function kpiK(label, value, delta, goodUp, unit) {
+        			function kpiK(label, value, delta, goodUp, unit, key, raw) {
         				var tone = !delta ? "flat" : ((delta > 0) === goodUp ? "good" : "bad");
         				var txt = !delta ? "Stable" : ((delta > 0 ? "\u25b2 +" : "\u25bc \u2212") + self.fmtCoef(Math.abs(delta)) + unit);
-        				return { label: label, value: value, delta: txt, tone: tone };
+        				return { label: label, value: value, delta: txt, tone: tone, key: key || "", raw: raw == null ? null : raw };
         			}
         			var absNowK = vueK.absence + vueK.formation;
         			var absPrevK = vueP.absence + vueP.formation;
         			this.kpis = [
-        				kpiK("Taux d\u2019affectation", vueK.taux + " %", vueK.taux - vueP.taux, true, " pts"),
-        				kpiK("Effort projet", this.fmtJ(vueK.projet), (vueK.projet - vueP.projet) / 2, true, " j"),
-        				kpiK("\u00c0 planifier", this.fmtJ(vueK.libre), (vueK.libre - vueP.libre) / 2, false, " j"),
-        				kpiK("Absences / formations", this.fmtJ(absNowK), (absNowK - absPrevK) / 2, false, " j")
+        				kpiK("Taux d\u2019affectation", vueK.taux + " %", vueK.taux - vueP.taux, true, " pts", "", null),
+        				kpiK("Effort projet", this.fmtJ(vueK.projet), (vueK.projet - vueP.projet) / 2, true, " j", "", null),
+        				kpiK("\u00c0 planifier", this.fmtJ(vueK.libre), (vueK.libre - vueP.libre) / 2, false, " j", "libre", vueK.libre),
+        				kpiK("Absences / formations", this.fmtJ(absNowK), (absNowK - absPrevK) / 2, false, " j", "", null)
         			];
         		}
         		this.collabCount = this.plur(cur.personnes.length, "collaborateur");
@@ -3019,6 +3019,56 @@ scriptContent:
         	}
         
         
+        	écrireQfqDeepLink(opts) {
+        		try {
+        			if (opts.periodFrom) window.sessionStorage.setItem("pfc:qfq:periodFrom", opts.periodFrom);
+        			if (opts.periodTo) window.sessionStorage.setItem("pfc:qfq:periodTo", opts.periodTo);
+        			if (opts.focusDay) window.sessionStorage.setItem("pfc:qfq:focusDay", opts.focusDay);
+        			else window.sessionStorage.removeItem("pfc:qfq:focusDay");
+        			if (opts.focusEl) window.sessionStorage.setItem("pfc:qfq:focusEl", opts.focusEl);
+        			else window.sessionStorage.removeItem("pfc:qfq:focusEl");
+        			if (opts.scroll) window.sessionStorage.setItem("pfc:qfq:scroll", opts.scroll);
+        			else window.sessionStorage.removeItem("pfc:qfq:scroll");
+        		} catch (e) {}
+        	}
+        	ouvrirInsightJour(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-day]") || n;
+        		var day = Number(n && n.getAttribute ? n.getAttribute("data-day") : -1);
+        		if (isNaN(day) || day < 0) return;
+        		var d = (this._allDays || [])[day];
+        		if (!d) return;
+        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, focusDay: this.iso(d) });
+        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        	}
+        	ouvrirInsightProjet(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-el]") || n;
+        		var code = n && n.getAttribute ? (n.getAttribute("data-el") || "") : "";
+        		if (!code) return;
+        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, focusEl: code });
+        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        	}
+        	ouvrirCapaciteJour(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-day]") || n;
+        		var day = Number(n && n.getAttribute ? n.getAttribute("data-day") : -1);
+        		if (isNaN(day) || day < 0) return;
+        		var d = (this._allDays || [])[day];
+        		if (!d) return;
+        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, focusDay: this.iso(d) });
+        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        	}
+        	ouvrirKpiAPlanifier(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-key]") || n;
+        		var key = n && n.getAttribute ? (n.getAttribute("data-key") || "") : "";
+        		if (key !== "libre") return;
+        		var raw = Number(n.getAttribute("data-raw"));
+        		if (!raw || raw <= 0) return;
+        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, scroll: "dispos" });
+        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        	}
         	fermerDetail() { this.detailOn = false; this.rafraichir(); }
         	aller(route, preset) {
         		if (!route || route === "dashboard") return;
@@ -3041,12 +3091,20 @@ scriptContent:
         			this.routerProvider.navigateRoot("Collaborateurs", false, null);
         			return;
         		}
-        		try {
-        			window.sessionStorage.setItem("pfc:vue", route === "grille" ? "grille" : String(route));
-        			if (preset) window.sessionStorage.setItem("pfc:preset", String(preset));
-        			else window.sessionStorage.removeItem("pfc:preset");
-        		} catch (e) {}
-        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        		if (route === "grille" || route === "plan") {
+        			try {
+        				window.sessionStorage.setItem("pfc:vue", "grille");
+        				if (preset === "surcharge") {
+        					window.sessionStorage.removeItem("pfc:preset");
+        					this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo });
+        				} else {
+        					if (preset) window.sessionStorage.setItem("pfc:preset", String(preset));
+        					else window.sessionStorage.removeItem("pfc:preset");
+        				}
+        			} catch (e) {}
+        			this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        			return;
+        		}
         	}
         	navSidebar(event) {
         		var code = event;
@@ -3066,7 +3124,12 @@ scriptContent:
         		}
         		this.aller(code || "grille", "");
         	}
-        	allerPlan() { this.detailOn = false; this.aller("grille", ""); }
+        	allerPlan() {
+        		this.detailOn = false;
+        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo });
+        		try { window.sessionStorage.setItem("pfc:vue", "grille"); window.sessionStorage.removeItem("pfc:preset"); } catch (e) {}
+        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        	}
         	allerProjet() { this.detailOn = false; this.aller("projets", ""); }
         	ouvrirPill(event) {
         		var n = this.noeud(event);
@@ -3404,7 +3467,7 @@ title: Tableau de bord
                 - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
                 - com.twinsoft.convertigo.beans.common.FormatedContent: 
                   →: |
-                    page.aller('grille', '');
+                    page.allerPlan();
                     resolve(true);
                     
         ↓OpenPlanL [ngx.components.UIText-1791128183557]: 
@@ -5055,7 +5118,7 @@ title: Tableau de bord
                             - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
                             - com.twinsoft.convertigo.beans.common.FormatedContent: 
                               →: |
-                                if ((event.currentTarget || event.target).getAttribute('data-act') === 'jour') page.focusJour(event); else page.focusProjet(event);
+                                if ((event.currentTarget || event.target).getAttribute('data-act') === 'jour') page.ouvrirInsightJour(event); else page.ouvrirInsightProjet(event);
                                 resolve(true);
                     ↓InsightIco2 [ngx.components.UIDynamicElement-1795702100106]: 
                       beanData: '{"ionBean":"DivTag"}'
@@ -5636,7 +5699,7 @@ title: Tableau de bord
                         - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
                         - com.twinsoft.convertigo.beans.common.FormatedContent: 
                           →: |
-                            page.focusJour(event);
+                            page.ouvrirCapaciteJour(event);
                             resolve(true);
                 ↓CapPct [ngx.components.UIDynamicElement-1795702100135]: 
                   beanData: '{"ionBean":"DivTag"}'
@@ -5834,6 +5897,27 @@ title: Tableau de bord
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                   - MobileSmartSourceType: plain:card dash-kpi
+            ↓KpiKey [ngx.components.UIAttribute-1795702100601]: 
+              attrName: '[attr.data-key]'
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:kpi.key
+            ↓KpiRaw [ngx.components.UIAttribute-1795702100602]: 
+              attrName: '[attr.data-raw]'
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:kpi.raw
+            ↓KpiClick [ngx.components.UIControlEvent-1795702100603]: 
+              ↓KpiClickDo [ngx.components.UICustomAction-1795702100604]: 
+                actionValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                      →: |
+                        page.ouvrirKpiAPlanifier(event);
+                        resolve(true);
             ↓KpiL [ngx.components.UIDynamicElement-1795702100184]: 
               beanData: '{"ionBean":"DivTag"}'
               tagName: div
