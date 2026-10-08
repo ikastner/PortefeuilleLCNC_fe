@@ -4080,7 +4080,7 @@ scriptContent:
         			} else this.refresh();
         		}, (err) => this.pfFail(err));
         	}
-
+        	
         	texteCommentaire(v) {
         		return String(v || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
         	}
