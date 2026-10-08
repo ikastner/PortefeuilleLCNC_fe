@@ -2742,7 +2742,9 @@ scriptContent:
         			this.rows = [];
         			this.items = [];
         			this.loading = false;
+        			this.ready = true;
         			this.message = String((d.error && d.error.message) || d.error);
+        			try { this.desarmerSkeleton(true); } catch (eSk) {}
         			this.refresh();
         			return;
         		}
@@ -3293,7 +3295,15 @@ scriptContent:
         		if (!this.rows || !this.rows.length) return;
         		if ((!this.elements || !this.elements.length) && (!this.types || !this.types.length)) return;
         		this.pfAffectPending = null;
-        		this.pfOpenCreate({ rowId: data.rowId, dateDebut: data.dateDebut, dateFin: data.dateFin || data.dateDebut, period: data.period || "ALL", label: data.label || "" });
+        		var label = data.label ? String(data.label) : "";
+        		this.affOuvrir({
+        			rowId: data.rowId,
+        			dateDebut: data.dateDebut,
+        			dateFin: data.dateFin || data.dateDebut,
+        			period: data.period || "ALL",
+        			label: label,
+        			mode: label ? "view" : "create"
+        		});
         	}
         	pfOpenCreate(data) {
         		const ev = data || {};
