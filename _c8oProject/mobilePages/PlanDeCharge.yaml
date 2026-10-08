@@ -335,6 +335,33 @@ scriptContent:
         			else window.sessionStorage.removeItem("pfc:trimestres");
         		} catch (e) {}
         	}
+        	écrireQfqDeepLink(opts) {
+        		try {
+        			if (opts.periodFrom) window.sessionStorage.setItem("pfc:qfq:periodFrom", opts.periodFrom);
+        			if (opts.periodTo) window.sessionStorage.setItem("pfc:qfq:periodTo", opts.periodTo);
+        			if (opts.focusDay) window.sessionStorage.setItem("pfc:qfq:focusDay", opts.focusDay);
+        			else window.sessionStorage.removeItem("pfc:qfq:focusDay");
+        			if (opts.focusEl) window.sessionStorage.setItem("pfc:qfq:focusEl", opts.focusEl);
+        			else window.sessionStorage.removeItem("pfc:qfq:focusEl");
+        			if (opts.scroll) window.sessionStorage.setItem("pfc:qfq:scroll", opts.scroll);
+        			else window.sessionStorage.removeItem("pfc:qfq:scroll");
+        		} catch (e) {}
+        	}
+        	lireEtConsommerQfqDeepLink() {
+        		try {
+        			var from = window.sessionStorage.getItem("pfc:qfq:periodFrom");
+        			var to = window.sessionStorage.getItem("pfc:qfq:periodTo");
+        			var focusDay = window.sessionStorage.getItem("pfc:qfq:focusDay");
+        			var focusEl = window.sessionStorage.getItem("pfc:qfq:focusEl");
+        			var scroll = window.sessionStorage.getItem("pfc:qfq:scroll");
+        			["pfc:qfq:periodFrom","pfc:qfq:periodTo","pfc:qfq:focusDay","pfc:qfq:focusEl","pfc:qfq:scroll"]
+        				.forEach(function (k) { window.sessionStorage.removeItem(k); });
+        			if (!from && !to && !focusDay && !focusEl && !scroll) return null;
+        			if (from && to && from > to) return null;
+        			return { periodFrom: from || undefined, periodTo: to || undefined,
+        				focusDay: focusDay || undefined, focusEl: focusEl || undefined, scroll: scroll || undefined };
+        		} catch (e) { return null; }
+        	}
         	fixTrimestre() {
         		var d = new Date();
         		var q = Math.floor(d.getMonth() / 3) + 1;
