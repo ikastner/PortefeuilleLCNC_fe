@@ -4068,6 +4068,714 @@ scriptContent:
         			} else this.refresh();
         		}, (err) => this.pfFail(err));
         	}
+
+        	texteCommentaire(v) {
+        		return String(v || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+        	}
+        	calerCommentaires() {
+        		var aside = document.querySelector(".tdb .dash-aside");
+        		var card: any = document.querySelector(".tdb .dash-comments");
+        		var list: any = card ? card.querySelector(".dash-comments__list") : null;
+        		if (!aside || !card) return;
+        		if (list) list.style.maxHeight = "";
+        		var a = aside.getBoundingClientRect();
+        		var c = card.getBoundingClientRect();
+        		if (a.left < c.right - 8) return;
+        		var head = card.querySelector(".dash-comments__head");
+        		var headH = head ? head.getBoundingClientRect().height : 52;
+        		var room = Math.floor(a.bottom - c.top - headH - 8);
+        		if (list && room > 72) list.style.maxHeight = room + "px";
+        	}
+        	montrerPersonne(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-cle]") || n;
+        		var cle = n && n.getAttribute ? n.getAttribute("data-cle") : "";
+        		if (!cle || !document || !document.querySelector) return;
+        		var row: any = document.querySelector(''.tdb .dash-row[data-cle="'' + cle + ''"]'');
+        		if (!row) return;
+        		if (row.scrollIntoView) row.scrollIntoView({ block: "center", behavior: "smooth" });
+        		row.classList.remove("is-flash");
+        		void row.offsetWidth;
+        		row.classList.add("is-flash");
+        	}
+        	affStop(event) {
+        		if (event && event.stopPropagation) event.stopPropagation();
+        	}
+        	affOk(out) {
+        		var d = this.doc(out);
+        		return !(d && d.error);
+        	}
+        	affTitle() {
+        		var who = "";
+        		var i;
+        		for (i = 0; i < (this.affRows || []).length; i++) {
+        			if (String(this.affRows[i].id) === String(this.affRowId)) { who = this.affRows[i].name; break; }
+        		}
+        		return who || (this.affMode === "view" ? "Affectation" : "Nouvelle affectation");
+        	}
+        	affSub() {
+        		var who = "";
+        		var i;
+        		for (i = 0; i < (this.affRows || []).length; i++) {
+        			if (String(this.affRows[i].id) === String(this.affRowId)) { who = this.affRows[i].name; break; }
+        		}
+        		var a = this.affLong(this.affStart);
+        		var b = this.affLong(this.affEnd);
+        		var span = !b || a === b ? a : ("Du " + a + " au " + b);
+        		var per = this.affPeriod === "AM" ? "matin" : (this.affPeriod === "PM" ? "après-midi" : "journée");
+        		return span + " · " + per;
+        	}
+        	affLong(iso) {
+        		var s = String(iso || "");
+        		if (s.length < 10) return "";
+        		var d = new Date(s.substring(0, 10) + "T12:00:00");
+        		if (isNaN(d.getTime())) return "";
+        		var txt = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+        		return txt ? txt.charAt(0).toUpperCase() + txt.slice(1) : "";
+        	}
+        	affQuand(iso) {
+        		var long = this.affLong(iso);
+        		var num = this.affFr(iso);
+        		if (long && num) return long + " · " + num;
+        		return num || long;
+        	}
+        	affFr(iso) {
+        		var s = String(iso || "");
+        		if (s.length < 10) return s;
+        		return s.substring(8, 10) + "/" + s.substring(5, 7) + "/" + s.substring(0, 4);
+        	}
+        	affConfirmLabel() {
+        		return this.affBusy ? "Enregistrement…" : (this.affMode === "view" ? "Enregistrer" : "Affecter");
+        	}
+        	affPeriodClass(code) {
+        		return "pfm-period" + (this.affPeriod === code ? " pfm-period--on" : "");
+        	}
+        	affSetPeriod(code) {
+        		this.affPeriod = code;
+        		this.affPeindreApercu();
+        		this.rafraichir();
+        	}
+        	affSetRow(v) {
+        		this.affRowId = v == null ? "" : String(v);
+        		this.affChargerApercu();
+        		this.rafraichir();
+        	}
+        	affSetLabel(v) {
+        		this.affLabel = v == null ? "" : String(v);
+        		this.affMajFiche();
+        		this.affPeindreApercu();
+        		this.affChargerFil();
+        		this.rafraichir();
+        	}
+        	affIsoOf(v) {
+        		if (v && typeof v.getFullYear === "function") {
+        			var m = String(v.getMonth() + 1);
+        			var d = String(v.getDate());
+        			if (m.length < 2) m = "0" + m;
+        			if (d.length < 2) d = "0" + d;
+        			return v.getFullYear() + "-" + m + "-" + d;
+        		}
+        		return String(v || "").slice(0, 10);
+        	}
+        	affSetStart(v) {
+        		this.affStart = this.affIsoOf(v);
+        		if (this.affEnd && this.affStart && this.affEnd < this.affStart) this.affEnd = this.affStart;
+        		this.affChargerApercu();
+        		this.affChargerFil();
+        		this.rafraichir();
+        	}
+        	affSetEnd(v) {
+        		this.affEnd = this.affIsoOf(v);
+        		if (this.affStart && this.affEnd && this.affEnd < this.affStart) this.affStart = this.affEnd;
+        		this.affChargerApercu();
+        		this.rafraichir();
+        	}
+        	affPreparer() {
+        		var self = this;
+        		this.affRows = (this.lignes || []).filter(function (l) {
+        			return self.onFlag(l.actif == null ? "true" : l.actif);
+        		}).map(function (l) {
+        			return { id: String(l.cle), name: l.libelle || l.cle };
+        		});
+        		var ICO = {
+        			PROJET: "M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z",
+        			ABSENCE: "M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1",
+        			ABSENCE_PREV: "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM16 2v4M8 2v4M3 10h18",
+        			FORMATION: "M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8",
+        			SEMINAIRE: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M5 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        		};
+        		var tiles = [{ code: "PROJET", libelle: "Projet", couleur: "#1A428A", encre: "#FFFFFF", ico: ICO.PROJET, on: this.affKind === "PROJET" }];
+        		(this.types || []).forEach(function (t) {
+        			var req = String(t.requiertElement == null ? "" : t.requiertElement).toLowerCase();
+        			if (req === "true" || req === "t" || req === "1") return;
+        			if (!self.onFlag(t.actif == null ? "true" : t.actif)) return;
+        			var code = String(t.code || "");
+        			tiles.push({ code: code, libelle: String(t.libelle || code), couleur: t.couleurFond || t.couleur || "#6C757D", encre: t.couleurTexte || "#FFFFFF", ico: ICO[code] || ICO.ABSENCE_PREV, on: self.affKind === code });
+        		});
+        		this.affTiles = tiles;
+        		this.affProjet = this.affKind === "PROJET";
+        		var days = this.joursApercu();
+        		this.affJourOpts = days.map(function (d) {
+        			return { label: self.affLong(self.iso(d)), value: self.iso(d) };
+        		});
+        		this.affPreparerGroupes();
+        		this.affMajFiche();
+        		this.affCanEdit = this.has("MODIFIER_AFFECTATION");
+        		var soi = String(this.affRowId) === String(this.cleActeur);
+        		this.affCanComment = soi ? (this.has("COMMENTER_JOUR_SOI") || this.has("COMMENTER_JOUR_AUTRUI")) : this.has("COMMENTER_JOUR_AUTRUI");
+        	}
+        	affTypeOf(label) {
+        		var lab = String(label || "");
+        		var list = this.types || [];
+        		var i;
+        		for (i = 0; i < list.length; i++) {
+        			var t = list[i];
+        			var req = String(t.requiertElement == null ? "" : t.requiertElement).toLowerCase();
+        			if (req === "true" || req === "t" || req === "1") continue;
+        			if (String(t.libelle || "") === lab || String(t.code || "") === lab) return String(t.code);
+        		}
+        		return "PROJET";
+        	}
+        	affPeriodDb(p) {
+        		if (p === "AM") return "MATIN";
+        		if (p === "PM") return "APREM";
+        		return "JOURNEE";
+        	}
+        	affItemPeriode(it) {
+        		var p = String((it && it.period) || "JOURNEE").toUpperCase();
+        		if (p === "AM" || p === "MATIN" || p === "M") return "MATIN";
+        		if (p === "PM" || p === "APREM" || p === "A") return "APREM";
+        		return "JOURNEE";
+        	}
+        	affDays(from, to) {
+        		var out = [];
+        		if (!from || !to) return out;
+        		var d = new Date(String(from).slice(0, 10) + "T12:00:00");
+        		var end = new Date(String(to).slice(0, 10) + "T12:00:00");
+        		if (isNaN(d.getTime()) || isNaN(end.getTime())) return out;
+        		while (d.getTime() <= end.getTime()) {
+        			var day = d.getDay();
+        			if (day !== 0 && day !== 6) out.push(this.iso(d));
+        			d.setDate(d.getDate() + 1);
+        		}
+        		return out;
+        	}
+        	affNext(iso) {
+        		var d = new Date(String(iso).slice(0, 10) + "T12:00:00");
+        		d.setDate(d.getDate() + 1);
+        		return this.iso(d);
+        	}
+        	affRuns(days) {
+        		var runs = [];
+        		var i;
+        		for (i = 0; i < days.length; i++) {
+        			var last = runs[runs.length - 1];
+        			if (last && this.affNext(last.to) === days[i]) last.to = days[i];
+        			else runs.push({ from: days[i], to: days[i] });
+        		}
+        		return runs;
+        	}
+        	affOrigOf(rowId, from, to, kind) {
+        		var self = this;
+        		return (this.items || []).filter(function (it) {
+        			var s = String(it.start || "").slice(0, 10);
+        			return String(it.rowId) === String(rowId) && s >= from && s <= to && self.kindOf(it) === kind;
+        		});
+        	}
+        	affFermer() {
+        		var self = this;
+        		this.affBusy = false;
+        		if (!this.affShown) { this.affOpen = false; this.affShown = false; this.rafraichir(); return; }
+        		this.affShown = false;
+        		this.rafraichir();
+        		setTimeout(function () { self.affOpen = false; self.rafraichir(); }, 260);
+        	}
+        	affOuvrir(data) {
+        		this.affMode = data.mode || "create";
+        		this.affRowId = String(data.rowId || "");
+        		this.affStart = String(data.dateDebut || "");
+        		this.affEnd = String(data.dateFin || data.dateDebut || "");
+        		this.affPeriod = data.period || "ALL";
+        		this.affLabel = data.label ? String(data.label) : "";
+        		this.affKind = this.affLabel ? this.affTypeOf(this.affLabel) : "PROJET";
+        		this.affReplyId = "";
+        		this.affEditId = "";
+        		this.affDraft = "";
+        		this.affCmtMsg = "";
+        		this.affFil = [];
+        		this.affOrigItems = this.affMode === "view" ? this.affOrigOf(this.affRowId, this.affStart, this.affEnd, data.kind || "") : [];
+        		this.affBusy = false;
+        		this.affPreparer();
+        		this.affChargerApercu();
+        		this.affChargerFil();
+        		this.detailOn = false;
+        		this.affShown = false;
+        		this.affOpen = true;
+        		this.rafraichir();
+        		var selfOpen = this;
+        		setTimeout(function () { selfOpen.affShown = true; selfOpen.rafraichir(); }, 20);
+        	}
+        	affEnregistrer() {
+        		if (this.affBusy) return;
+        		if (!this.has("MODIFIER_AFFECTATION")) {
+        			this.message = "Droit MODIFIER_AFFECTATION requis.";
+        			this.rafraichir();
+        			return;
+        		}
+        		if (!this.affRowId || !this.affStart || !this.affEnd) return;
+        		var a = this.affStart;
+        		var b = this.affEnd;
+        		if (a > b) { var t = a; a = b; b = t; this.affStart = a; this.affEnd = b; }
+        		var days = this.affDays(a, b);
+        		if (!days.length) {
+        			this.message = "Choisissez au moins un jour ouvré.";
+        			this.rafraichir();
+        			return;
+        		}
+        		var periode = this.affPeriodDb(this.affPeriod);
+        		var codeType = (this.affKind && this.affKind !== "PROJET") ? this.affKind : "PROJET";
+        		var libelle = codeType === "PROJET" ? String(this.affLabel || "") : "";
+        		if (codeType === "PROJET" && !libelle) {
+        			this.message = "Choisissez le projet.";
+        			this.rafraichir();
+        			return;
+        		}
+        		var runs = periode === "JOURNEE" ? this.affRuns(days) : days.map(function (d) { return { from: d, to: d }; });
+        		var self = this;
+        		var covered = {};
+        		days.forEach(function (d) { covered[d + "|" + periode] = true; if (periode === "JOURNEE") { covered[d + "|MATIN"] = true; covered[d + "|APREM"] = true; } });
+        		this.affBusy = true;
+        		this.rafraichir();
+        		var chain = Promise.resolve(true);
+        		runs.forEach(function (r) {
+        			chain = chain.then(function (ok) {
+        				if (!ok) return false;
+        				return self.appel("Jour_Enregistrer", {
+        					cleActeur: self.cleActeur,
+        					cleLigne: self.affRowId,
+        					codeType: codeType,
+        					libelleElement: libelle,
+        					dateFrom: r.from,
+        					dateTo: r.to,
+        					periode: periode,
+        					commentaire: ""
+        				}).then(function (out) { return self.affOk(out); });
+        			});
+        		});
+        		chain = chain.then(function (ok) {
+        			if (!ok) return false;
+        			var drop = (self.affOrigItems || []).filter(function (it) {
+        				var s = String(it.start || "").slice(0, 10);
+        				if (String(it.rowId) !== String(self.affRowId)) return true;
+        				return s < a || s > b;
+        			});
+        			var next = Promise.resolve(true);
+        			drop.forEach(function (it) {
+        				next = next.then(function (still) {
+        					if (!still) return false;
+        					return self.appel("Jour_Supprimer", {
+        						cleActeur: self.cleActeur,
+        						cleLigne: String(it.rowId),
+        						jour: String(it.start || "").slice(0, 10),
+        						periode: self.affItemPeriode(it)
+        					}).then(function (out) { return self.affOk(out); });
+        				});
+        			});
+        			return next;
+        		});
+        		chain.then(function (ok) {
+        			self.affBusy = false;
+        			if (!ok) {
+        				self.message = "Enregistrement impossible.";
+        				self.rafraichir();
+        				return;
+        			}
+        			self.affFermer();
+        			self.message = days.length > 1 ? days.length + " jours affectés." : "Affectation enregistrée.";
+        			self.ionViewDidEnter();
+        		}, function (err) {
+        			self.affBusy = false;
+        			self.message = String((err && err.message) || err);
+        			self.rafraichir();
+        		});
+        	}
+        	affSupprimer() {
+        		if (this.affBusy || this.affMode !== "view") return;
+        		if (!this.has("MODIFIER_AFFECTATION")) {
+        			this.message = "Droit MODIFIER_AFFECTATION requis.";
+        			this.rafraichir();
+        			return;
+        		}
+        		var self = this;
+        		var list = this.affOrigItems || [];
+        		if (!list.length) return;
+        		this.affBusy = true;
+        		this.rafraichir();
+        		var chain = Promise.resolve(true);
+        		list.forEach(function (it) {
+        			chain = chain.then(function (ok) {
+        				if (!ok) return false;
+        				return self.appel("Jour_Supprimer", {
+        					cleActeur: self.cleActeur,
+        					cleLigne: String(it.rowId),
+        					jour: String(it.start || "").slice(0, 10),
+        					periode: self.affItemPeriode(it)
+        				}).then(function (out) { return self.affOk(out); });
+        			});
+        		});
+        		chain.then(function (ok) {
+        			self.affBusy = false;
+        			if (!ok) {
+        				self.message = "Suppression impossible.";
+        				self.rafraichir();
+        				return;
+        			}
+        			self.affFermer();
+        			self.message = "Affectation supprimée.";
+        			self.ionViewDidEnter();
+        		}, function (err) {
+        			self.affBusy = false;
+        			self.message = String((err && err.message) || err);
+        			self.rafraichir();
+        		});
+        	}
+        
+        	ouvrirSeg(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-kind]") || n;
+        		if (!n || !n.getAttribute) return;
+        		var kind = n.getAttribute("data-kind") || "libre";
+        		if (kind === "ferie" || kind === "repos") return;
+        		var canEdit = this.has("MODIFIER_AFFECTATION");
+        		if (!canEdit && (kind === "libre" || kind === "vide")) return;
+        		var cle = n.getAttribute("data-cle") || "";
+        		var code = n.getAttribute("data-el") || "";
+        		var start = Number(n.getAttribute("data-start") || 0);
+        		var len = Number(n.getAttribute("data-len") || 1);
+        		var el = kind === "projet" ? this.elementOf(code) : null;
+        		var days = this._winDays && this._winDays.length ? this._winDays : this.periodeCourante().days;
+        		var from = Math.floor(start / 2);
+        		var to = Math.floor((start + len - 1) / 2);
+        		if (!days[from]) return;
+        		var period = len === 1 ? (start % 2 ? "PM" : "AM") : "ALL";
+        		var shown = n.getAttribute("data-label") || "";
+        		var label = "";
+        		if (kind === "projet" && el) label = el.libelle || el.code || shown;
+        		else if (kind === "nature") label = shown;
+        		else if (kind === "absence" || kind === "formation") label = shown || (kind === "absence" ? "Absence" : "Formation");
+        		if (!canEdit && !label) return;
+        		this.affOuvrir({
+        			rowId: cle,
+        			dateDebut: this.iso(days[from]),
+        			dateFin: this.iso(days[to] || days[from]),
+        			period: period,
+        			label: label,
+        			kind: kind,
+        			mode: label ? "view" : "create"
+        		});
+        	}
+        
+        	affTileClass(code) {
+        		return "aff-type" + (this.affKind === code ? " is-on" : "");
+        	}
+        	affChoisirType(code) {
+        		if (!this.affCanEdit) return;
+        		this.affKind = code || "PROJET";
+        		if (this.affKind !== "PROJET") {
+        			var i, t = null, list = this.affTiles || [];
+        			for (i = 0; i < list.length; i++) if (list[i].code === this.affKind) t = list[i];
+        			this.affLabel = t ? t.libelle : this.affKind;
+        		} else if (this.affTypeOf(this.affLabel) !== "PROJET") this.affLabel = "";
+        		this.affPreparer();
+        		this.affPeindreApercu();
+        		this.affChargerFil();
+        		this.rafraichir();
+        	}
+        	affLc(v) { return v === "NC" ? "No Code" : (v === "AU" ? "Autre" : "Low Code"); }
+        	affPreparerGroupes() {
+        		var self = this;
+        		var ses = {};
+        		(this.participants || []).forEach(function (p) { if (String(p.cle || "") === String(self.affRowId)) ses[String(p.codeElement)] = true; });
+        		(this.elements || []).forEach(function (e) { if (String(e.chefProjet || "") === String(self.affRowId)) ses[String(e.code)] = true; });
+        		var groups = { SES: [], LC: [], NC: [], AU: [] };
+        		(this.elements || []).forEach(function (e) {
+        			if (String(e.actif) === "false") return;
+        			var lab = String(e.libelle || "");
+        			if (!lab) return;
+        			var item = { label: lab, value: lab };
+        			if (ses[String(e.code)]) groups.SES.push(item);
+        			var lc = String(e.lcNc || "LC");
+        			var key = lc === "NC" ? "NC" : (lc === "AU" ? "AU" : "LC");
+        			groups[key].push(item);
+        		});
+        		function tri(a, b) { return String(a.label).localeCompare(String(b.label), "fr"); }
+        		var out = [];
+        		[["SES", "Ses projets"], ["LC", "Low Code"], ["NC", "No Code"], ["AU", "Autre"]].forEach(function (g) {
+        			var items = groups[g[0]].sort(tri);
+        			if (items.length) out.push({ label: g[1], items: items });
+        		});
+        		this.affGroupes = out;
+        		this.affOpts = [];
+        		out.forEach(function (g) { g.items.forEach(function (it) { self.affOpts.push({ value: it.value, caption: it.label }); }); });
+        	}
+        	affMajFiche() {
+        		this.affProjet = this.affKind === "PROJET";
+        		var i, list = this.elements || [];
+        		if (!this.affProjet) {
+        			var tile = null;
+        			var selfF = this;
+        			(this.affTiles || []).forEach(function (t) { if (String(t.code) === String(selfF.affKind)) tile = t; });
+        			if (!tile) {
+        				(this.types || []).forEach(function (t) {
+        					if (String(t.code) === String(selfF.affKind)) tile = { libelle: t.libelle || t.code, couleur: t.couleurFond || t.couleur || "#6C757D" };
+        				});
+        			}
+        			this.affFiche = tile ? { libelle: String(tile.libelle || this.affKind), couleur: tile.couleur || "#6C757D", type: "Hors projet", statut: "", chef: "", chefMissing: false, participants: "", partsMissing: false, code: "", horsProjet: true } : null;
+        			return;
+        		}
+        		var el = null;
+        		for (i = 0; i < list.length; i++) if (String(list[i].libelle) === String(this.affLabel)) el = list[i];
+        		if (!el) { this.affFiche = null; return; }
+        		var chef = "";
+        		var lignes = this.lignes || [];
+        		for (i = 0; i < lignes.length; i++) if (String(lignes[i].cle) === String(el.chefProjet || "")) chef = lignes[i].libelle || lignes[i].cle;
+        		var ports = [];
+        		(this.participants || []).forEach(function (p) {
+        			if (String(p.codeElement) !== String(el.code)) return;
+        			var nom = "";
+        			for (var j = 0; j < lignes.length; j++) if (String(lignes[j].cle) === String(p.cle || "")) nom = lignes[j].libelle || lignes[j].cle;
+        			if (nom) ports.push(nom);
+        		});
+        		this.affFiche = { libelle: el.libelle, couleur: el.couleur || "#1A428A", type: this.affLc(el.lcNc), statut: String(el.statutCatalogue || el.statut || ""), chef: chef || "À définir", chefMissing: !chef, participants: ports.length ? ports.join(", ") : "À définir", partsMissing: !ports.length, code: el.code || "" , horsProjet: false };
+        	}
+        	affSigle(label) {
+        		return String(label || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]/g, "").slice(0, 4).toUpperCase();
+        	}
+        	affChargerApercu() {
+        		var self = this;
+        		var from = String(this.affStart || "");
+        		var to = String(this.affEnd || from);
+        		if (from && to && from > to) { var swap = from; from = to; to = swap; }
+        		this.affPeindreApercu();
+        		if (!from || !this.affRowId) return;
+        		var key = String(this.affRowId) + "|" + from + "|" + to;
+        		if (this._affPrevKey === key) return;
+        		this._affPrevKey = key;
+        		var gen = (this._affPrevGen || 0) + 1;
+        		this._affPrevGen = gen;
+        		this.appel("Grille_Lire", { dateFrom: from, dateTo: to, cleActeur: this.cleActeur }).then(function (out) {
+        			if (self._affPrevGen !== gen) return;
+        			var d = self.doc(out);
+        			var extra = self.asList(d.items).filter(function (it) { return String(it.rowId) === String(self.affRowId); });
+        			var seen = {};
+        			var merged = [];
+        			function push(it) {
+        				var k = String(it.rowId) + "|" + String(it.start || "").slice(0, 10) + "|" + String(it.period || "") + "|" + String(it.label || "") + "|" + String(it.type || "");
+        				if (seen[k]) return;
+        				seen[k] = true;
+        				merged.push(it);
+        			}
+        			(self.affItems || []).forEach(push);
+        			extra.forEach(push);
+        			self.affItems = merged;
+        			self.affHol = self.affHol || {};
+        			self.asList(d.feries).forEach(function (f) { if (f.jour) self.affHol[String(f.jour).slice(0, 10)] = f.libelle || "Ferie"; });
+        			self.affPeindreApercu();
+        			self.rafraichir();
+        		}, function () {
+        			if (self._affPrevKey === key) self._affPrevKey = "";
+        		});
+        	}
+        	affPeindreApercu() {
+        		var self = this;
+        		var days = this.joursApercu();
+        		var periode = this.affPeriodDb(this.affPeriod);
+        		var from = String(this.affStart || "");
+        		var to = String(this.affEnd || from);
+        		if (from && to && from > to) { var swap = from; from = to; to = swap; }
+        		var nouveau = this.affKind === "PROJET" ? (this.affLabel || "Projet") : (this.affLabel || this.affKind || "");
+        		var heads = [];
+        		var avant = [];
+        		var apres = [];
+        		var changes = 0;
+        		days.forEach(function (d, di) {
+        			var iso = self.iso(d);
+        			var ferie = !!((self.affHol && self.affHol[iso]) || (self.hol && self.hol[iso]));
+        			var inRange = !ferie && iso >= from && iso <= to;
+        			var bits = self.affLong(iso).split(" ");
+        			heads.push({ label: (bits[0] || "").slice(0, 3) + " " + (bits[1] || ""), on: inRange });
+        			var halves = [null, null];
+        			var connus = {};
+        			function garder(it) {
+        				var k = String(it.rowId) + "|" + String(it.start || "").slice(0, 10) + "|" + String(it.period || "") + "|" + String(it.label || "") + "|" + String(it.type || "");
+        				if (connus[k]) return;
+        				connus[k] = true;
+        				return true;
+        			}
+        			var sources = [];
+        			(self.items || []).forEach(function (it) { if (garder(it)) sources.push(it); });
+        			(self.affItems || []).forEach(function (it) { if (garder(it)) sources.push(it); });
+        			sources.forEach(function (it) {
+        				if (String(it.rowId) !== String(self.affRowId) || String(it.start || "").slice(0, 10) !== iso) return;
+        				var txt = it.type === "PROJET" ? (it.label || "Projet") : (it.label || it.type || "");
+        				var cell = { text: self.affSigle(txt), title: txt };
+        				if (it.period === "JOURNEE" || !it.period) { halves[0] = cell; halves[1] = cell; }
+        				else halves[it.period === "MATIN" ? 0 : 1] = cell;
+        			});
+        			var cible = periode === "JOURNEE" ? [0, 1] : [periode === "MATIN" ? 0 : 1];
+        			[0, 1].forEach(function (h) {
+        				var cur = halves[h];
+        				avant.push({ text: ferie ? "" : (cur ? cur.text : ""), ferie: ferie, changed: false, title: cur ? cur.title : "Libre", col: String(2 + di), row: String(2 + h), demi: h ? "is-pm" : "is-am" });
+        				var hit = inRange && cible.indexOf(h) >= 0;
+        				var nextText = hit ? self.affSigle(nouveau) : (cur ? cur.text : "");
+        				var changed = hit && (!cur || cur.title !== nouveau);
+        				if (changed) changes++;
+        				apres.push({ text: ferie ? "" : nextText, ferie: ferie, changed: changed, title: hit ? nouveau : (cur ? cur.title : "Libre"), col: String(2 + di), row: String(5 + h), demi: h ? "is-pm" : "is-am" });
+        			});
+        		});
+        		this.affPreviewDays = heads;
+        		this.affPreviewAvant = avant;
+        		this.affPreviewApres = apres;
+        		this.affPreviewCount = changes ? (changes + " demi-journée" + (changes > 1 ? "s" : "") + " modifiée" + (changes > 1 ? "s" : "")) : "Aucun changement";
+        		var nCols = heads.length || 5;
+        		setTimeout(function () {
+        			var prev = document.querySelector(".aff-preview") as HTMLElement;
+        			if (prev) prev.style.setProperty("--aff-n", String(nCols));
+        		}, 0);
+        	}
+        	affCmtArgs() {
+        		var codeType = (this.affKind && this.affKind !== "PROJET") ? this.affKind : "PROJET";
+        		var libelle = codeType === "PROJET" ? String(this.affLabel || "") : "";
+        		return { codeType: libelle ? "" : codeType, libelleElement: libelle };
+        	}
+        	affStamp(iso) {
+        		var s = String(iso || "");
+        		if (s.length < 16) return s;
+        		return s.substring(8, 10) + "/" + s.substring(5, 7) + " " + s.substring(11, 16);
+        	}
+        	affMapperFil(out) {
+        		var self = this;
+        		var rows = this.asList(this.doc(out).messages);
+        		var ids = {};
+        		rows.forEach(function (m) { if (m.idParent) ids[String(m.idParent)] = true; });
+        		return rows.map(function (m) {
+        			var id = String(m.id || "");
+        			return {
+        				id: id,
+        				author: String(m.auteur || ""),
+        				at: self.affStamp(m.creeLe),
+        				html: String(m.corps || ""),
+        				mine: String(m.cleAuteur || "") === String(self.cleActeur),
+        				reply: !!m.idParent,
+        				blocked: !!ids[id]
+        			};
+        		});
+        	}
+        	affChargerFil() {
+        		var args = this.affCmtArgs();
+        		if (!this.affRowId || !this.affStart || (args.codeType === "" && !args.libelleElement && this.affKind === "PROJET" && !this.affLabel)) {
+        			this.affFil = [];
+        			return;
+        		}
+        		if (this.affKind === "PROJET" && !this.affLabel) { this.affFil = []; return; }
+        		var self = this;
+        		this.appel("Commentaire_Lire", {
+        			portee: "JOUR",
+        			cleLigne: this.affRowId,
+        			jour: this.affStart,
+        			libelleElement: args.libelleElement,
+        			codeType: args.codeType
+        		}).then(function (out) {
+        			var d = self.doc(out);
+        			if (d && d.error) { self.affCmtMsg = String(d.error.message || d.error); self.affFil = []; self.rafraichir(); return; }
+        			self.affFil = self.affMapperFil(out);
+        			self.affCmtMsg = "";
+        			self.rafraichir();
+        		}, function () { self.affFil = []; });
+        	}
+        	affMentionsDe(html) {
+        		var text = String(html || "").replace(/<[^>]+>/g, " ");
+        		var ids = [];
+        		var tous = text.indexOf("@Tout le monde") >= 0;
+        		var lignes = this.lignes || [];
+        		var i;
+        		for (i = 0; i < lignes.length; i++) {
+        			var nom = String(lignes[i].libelle || "").split(/\s+/)[0];
+        			if (nom && text.indexOf("@" + nom) >= 0) ids.push(String(lignes[i].cle));
+        		}
+        		return { mentions: ids.join(","), tous: tous ? "true" : "false" };
+        	}
+        	affEnvoyerFil() {
+        		var html = String(this.affDraft || "").trim();
+        		if (!html) return;
+        		var self = this;
+        		var args = this.affCmtArgs();
+        		var men = this.affMentionsDe(html);
+        		var seq = this.affEditId ? "Commentaire_Modifier" : "Commentaire_Ajouter";
+        		var vars = this.affEditId ? { id: this.affEditId, corps: html } : {
+        			portee: "JOUR",
+        			cleLigne: this.affRowId,
+        			jour: this.affStart,
+        			libelleElement: args.libelleElement,
+        			codeType: args.codeType,
+        			corps: html,
+        			idParent: this.affReplyId || "",
+        			mentions: men.mentions,
+        			tous: men.tous
+        		};
+        		this.appel(seq, vars).then(function (out) {
+        			var d = self.doc(out);
+        			if (d && d.error) { self.affCmtMsg = String(d.error.message || d.error); self.rafraichir(); return; }
+        			self.affDraft = "";
+        			self.affReplyId = "";
+        			self.affEditId = "";
+        			self.affCmtMsg = "";
+        			self.affChargerFil();
+        		}, function (err) { self.affCmtMsg = String((err && err.message) || err); self.rafraichir(); });
+        	}
+        	affCmtId(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-id]") || n;
+        		return n && n.getAttribute ? (n.getAttribute("data-id") || "") : "";
+        	}
+        	affRepondre(event) {
+        		this.affEditId = "";
+        		this.affReplyId = this.affCmtId(event);
+        		this.rafraichir();
+        	}
+        	affModifierCmt(event) {
+        		var id = this.affCmtId(event);
+        		var i, row = null, list = this.affFil || [];
+        		for (i = 0; i < list.length; i++) if (list[i].id === id) row = list[i];
+        		if (!row || !row.mine) return;
+        		this.affReplyId = "";
+        		this.affEditId = id;
+        		this.affDraft = row.html;
+        		this.rafraichir();
+        	}
+        	affAnnulerCmt() {
+        		this.affReplyId = "";
+        		this.affEditId = "";
+        		this.affDraft = "";
+        		this.rafraichir();
+        	}
+        	affSupprimerCmt(event) {
+        		var id = this.affCmtId(event);
+        		var i, row = null, list = this.affFil || [];
+        		for (i = 0; i < list.length; i++) if (list[i].id === id) row = list[i];
+        		if (!row || !row.mine || row.blocked) return;
+        		var self = this;
+        		this.appel("Commentaire_Supprimer", { id: id }).then(function (out) {
+        			var d = self.doc(out);
+        			if (d && d.error) { self.affCmtMsg = String(d.error.message || d.error); self.rafraichir(); return; }
+        			if (self.affEditId === id) self.affAnnulerCmt();
+        			self.affChargerFil();
+        		}, function (err) { self.affCmtMsg = String((err && err.message) || err); self.rafraichir(); });
+        	}
+        	affAllerProjet() {
+        		if (!this.affFiche || !this.affFiche.code) return;
+        		this.aller("projets", this.affFiche.code);
+        	}
         /*End_c8o_PageFunction*/'
 segment: plan
 title: Plan de charge
