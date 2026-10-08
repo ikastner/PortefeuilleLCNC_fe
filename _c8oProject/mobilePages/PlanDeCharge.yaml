@@ -225,6 +225,7 @@ scriptContent:
         /*End_c8o_PageInitialization*/
         /*Begin_c8o_PageFunction*/
         	pfcInit() {
+        		this.installerHookDeepLinkQfq();
         		if (this.view) return;
         		this.view = "grille";
         		this.modal = "";
@@ -607,6 +608,74 @@ scriptContent:
         			return { periodFrom: from || undefined, periodTo: to || undefined,
         				focusDay: focusDay || undefined, focusEl: focusEl || undefined, scroll: scroll || undefined };
         		} catch (e) { return null; }
+        	}
+        	appliquerDeepLinkQfq() {
+        		var dl = this.lireEtConsommerQfqDeepLink();
+        		this._pendingApplied = false;
+        		this._pendingPeriodOnly = false;
+        		if (!dl) {
+        			if (!this.periodFrom || !this.periodTo) {
+        				this.periodFrom = this.iso(this.monday(0));
+        				var fin = this.monday(0); fin.setDate(fin.getDate() + 4);
+        				this.periodTo = this.iso(fin);
+        			}
+        			this._pendingFocusDayIso = "";
+        			this._pendingFocusEl = "";
+        			this._pendingScroll = "";
+        			this._pendingApplied = true;
+        			return;
+        		}
+        		if (dl.periodFrom && dl.periodTo) {
+        			this.periodFrom = dl.periodFrom;
+        			this.periodTo = dl.periodTo;
+        		}
+        		this._pendingFocusDayIso = dl.focusDay || "";
+        		this._pendingFocusEl = dl.focusEl || "";
+        		this._pendingScroll = dl.scroll || "";
+        		this._pendingPeriodOnly = !!(dl.periodFrom && dl.periodTo && !dl.focusDay && !dl.focusEl);
+        	}
+        	appliquerPendingFocusInPlace() {
+        		if (this._pendingApplied) return;
+        		this._pendingApplied = true;
+        		var all = this._allDays || [];
+        		if (this._pendingFocusDayIso) {
+        			var iso = this._pendingFocusDayIso; this._pendingFocusDayIso = "";
+        			var idx = -1;
+        			for (var i = 0; i < all.length; i++) if (this.iso(all[i]) === iso) { idx = i; break; }
+        			if (idx >= 0) {
+        				this.focusDay = idx;
+        				var win = this.fenetreVisible(all.length);
+        				this.gridStart = Math.max(0, Math.min(idx - Math.floor(win / 2), this.maxGridStart(all.length, win)));
+        			}
+        		} else if (this._pendingPeriodOnly) {
+        			this._pendingPeriodOnly = false;
+        			this.centrerFriseSur(all);
+        		}
+        		if (this._pendingFocusEl) { this.focusEl = this._pendingFocusEl; this._pendingFocusEl = ""; }
+        		if (this._pendingScroll === "dispos") {
+        			this._pendingScroll = "";
+        			setTimeout(function () {
+        				var nodes = document.querySelectorAll(".tdb .dash-side, .tdb .dash-aside .card");
+        				for (var j = 0; j < nodes.length; j++) {
+        					var t = (nodes[j].textContent || "");
+        					if (t.indexOf("Disponibles") >= 0) { nodes[j].scrollIntoView({ block: "nearest", behavior: "smooth" }); break; }
+        				}
+        			}, 400);
+        		}
+        	}
+        	installerHookDeepLinkQfq() {
+        		if (this._qfqDlHooked) return;
+        		this._qfqDlHooked = true;
+        		var self = this;
+        		var origWill = this.ionViewWillEnter ? this.ionViewWillEnter.bind(this) : function () {};
+        		this.ionViewWillEnter = function () {
+        			try {
+        				self.appliquerDeepLinkQfq();
+        				if (self.periodFrom) { self.chargeFrom = self.periodFrom; self.dateFrom = self.periodFrom; }
+        				if (self.periodTo) { self.chargeTo = self.periodTo; self.dateTo = self.periodTo; }
+        			} catch (eDl) {}
+        			return origWill();
+        		};
         	}
         	weekDays(offset) {
         		var l = this.monday(offset);
@@ -1698,11 +1767,12 @@ scriptContent:
         		var prev = this.analyser(prevP.days, this.prevItems || [], this.holPrev || {}, true);
         		var win = this.fenetreVisible(allDays.length);
         		var maxStart = Math.max(0, allDays.length - win);
+        		this._allDays = allDays;
+        		this.appliquerPendingFocusInPlace();
         		this.gridStart = Math.min(Math.max(0, this.gridStart || 0), maxStart);
         		var g0 = this.gridStart || 0;
         		var days = allDays.length > win ? allDays.slice(g0, g0 + win) : allDays;
         		if (allDays.length <= win) g0 = 0;
-        		this._allDays = allDays;
         		this._winDays = days;
         		this._winStart = g0;
         		this.dashCols = days.length;
@@ -8155,12 +8225,12 @@ title: Plan de charge
           varValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: script:this.chargeFrom || this.dateFrom
+              - MobileSmartSourceType: script:this.periodFrom || this.chargeFrom || this.dateFrom
         ↓dateTo [ngx.components.UIControlVariable-1791142850314]: 
           varValue: 
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-              - MobileSmartSourceType: script:this.chargeTo || this.dateTo
+              - MobileSmartSourceType: script:this.periodTo || this.chargeTo || this.dateTo
         ↓cleActeur [ngx.components.UIControlVariable-1791142850316]: 
           varValue: 
             - xmlizable: 
