@@ -3058,6 +3058,21 @@ scriptContent:
         		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, focusEl: code });
         		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
         	}
+        	ouvrirIsolerProjet(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-el]") || n;
+        		var code = n && n.getAttribute ? (n.getAttribute("data-el") || "") : "";
+        		if (!code) return;
+        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, focusEl: code });
+        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        	}
+        	ouvrirFicheProjet(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-el]") || n;
+        		var code = n && n.getAttribute ? (n.getAttribute("data-el") || "") : "";
+        		if (!code) return;
+        		this.aller("projets", code);
+        	}
         	ouvrirCapaciteJour(event) {
         		var n = this.noeud(event);
         		if (n && n.closest) n = n.closest("[data-day]") || n;
@@ -6073,6 +6088,273 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: script:pill.label
+      ↓Port [ngx.components.UIDynamicElement-1795702100701]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: section
+        ↓PortC [ngx.components.UIAttribute-1795702100702]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:card dash-side dash-port
+        ↓PortH [ngx.components.UIDynamicElement-1795702100703]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓PortHC [ngx.components.UIAttribute-1795702100704]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:dash-side__head
+          ↓PortHt [ngx.components.UIDynamicElement-1795702100705]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: h3
+            ↓PortHtT [ngx.components.UIText-1795702100706]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Portefeuille
+          ↓PortHintIf [ngx.components.UIControlDirective-1795702100707]: 
+            directiveName: If
+            directiveSource: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: script:!this.effortEmpty
+            ↓PortHs [ngx.components.UIDynamicElement-1795702100708]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: span
+              ↓PortHsT [ngx.components.UIText-1795702100709]: 
+                textValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:Classement d’effort sur la période
+        ↓PortEmpty [ngx.components.UIControlDirective-1795702100710]: 
+          directiveName: If
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:this.effortEmpty
+          ↓PortMt [ngx.components.UIDynamicElement-1795702100711]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: p
+            ↓PortMtC [ngx.components.UIAttribute-1795702100712]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:muted
+            ↓PortMtT [ngx.components.UIText-1795702100713]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Aucune affectation projet sur la période.
+        ↓PortOn [ngx.components.UIControlDirective-1795702100714]: 
+          directiveName: If
+          directiveSource: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: script:!this.effortEmpty
+          ↓PortStack [ngx.components.UIDynamicElement-1795702100715]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓PortStackC [ngx.components.UIAttribute-1795702100716]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-stack
+            ↓PortStackLoop [ngx.components.UIControlDirective-1795702100717]: 
+              directiveItemName: st
+              directiveSource: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.effortStack
+              ↓PortStackI [ngx.components.UIDynamicElement-1795702100718]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: span
+                ↓PortStackW [ngx.components.UIAttribute-1795702100719]: 
+                  attrName: '[style.width]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:st.w
+                ↓PortStackB [ngx.components.UIAttribute-1795702100720]: 
+                  attrName: '[style.background]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:st.couleur
+          ↓PortUl [ngx.components.UIDynamicElement-1795702100721]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: ul
+            ↓PortUlC [ngx.components.UIAttribute-1795702100722]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-effort
+            ↓PortLoop [ngx.components.UIControlDirective-1795702100723]: 
+              directiveItemName: ef
+              directiveSource: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.efforts
+              ↓PortLi [ngx.components.UIDynamicElement-1795702100724]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: li
+                ↓PortLiC [ngx.components.UIAttribute-1795702100725]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:dash-port__row
+                ↓PortItem [ngx.components.UIDynamicElement-1795702100726]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: div
+                  ↓PortItemC [ngx.components.UIAttribute-1795702100727]: 
+                    attrName: class
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:dash-effort__item
+                  ↓PortDot [ngx.components.UIDynamicElement-1795702100728]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: span
+                    ↓PortDotC [ngx.components.UIAttribute-1795702100729]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:dot
+                    ↓PortDotB [ngx.components.UIAttribute-1795702100730]: 
+                      attrName: '[style.background]'
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:ef.couleur
+                  ↓PortNm [ngx.components.UIDynamicElement-1795702100731]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: span
+                    ↓PortNmC [ngx.components.UIAttribute-1795702100732]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:dash-effort__name
+                    ↓PortNmT [ngx.components.UIText-1795702100733]: 
+                      textValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:ef.label
+                    ↓PortSm [ngx.components.UIDynamicElement-1795702100734]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: small
+                      ↓PortSmT [ngx.components.UIText-1795702100735]: 
+                        textValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:ef.gens
+                  ↓PortVal [ngx.components.UIDynamicElement-1795702100736]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: span
+                    ↓PortValC [ngx.components.UIAttribute-1795702100737]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:dash-effort__val
+                    ↓PortValT [ngx.components.UIText-1795702100738]: 
+                      textValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:ef.val
+                    ↓PortPct [ngx.components.UIDynamicElement-1795702100739]: 
+                      beanData: '{"ionBean":"DivTag"}'
+                      tagName: small
+                      ↓PortPctT [ngx.components.UIText-1795702100740]: 
+                        textValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                            - MobileSmartSourceType: script:ef.pct
+                ↓PortActs [ngx.components.UIDynamicElement-1795702100741]: 
+                  beanData: '{"ionBean":"DivTag"}'
+                  tagName: div
+                  ↓PortActsC [ngx.components.UIAttribute-1795702100742]: 
+                    attrName: class
+                    attrValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                        - MobileSmartSourceType: plain:dash-port__acts
+                  ↓PortIsoler [ngx.components.UIDynamicElement-1795702100743]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: button
+                    ↓PortIsolerC [ngx.components.UIAttribute-1795702100744]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:dash-port__act dash-port__act--primary
+                    ↓PortIsolerEl [ngx.components.UIAttribute-1795702100745]: 
+                      attrName: '[attr.data-el]'
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:ef.code
+                    ↓PortIsolerType [ngx.components.UIAttribute-1795702100746]: 
+                      attrName: type
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:button
+                    ↓PortIsolerClick [ngx.components.UIControlEvent-1795702100747]: 
+                      ↓PortIsolerClickDo [ngx.components.UICustomAction-1795702100748]: 
+                        actionValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                              →: |
+                                page.ouvrirIsolerProjet(event);
+                                resolve(true);
+                    ↓PortIsolerT [ngx.components.UIText-1795702100749]: 
+                      textValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:Isoler dans le plan
+                  ↓PortFiche [ngx.components.UIDynamicElement-1795702100750]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: button
+                    ↓PortFicheC [ngx.components.UIAttribute-1795702100751]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:dash-port__act
+                    ↓PortFicheEl [ngx.components.UIAttribute-1795702100752]: 
+                      attrName: '[attr.data-el]'
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: script:ef.code
+                    ↓PortFicheType [ngx.components.UIAttribute-1795702100753]: 
+                      attrName: type
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:button
+                    ↓PortFicheClick [ngx.components.UIControlEvent-1795702100754]: 
+                      ↓PortFicheClickDo [ngx.components.UICustomAction-1795702100755]: 
+                        actionValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                              →: |
+                                page.ouvrirFicheProjet(event);
+                                resolve(true);
+                    ↓PortFicheT [ngx.components.UIText-1795702100756]: 
+                      textValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:Fiche projet
     ↓DetailIf [ngx.components.UIControlDirective-1795702100528]: 
       directiveName: If
       directiveSource: 
@@ -7502,6 +7784,36 @@ title: Tableau de bord
           }
           
           .tdb .dash-effort__val small{ font-size: 11px; font-weight: 400; color: var(--c-muted); }
+          
+          .tdb .dash-port{ margin-top: 12px; }
+          .tdb .dash-port__row{
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding-bottom: 4px;
+          }
+          .tdb .dash-port__row .dash-effort__item{ cursor: default; }
+          .tdb .dash-port__row .dash-effort__item:hover{ background: transparent; }
+          .tdb .dash-port__acts{
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            padding: 0 10px 6px 30px;
+          }
+          .tdb .dash-port__act{
+            padding: 0;
+            border: 0;
+            background: transparent;
+            font: 600 12px var(--font-body, Roboto, Helvetica, Arial, sans-serif);
+            color: var(--c-primary, #1A428A);
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+          }
+          .tdb .dash-port__act--primary{ text-decoration: none; }
+          .tdb .dash-port__act--primary:hover{ text-decoration: underline; }
+          .tdb .dash-port__act:focus-visible{ outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
           
           /* Listes « Disponibles » et « Absences / Formations » : une colonne par jour */
           .tdb .dash-week-list__head,
