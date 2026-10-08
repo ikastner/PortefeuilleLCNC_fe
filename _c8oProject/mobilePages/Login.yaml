@@ -1,4 +1,4 @@
-comment: 'Connexion : identifiant et mot de passe du SI (LDAP) via lib_common_be.auth__login. Le code agent doit exister dans les collaborateurs (PLG_Ligne). Les droits viennent de PFC_LigneRole / PFC_RoleDroit.'
+comment: 'Connexion via PortefeuilleLCNC_be.Auth_Login. SI : LDAP. Mac hors SI (symbole Portefeuille_Auth_HorsSI) : code agent + role PFC sans mot de passe. Les droits viennent de PFC_LigneRole, ou du role choisi en hors SI.'
 inAutoMenu: false
 scriptContent: 
   - xmlizable: 
@@ -8,8 +8,12 @@ scriptContent:
         '/*Begin_c8o_PageImport*/
         /*End_c8o_PageImport*/
         /*Begin_c8o_PageDeclaration*/
+        	authHorsSI: boolean;
+        	roleOptions: any;
         /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
+        		this.authHorsSI = false;
+        		this.roleOptions = ["LECTEUR", "CONTRIBUTEUR", "GESTIONNAIRE"];
         /*End_c8o_PageConstructor*/
         /*Begin_c8o_PageInitialization*/
         		if (!document.getElementById("pfa-fonts")) {
@@ -24,9 +28,23 @@ scriptContent:
         		}
         /*End_c8o_PageInitialization*/
         /*Begin_c8o_PageFunction*/
+        	pfChargerAuthHorsSI(): Promise<any> {
+        		var self = this;
+        		return this.pfAppel("PortefeuilleLCNC_be.Get_Auth_Hors_SI", {}).then(function (res) {
+        			var d = res && (res.document || res);
+        			var data = d && d.data ? d.data : d;
+        			var v = data && data.authHorsSI;
+        			self.authHorsSI = v === true || v === "true" || v === 1 || v === "1";
+        			return res;
+        		});
+        	}
         	pfConnecter(input): Promise<any> {
         		var v = input || {};
-        		return this.pfAppel("lib_common_be.auth__login", { user: String(v.login || "").trim(), password: v.password || "", appName: "PORTEFEUILLE", socleRoles: "DEVELOP_INTERNES,DEVELOP_EXTERNES,UTIL_INTERNES,UTIL_EXTERNES,ADMIN-NATDSI" });
+        		return this.pfAppel("PortefeuilleLCNC_be.Auth_Login", {
+        			user: String(v.login || "").trim(),
+        			password: v.password || "",
+        			testRole: v.testRole || ""
+        		});
         	}
         	pfAppel(seq, params): Promise<any> {
         		var self = this;
@@ -65,6 +83,21 @@ title: Connexion
         - xmlizable: 
           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
           - MobileSmartSourceType: script:'../img/M2A2H@2x.jpg'
+    ↓testMode [ngx.components.UIUseVariable-1791387240001]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.authHorsSI
+    ↓hidePassword [ngx.components.UIUseVariable-1791387240002]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.authHorsSI
+    ↓roleOptions [ngx.components.UIUseVariable-1791387240003]: 
+      varValue: 
+        - xmlizable: 
+          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+          - MobileSmartSourceType: script:this.roleOptions
     ↓Event [ngx.components.UIControlEvent-1791300000410]: 
       attrName: (Connexion)
       eventName: Connexion
@@ -140,7 +173,7 @@ title: Connexion
             			page.routerProvider.sharedObject.isConnected = false;
             		}
             		try { window.sessionStorage.removeItem("pfc:userName"); window.sessionStorage.removeItem("pfc:userRole"); window.sessionStorage.removeItem("pfc:canAdmin"); } catch (eL) {}
-            		resolve();
+            		page.pfChargerAuthHorsSI().then(function () { resolve(); }).catch(function () { resolve(); });
             '
 ↓PageStyle [ngx.components.UIStyle-1791367368135]: 
   styleContent: 

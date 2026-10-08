@@ -2415,20 +2415,6 @@ title: Collaborateurs
                               - xmlizable: 
                                 - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                                 - MobileSmartSourceType: script:pr.more
-                  ↓Cnt [ngx.components.UIDynamicElement-1791152637067]: 
-                    beanData: '{"ionBean":"DivTag"}'
-                    tagName: span
-                    ↓CntC [ngx.components.UIAttribute-1791152637069]: 
-                      attrName: class
-                      attrValue: 
-                        - xmlizable: 
-                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                          - MobileSmartSourceType: plain:muted
-                    ↓CntT [ngx.components.UIText-1791152637071]: 
-                      textValue: 
-                        - xmlizable: 
-                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                          - MobileSmartSourceType: script:pr.n
               ↓PC3 [ngx.components.UIDynamicElement-1791143697337]: 
                 beanData: '{"ionBean":"DivTag"}'
                 tagName: td
