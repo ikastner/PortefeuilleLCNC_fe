@@ -2766,7 +2766,11 @@ scriptContent:
         		var start = Number(n.getAttribute("data-start") || 0);
         		var len = Number(n.getAttribute("data-len") || 1);
         		var el = kind === "projet" ? this.elementOf(code) : null;
-        		var days = this._winDays && this._winDays.length ? this._winDays : this.periodeCourante().days;
+        		// data-start est un index de demi-journée ABSOLU sur la période (_allDays),
+        		// pas relatif à la fenêtre visible (_winDays). Sur mois/trimestre, _winDays
+        		// n''a que ~5 jours : days[from] était undefined et le clic ne faisait rien.
+        		var days = (this._allDays && this._allDays.length) ? this._allDays
+        			: ((this._winDays && this._winDays.length) ? this._winDays : this.periodeCourante().days);
         		var from = Math.floor(start / 2);
         		var to = Math.floor((start + len - 1) / 2);
         		if (!days[from]) return;

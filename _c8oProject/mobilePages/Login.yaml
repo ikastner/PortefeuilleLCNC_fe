@@ -75,9 +75,15 @@ scriptContent:
         		}).then(function (res) {
         			var root = res || {};
         			var err = self.pfExtraireErreur(root) || root.error;
-        			if (err) return { error: err, document: root.document || root };
+        			if (err) {
+        				var msg = (err && err.message) ? String(err.message) : String(err);
+        				return { error: { code: (err && err.code) || "403", message: msg }, document: root.document || root };
+        			}
         			var user = self.pfExtraireUser(root);
-        			if (user && user.role != null && Object.prototype.toString.call(user.role) !== "[object Array]") {
+        			if (!user || !user.codeAgent) {
+        				return { error: { code: "403", message: "Accès refusé : aucune ligne du portefeuille n’est associée à ce compte." }, document: root.document || root };
+        			}
+        			if (user.role != null && Object.prototype.toString.call(user.role) !== "[object Array]") {
         				user.role = [user.role];
         			}
         			return { user: user, document: root.document || root };
