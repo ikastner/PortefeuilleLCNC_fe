@@ -1,4 +1,3 @@
-↑isRoot: true
 comment: Plan de charge — page Qui fait quoi (bascule depuis Tableau de bord, sans redesign).
 inAutoMenu: false
 preloadPriority: high
@@ -30,6 +29,9 @@ scriptContent:
         	profil: string;
         	focusEl: string;
         	focusDay: any;
+        	_qfqFocusEl: string;
+        	_qfqFocusDay: string;
+        	_qfqScroll: string;
         	lignes: any[];
         	elements: any[];
         	profils: any[];
@@ -104,6 +106,9 @@ scriptContent:
         	wpLeft: string;
         	wpMoisLabel: string;
         	wpWeeks: any[];
+        	periodDraftFrom: string;
+        	periodDraftTo: string;
+        	periodPresetRows: any[];
         	collabCount: string;
         	effortEmpty: boolean;
         	dispoEmpty: boolean;
@@ -227,7 +232,7 @@ scriptContent:
         					+ ".dash-frise-scrub:not(.is-dragging) .dash-frise-scrub__thumb{transition:left .12s ease,width .12s ease}"
         					+ ".dash-frise-scrub:hover .dash-frise-scrub__thumb,.dash-frise-scrub.is-dragging .dash-frise-scrub__thumb{box-shadow:0 0 0 4px rgba(26,66,138,.25)}"
         					+ ".dash-grid-sizer{pointer-events:none;min-height:320px}"
-        					+ ".dash-wp:has(.dash-period-picker){width:300px;padding:0}"
+        					+ ".dash-wp:has(.dash-period-picker){width:min(320px,calc(100vw - 24px));padding:0}"
         					+ ".dash-wp:has(.dash-period-picker) .dash-wp__head,.dash-wp:has(.dash-period-picker) .dash-wp__list{display:none !important}"
         					+ ".dash-period-picker{width:300px;padding:10px 12px 12px;box-sizing:border-box;background:#fff}"
         					+ ".dash-period-picker__title{margin:0 0 10px;font:700 13px Montserrat,Segoe UI,sans-serif;color:#122F62}"
@@ -236,10 +241,13 @@ scriptContent:
         					+ ".dash-period-picker__preset:hover,.dash-period-picker__preset:focus-visible{background:#EFF4FF;outline:none}"
         					+ ".dash-period-picker__preset.is-current{background:#EFF4FF;font-weight:600;color:#1A428A}"
         					+ ".dash-period-picker__preset svg{color:#1A428A;flex:0 0 auto}"
-        					+ ".dash-period-picker__custom{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #E6E9EC}"
-        					+ ".dash-period-picker__custom label{display:flex;flex-direction:column;gap:4px;font:600 11px Roboto,Helvetica,Arial,sans-serif;color:#6C757D;text-transform:uppercase;letter-spacing:.03em}"
-        					+ ".dash-period-picker__custom input[type=date]{height:34px;width:100%;box-sizing:border-box;padding:0 8px;border:1px solid #DDE3F0;border-radius:8px;font:500 13px Roboto,Helvetica,Arial,sans-serif;color:#212529;background:#fff}"
-        					+ ".dash-period-picker__custom .btn{grid-column:1 / -1;display:inline-flex;align-items:center;justify-content:center;width:100%;height:32px;padding:0 12px;border:1px solid #1A428A;border-radius:10px;background:#1A428A;color:#fff;font:600 13px Roboto,Helvetica,Arial,sans-serif;cursor:pointer}"
+        					+ ".dash-period-picker__custom{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #E6E9EC;align-items:end}"
+        					+ ".dash-period-picker__custom>div{min-width:0}"
+        					+ ".dash-period-picker__custom label{display:block;margin:0 0 4px;font:600 11px Roboto,Helvetica,Arial,sans-serif;color:#6C757D;text-transform:uppercase;letter-spacing:.03em}"
+        					+ ".dash-period-picker__custom .p-calendar{display:flex!important;width:100%;align-items:stretch}"
+        					+ ".dash-period-picker__custom .p-calendar .p-inputtext{flex:1 1 auto;min-width:0!important;height:34px!important;min-height:34px!important;padding:0 8px!important;border:1px solid #DDE3F0!important;border-right:0!important;border-radius:8px 0 0 8px!important;font:500 12px Roboto,Helvetica,Arial,sans-serif!important;line-height:34px!important}"
+        					+ ".dash-period-picker__custom .p-calendar .p-datepicker-trigger{width:34px!important;min-width:34px!important;height:34px!important;border:1px solid #DDE3F0!important;border-radius:0 8px 8px 0!important;background:#F8F9FA!important;color:#1A428A!important}"
+        					+ ".dash-period-picker__custom .btn{grid-column:1 / -1;display:inline-flex;align-items:center;justify-content:center;width:100%;height:34px;padding:0 12px;border:1px solid #1A428A;border-radius:10px;background:#1A428A;color:#fff;font:600 13px Roboto,Helvetica,Arial,sans-serif;cursor:pointer}"
         					+ ".dash-hero__right{max-width:440px;min-width:0;overflow:hidden}"
         					+ ".dash-cap--scroll{display:flex;align-items:flex-end;gap:6px;max-width:420px;overflow-x:auto;padding-bottom:4px}"
         					+ ".dash-cap--scroll .dash-cap__day{flex:0 0 36px}"
@@ -420,6 +428,26 @@ scriptContent:
         		var finInit = this.monday(0);
         		finInit.setDate(finInit.getDate() + 4);
         		this.periodTo = this.iso(finInit);
+        		this._qfqFocusEl = "";
+        		this._qfqFocusDay = "";
+        		this._qfqScroll = "";
+        		try {
+        			var qFrom = window.sessionStorage.getItem("pfc:qfq:periodFrom");
+        			var qTo = window.sessionStorage.getItem("pfc:qfq:periodTo");
+        			var qFocusDay = window.sessionStorage.getItem("pfc:qfq:focusDay");
+        			var qFocusEl = window.sessionStorage.getItem("pfc:qfq:focusEl");
+        			var qScroll = window.sessionStorage.getItem("pfc:qfq:scroll");
+        			["pfc:qfq:periodFrom", "pfc:qfq:periodTo", "pfc:qfq:focusDay", "pfc:qfq:focusEl", "pfc:qfq:scroll"].forEach(function (k) {
+        				window.sessionStorage.removeItem(k);
+        			});
+        			if (qFrom && qTo && qFrom <= qTo) {
+        				this.periodFrom = qFrom;
+        				this.periodTo = qTo;
+        			}
+        			this._qfqFocusEl = qFocusEl || "";
+        			this._qfqFocusDay = qFocusDay || "";
+        			this._qfqScroll = qScroll || "";
+        		} catch (eQ) {}
         		this.q = "";
         		this.recherche = [];
         		this.collabOpts = [];
@@ -493,6 +521,9 @@ scriptContent:
         		this.showBack = false;
         		this.wpOpen = false;
         		this.wpWeeks = [];
+        		this.periodDraftFrom = "";
+        		this.periodDraftTo = "";
+        		this.periodPresetRows = [];
         		this.collabCount = "0 collaborateur";
         		this.effortEmpty = true;
         		this.dispoEmpty = true;
@@ -526,6 +557,16 @@ scriptContent:
         	}
         	rafraichir() {
         		try { this.ref.detectChanges(); } catch (e) {}
+        	}
+        	toast(message, type = "success") {
+        		var w: any = window;
+        		try { if (w.pfcToast) { w.pfcToast(message, type || "success"); return; } } catch (eT) {}
+        		this.message = message; this.rafraichir();
+        	}
+        	confirmer(opts) {
+        		var w: any = window;
+        		try { if (w.pfcConfirm) return w.pfcConfirm(opts || {}); } catch (eC) {}
+        		return Promise.resolve(window.confirm(((opts && opts.title) ? opts.title + "\n" : "") + ((opts && opts.text) || "Confirmer ?")));
         	}
         	asList(v) {
         		if (v == null) return [];
@@ -1388,43 +1429,41 @@ scriptContent:
         			{ label: "Cette ann\u00e9e", from: new Date(now.getFullYear(), 0, 1), to: new Date(now.getFullYear(), 11, 31) }
         		];
         	}
-        	monterPeriode() {
-        		var pop = document.querySelector(".dash-wp") as HTMLElement;
-        		if (!pop) return;
-        		var old = pop.querySelector(".dash-period-picker");
-        		if (old && old.parentElement) old.parentElement.removeChild(old);
+        	preparerPeriode() {
         		var self = this;
-        		var box = document.createElement("div");
-        		box.className = "dash-period-picker";
-        		var check = this.icoDash("check", 14);
-        		var html = "<p class=\"dash-period-picker__title\">Choisir une p\u00e9riode</p><div class=\"dash-period-picker__presets\">";
-        		this.presetsPeriode().forEach(function (p, i) {
-        			var on = self.iso(p.from) === self.periodFrom && self.iso(p.to) === self.periodTo;
-        			html += "<button type=\"button\" data-preset=\"" + i + "\" class=\"dash-period-picker__preset" + (on ? " is-current" : "") + "\">" + p.label + (on ? check : "") + "</button>";
+        		this.periodDraftFrom = this.periodFrom || "";
+        		this.periodDraftTo = this.periodTo || "";
+        		this.periodPresetRows = this.presetsPeriode().map(function (p, i) {
+        			return {
+        				idx: i,
+        				label: p.label,
+        				current: self.iso(p.from) === self.periodFrom && self.iso(p.to) === self.periodTo
+        			};
         		});
-        		html += "</div><div class=\"dash-period-picker__custom\"><label>Du<input type=\"date\" data-from value=\"" + (self.periodFrom || "") + "\"></label><label>Au<input type=\"date\" data-to value=\"" + (self.periodTo || "") + "\"></label><button type=\"button\" class=\"btn btn--primary btn--sm\" data-apply>Appliquer</button></div>";
-        		box.innerHTML = html;
-        		pop.insertBefore(box, pop.firstChild);
-        		box.addEventListener("click", function (ev) {
-        			var t = ev.target as HTMLElement;
-        			var b = t && t.closest ? t.closest("button") as HTMLElement : null;
-        			if (!b || !box.contains(b)) return;
-        			ev.stopPropagation();
-        			if (b.getAttribute("data-apply") != null) {
-        				var fEl = box.querySelector("[data-from]") as HTMLInputElement;
-        				var tEl = box.querySelector("[data-to]") as HTMLInputElement;
-        				if (!fEl.value || !tEl.value) return;
-        				self.wpOpen = false;
-        				self.setPeriode(self.parseISO(fEl.value), self.parseISO(tEl.value));
-        				return;
-        			}
-        			var idx = b.getAttribute("data-preset");
-        			if (idx == null) return;
-        			var p = self.presetsPeriode()[Number(idx)];
-        			if (!p) return;
-        			self.wpOpen = false;
-        			self.setPeriode(p.from, p.to);
-        		});
+        	}
+        	periodSetFrom(v) {
+        		this.periodDraftFrom = this.affIsoOf(v);
+        		if (this.periodDraftTo && this.periodDraftFrom && this.periodDraftTo < this.periodDraftFrom) this.periodDraftTo = this.periodDraftFrom;
+        		this.rafraichir();
+        	}
+        	periodSetTo(v) {
+        		this.periodDraftTo = this.affIsoOf(v);
+        		if (this.periodDraftFrom && this.periodDraftTo && this.periodDraftTo < this.periodDraftFrom) this.periodDraftFrom = this.periodDraftTo;
+        		this.rafraichir();
+        	}
+        	periodApply() {
+        		if (!this.periodDraftFrom || !this.periodDraftTo) return;
+        		this.wpOpen = false;
+        		this.setPeriode(this.parseISO(this.periodDraftFrom), this.parseISO(this.periodDraftTo));
+        	}
+        	periodPreset(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-preset]") || n;
+        		var idx = Number(n && n.getAttribute ? n.getAttribute("data-preset") : NaN);
+        		var p = this.presetsPeriode()[idx];
+        		if (!p) return;
+        		this.wpOpen = false;
+        		this.setPeriode(p.from, p.to);
         	}
         	evictCache() {
         		var cache = this._winCache || {};
@@ -1542,7 +1581,41 @@ scriptContent:
         		this.holPrev = {};
         		this.asList(prev.feries).forEach(function (f) { if (f.jour) self.holPrev[String(f.jour)] = f.libelle || "Ferie"; });
         		this.syncChrome();
+        		this.appliquerQfqPending();
         		this.reconstruire();
+        		this.appliquerQfqScroll();
+        	}
+        	appliquerQfqPending() {
+        		var self = this;
+        		if (this._qfqFocusEl) {
+        			this.focusEl = String(this._qfqFocusEl);
+        			this._qfqFocusEl = "";
+        		}
+        		if (this._qfqFocusDay) {
+        			var iso = String(this._qfqFocusDay);
+        			this._qfqFocusDay = "";
+        			var plage = this.periodeCourante();
+        			var days = plage.days || [];
+        			var i;
+        			for (i = 0; i < days.length; i++) {
+        				if (this.iso(days[i]) === iso) {
+        					this.focusDay = i;
+        					this.centrerFriseSur(days, days[i]);
+        					break;
+        				}
+        			}
+        		}
+        	}
+        	appliquerQfqScroll() {
+        		if (this._qfqScroll !== "dispos") return;
+        		this._qfqScroll = "";
+        		var self = this;
+        		setTimeout(function () {
+        			try {
+        				var el = document.querySelector(".tdb .dash-dispo, .dash-aside .dash-dispo, [data-scroll=dispos]");
+        				if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        			} catch (eS) {}
+        		}, 120);
         	}
         	charger() {
         		var self = this;
@@ -2208,17 +2281,16 @@ scriptContent:
         		if (this.wpOpen) { this.wpFermer(); return; }
         		var n = this.noeud(event);
         		var r = n && n.getBoundingClientRect ? n.getBoundingClientRect() : null;
-        		var w = 300;
+        		var w = Math.min(320, Math.max(260, window.innerWidth - 24));
         		this.wpTop = (r ? r.bottom + 6 : 120) + "px";
         		this.wpLeft = (r ? Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) : 24) + "px";
         		var d = this.periodFrom ? this.parseISO(this.periodFrom) : this.monday(0);
         		this.wpY = d.getFullYear();
         		this.wpM = d.getMonth();
         		this.wpConstruire();
+        		this.preparerPeriode();
         		this.wpOpen = true;
         		this.rafraichir();
-        		var selfWp = this;
-        		setTimeout(function () { selfWp.monterPeriode(); }, 40);
         	}
         	wpNav(delta) {
         		var m = this.wpM + delta;
@@ -2559,8 +2631,7 @@ scriptContent:
         	affEnregistrer() {
         		if (this.affBusy) return;
         		if (!this.has("MODIFIER_AFFECTATION")) {
-        			this.message = "Droit MODIFIER_AFFECTATION requis.";
-        			this.rafraichir();
+        			this.toast("Droit MODIFIER_AFFECTATION requis.", "warning");
         			return;
         		}
         		if (!this.affRowId || !this.affStart || !this.affEnd) return;
@@ -2569,16 +2640,14 @@ scriptContent:
         		if (a > b) { var t = a; a = b; b = t; this.affStart = a; this.affEnd = b; }
         		var days = this.affDays(a, b);
         		if (!days.length) {
-        			this.message = "Choisissez au moins un jour ouvré.";
-        			this.rafraichir();
+        			this.toast("Choisissez au moins un jour ouvré.", "warning");
         			return;
         		}
         		var periode = this.affPeriodDb(this.affPeriod);
         		var codeType = (this.affKind && this.affKind !== "PROJET") ? this.affKind : "PROJET";
         		var libelle = codeType === "PROJET" ? String(this.affLabel || "") : "";
         		if (codeType === "PROJET" && !libelle) {
-        			this.message = "Choisissez le projet.";
-        			this.rafraichir();
+        			this.toast("Choisissez le projet.", "warning");
         			return;
         		}
         		var runs = periode === "JOURNEE" ? this.affRuns(days) : days.map(function (d) { return { from: d, to: d }; });
@@ -2627,57 +2696,60 @@ scriptContent:
         		chain.then(function (ok) {
         			self.affBusy = false;
         			if (!ok) {
-        				self.message = "Enregistrement impossible.";
-        				self.rafraichir();
+        				self.toast("Enregistrement impossible.", "error");
         				return;
         			}
         			self.affFermer();
-        			self.message = days.length > 1 ? days.length + " jours affectés." : "Affectation enregistrée.";
+        			self.toast(days.length > 1 ? days.length + " jours affectés" : "Affectation enregistrée");
         			self.ionViewDidEnter();
         		}, function (err) {
         			self.affBusy = false;
-        			self.message = String((err && err.message) || err);
-        			self.rafraichir();
+        			self.toast(String((err && err.message) || err), "error");
         		});
         	}
         	affSupprimer() {
         		if (this.affBusy || this.affMode !== "view") return;
         		if (!this.has("MODIFIER_AFFECTATION")) {
-        			this.message = "Droit MODIFIER_AFFECTATION requis.";
-        			this.rafraichir();
+        			this.toast("Droit MODIFIER_AFFECTATION requis.", "warning");
         			return;
         		}
         		var self = this;
         		var list = this.affOrigItems || [];
         		if (!list.length) return;
-        		this.affBusy = true;
-        		this.rafraichir();
-        		var chain = Promise.resolve(true);
-        		list.forEach(function (it) {
-        			chain = chain.then(function (ok) {
-        				if (!ok) return false;
-        				return self.appel("Jour_Supprimer", {
-        					cleActeur: self.cleActeur,
-        					cleLigne: String(it.rowId),
-        					jour: String(it.start || "").slice(0, 10),
-        					periode: self.affItemPeriode(it)
-        				}).then(function (out) { return self.affOk(out); });
-        			});
-        		});
-        		chain.then(function (ok) {
-        			self.affBusy = false;
-        			if (!ok) {
-        				self.message = "Suppression impossible.";
-        				self.rafraichir();
-        				return;
-        			}
-        			self.affFermer();
-        			self.message = "Affectation supprimée.";
-        			self.ionViewDidEnter();
-        		}, function (err) {
-        			self.affBusy = false;
-        			self.message = String((err && err.message) || err);
+        		this.confirmer({
+        			title: "Supprimer cette affectation ?",
+        			text: list.length > 1 ? (list.length + " créneaux seront libérés.") : "Le créneau sera libéré.",
+        			confirmLabel: "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.affBusy = true;
         			self.rafraichir();
+        			var chain = Promise.resolve(true);
+        			list.forEach(function (it) {
+        				chain = chain.then(function (ok) {
+        					if (!ok) return false;
+        					return self.appel("Jour_Supprimer", {
+        						cleActeur: self.cleActeur,
+        						cleLigne: String(it.rowId),
+        						jour: String(it.start || "").slice(0, 10),
+        						periode: self.affItemPeriode(it)
+        					}).then(function (out) { return self.affOk(out); });
+        				});
+        			});
+        			chain.then(function (ok) {
+        				self.affBusy = false;
+        				if (!ok) {
+        					self.toast("Suppression impossible.", "error");
+        					return;
+        				}
+        				self.affFermer();
+        				self.toast("Affectation supprimée");
+        				self.ionViewDidEnter();
+        			}, function (err) {
+        				self.affBusy = false;
+        				self.toast(String((err && err.message) || err), "error");
+        			});
         		});
         	}
         
@@ -7793,6 +7865,217 @@ title: Plan de charge
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
               - MobileSmartSourceType: script:this.wpLeft
+        ↓PeriodPick [ngx.components.UIDynamicElement-1791539200101]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓PeriodPickC [ngx.components.UIAttribute-1791539200102]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:dash-period-picker
+          ↓PeriodPickTitle [ngx.components.UIDynamicElement-1791539200103]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: p
+            ↓PeriodPickTitleC [ngx.components.UIAttribute-1791539200104]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-period-picker__title
+            ↓PeriodPickTitleT [ngx.components.UIText-1791539200105]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Choisir une période
+          ↓PeriodPresets [ngx.components.UIDynamicElement-1791539200106]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓PeriodPresetsC [ngx.components.UIAttribute-1791539200107]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-period-picker__presets
+            ↓PeriodPresetLoop [ngx.components.UIControlDirective-1791539200108]: 
+              directiveItemName: pp
+              directiveSource: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.periodPresetRows
+              ↓PeriodPresetBtn [ngx.components.UIDynamicElement-1791539200109]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: button
+                ↓PeriodPresetBtnC [ngx.components.UIAttribute-1791539200110]: 
+                  attrName: '[class]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: 'script:''dash-period-picker__preset'' + (pp.current ? '' is-current'' : '''')'
+                ↓PeriodPresetBtnType [ngx.components.UIAttribute-1791539200111]: 
+                  attrName: type
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:button
+                ↓PeriodPresetBtnIdx [ngx.components.UIAttribute-1791539200112]: 
+                  attrName: '[attr.data-preset]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:pp.idx
+                ↓PeriodPresetBtnClick [ngx.components.UIControlEvent-1791539200113]: 
+                  ↓PeriodPresetBtnClickDo [ngx.components.UICustomAction-1791539200114]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            page.periodPreset(event);
+                            resolve(true);
+                ↓PeriodPresetBtnT [ngx.components.UIText-1791539200115]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:pp.label
+          ↓PeriodCustom [ngx.components.UIDynamicElement-1791539200116]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓PeriodCustomC [ngx.components.UIAttribute-1791539200117]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-period-picker__custom
+            ↓PeriodDu [ngx.components.UIDynamicElement-1791539200118]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓PeriodDuL [ngx.components.UIDynamicElement-1791539200119]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: label
+                ↓PeriodDuLT [ngx.components.UIText-1791539200120]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Du
+              ↓PeriodDuPick [ngx.components.UIUseShared-1791539200121]: 
+                sharedcomponent: lib_components_ui.Application.NgxApp.p_datepicker
+                ↓value [ngx.components.UIUseVariable-1791539200122]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.periodDraftFrom
+                ↓placeholder [ngx.components.UIUseVariable-1791539200123]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:'jj/mm/aaaa'
+                ↓baseZIndex [ngx.components.UIUseVariable-1791539200124]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:6000
+                ↓OnChange [ngx.components.UIControlEvent-1791539200125]: 
+                  attrName: (onSelect)
+                  eventName: onSelect
+                  ↓OnChangeDo [ngx.components.UICustomAction-1791539200126]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            'try {
+                              var src = event;
+                              var v = src;
+                              if (src && typeof src === "object") {
+                                if (src.event && typeof src.event.getFullYear === "function") v = src.event;
+                                else if (src.event && src.event.value !== undefined) v = src.event.value;
+                                else if (typeof src.getFullYear === "function") v = src;
+                                else if (src.value !== undefined) v = src.value;
+                              }
+                              setTimeout(function () { page.periodSetFrom(v); }, 0);
+                            } catch (e) { console.error(e); }
+                            resolve(true);
+                            '
+            ↓PeriodAu [ngx.components.UIDynamicElement-1791539200127]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓PeriodAuL [ngx.components.UIDynamicElement-1791539200128]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: label
+                ↓PeriodAuLT [ngx.components.UIText-1791539200129]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Au
+              ↓PeriodAuPick [ngx.components.UIUseShared-1791539200130]: 
+                sharedcomponent: lib_components_ui.Application.NgxApp.p_datepicker
+                ↓value [ngx.components.UIUseVariable-1791539200131]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.periodDraftTo
+                ↓placeholder [ngx.components.UIUseVariable-1791539200132]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:'jj/mm/aaaa'
+                ↓baseZIndex [ngx.components.UIUseVariable-1791539200133]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:6000
+                ↓OnChange [ngx.components.UIControlEvent-1791539200134]: 
+                  attrName: (onSelect)
+                  eventName: onSelect
+                  ↓OnChangeDo [ngx.components.UICustomAction-1791539200135]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            'try {
+                              var src = event;
+                              var v = src;
+                              if (src && typeof src === "object") {
+                                if (src.event && typeof src.event.getFullYear === "function") v = src.event;
+                                else if (src.event && src.event.value !== undefined) v = src.event.value;
+                                else if (typeof src.getFullYear === "function") v = src;
+                                else if (src.value !== undefined) v = src.value;
+                              }
+                              setTimeout(function () { page.periodSetTo(v); }, 0);
+                            } catch (e) { console.error(e); }
+                            resolve(true);
+                            '
+            ↓PeriodApply [ngx.components.UIDynamicElement-1791539200136]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: button
+              ↓PeriodApplyC [ngx.components.UIAttribute-1791539200137]: 
+                attrName: class
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:btn btn--primary btn--sm
+              ↓PeriodApplyType [ngx.components.UIAttribute-1791539200138]: 
+                attrName: type
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:button
+              ↓PeriodApplyClick [ngx.components.UIControlEvent-1791539200139]: 
+                ↓PeriodApplyClickDo [ngx.components.UICustomAction-1791539200140]: 
+                  actionValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                        →: |
+                          page.periodApply();
+                          resolve(true);
+              ↓PeriodApplyT [ngx.components.UIText-1791539200141]: 
+                textValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:Appliquer
         ↓WpHead [ngx.components.UIDynamicElement-1791331068413]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -9961,7 +10244,7 @@ title: Plan de charge
           .tdb .dash-wp{
             position: fixed;
             z-index: 150;
-            width: 300px;
+            width: min(320px, calc(100vw - 24px));
             padding: 0;
             border: 1px solid var(--c-border-soft);
             border-radius: var(--r-md);
@@ -11287,16 +11570,17 @@ title: Plan de charge
           .tdb .dash-week__btn:disabled{ opacity: 0.45; cursor: not-allowed; }
           
           .tdb .dash-wp{
-            width: 300px;
+            width: min(320px, calc(100vw - 24px));
             padding: 0;
           }
           .tdb .dash-wp:has(.dash-period-picker) .dash-wp__head,
           .tdb .dash-wp:has(.dash-period-picker) .dash-wp__list{ display: none !important; }
           .tdb .dash-period-picker{
-            width: 300px;
+            width: min(320px, calc(100vw - 24px));
             padding: 10px 12px 12px;
             display: block;
             border-bottom: 0;
+            box-sizing: border-box;
           }
           .tdb .dash-period-picker__title{
             margin: 0 0 10px;
@@ -11342,31 +11626,62 @@ title: Plan de charge
             gap: 8px;
             padding-top: 10px;
             border-top: 1px solid var(--c-grey-2);
-            align-items: stretch;
+            align-items: end;
             flex-wrap: nowrap;
           }
-          .tdb .dash-period-picker__custom label{
+          .tdb .dash-period-picker__custom > div{
+            min-width: 0;
+          }
+          .tdb .dash-period-picker__custom label,
+          .tdb .dash-period-picker__custom .pfm-label{
             display: flex;
             flex-direction: column;
             gap: 4px;
+            margin: 0 0 4px;
             font: 600 11px var(--font-body);
             color: var(--c-muted);
             text-transform: uppercase;
             letter-spacing: 0.03em;
           }
-          .tdb .dash-period-picker__custom input[type="date"]{
-            height: 34px;
-            padding: 0 8px;
-            border: 1px solid var(--c-border-soft);
-            border-radius: var(--r-sm);
-            font: 500 13px var(--font-body);
-            color: var(--c-text);
-            background: var(--c-white);
+          .tdb .dash-period-picker__custom lib_components_ui-datefield,
+          .tdb .dash-period-picker__custom .p-calendar{
+            width: 100%;
+            max-width: 100%;
+          }
+          .tdb .dash-period-picker__custom .p-calendar{
+            display: flex !important;
+            align-items: stretch;
+          }
+          .tdb .dash-period-picker__custom .p-calendar .p-inputtext{
+            flex: 1 1 auto;
+            width: auto !important;
+            min-width: 0 !important;
+            height: 34px !important;
+            min-height: 34px !important;
+            padding: 0 8px !important;
+            border: 1px solid var(--c-border-soft) !important;
+            border-right: 0 !important;
+            border-radius: 8px 0 0 8px !important;
+            font: 500 12px var(--font-body) !important;
+            line-height: 34px !important;
+            color: var(--c-text) !important;
+            background: var(--c-white) !important;
+          }
+          .tdb .dash-period-picker__custom .p-calendar .p-datepicker-trigger{
+            width: 34px !important;
+            min-width: 34px !important;
+            height: 34px !important;
+            border: 1px solid var(--c-border-soft) !important;
+            border-radius: 0 8px 8px 0 !important;
+            background: #F8F9FA !important;
+            color: var(--c-primary) !important;
           }
           .tdb .dash-period-picker__custom .btn{
             grid-column: 1 / -1;
             justify-self: stretch;
             width: 100%;
+            height: 34px;
+            margin-top: 2px;
           }
           
           @media (max-width: 1360px){

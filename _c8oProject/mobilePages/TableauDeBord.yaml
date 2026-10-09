@@ -104,6 +104,9 @@ scriptContent:
         	wpLeft: string;
         	wpMoisLabel: string;
         	wpWeeks: any[];
+        	periodDraftFrom: string;
+        	periodDraftTo: string;
+        	periodPresetRows: any[];
         	collabCount: string;
         	effortEmpty: boolean;
         	dispoEmpty: boolean;
@@ -145,6 +148,30 @@ scriptContent:
         	_scrubDragging: boolean;
         	_kpiSig: string;
         	_focusSig: string;
+        	chartPieData: any[];
+        	chartAreaSeries: any[];
+        	chartAreaCats: any[];
+        	chartBarSeries: any[];
+        	chartBarYcats: any[];
+        	chartBarHeight: number;
+        	chartHeatData: any[];
+        	chartHeatXcats: any[];
+        	chartHeatYcats: any[];
+        	chartHeatMin: number;
+        	chartHeatMax: number;
+        	chartHeatHeight: number;
+        	chartCatPieData: any[];
+        	chartCatAreaSeries: any[];
+        	chartCatAreaCats: any[];
+        	chartCatBarSeries: any[];
+        	chartCatBarYcats: any[];
+        	chartCatBarHeight: number;
+        	chartCatHeatData: any[];
+        	chartCatHeatXcats: any[];
+        	chartCatHeatYcats: any[];
+        	chartCatHeatMin: number;
+        	chartCatHeatMax: number;
+        	chartCatHeatHeight: number;
         /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
         /*End_c8o_PageConstructor*/
@@ -227,7 +254,7 @@ scriptContent:
         					+ ".dash-frise-scrub:not(.is-dragging) .dash-frise-scrub__thumb{transition:left .12s ease,width .12s ease}"
         					+ ".dash-frise-scrub:hover .dash-frise-scrub__thumb,.dash-frise-scrub.is-dragging .dash-frise-scrub__thumb{box-shadow:0 0 0 4px rgba(26,66,138,.25)}"
         					+ ".dash-grid-sizer{pointer-events:none;min-height:320px}"
-        					+ ".dash-wp:has(.dash-period-picker){width:300px;padding:0}"
+        					+ ".dash-wp:has(.dash-period-picker){width:min(320px,calc(100vw - 24px));padding:0}"
         					+ ".dash-wp:has(.dash-period-picker) .dash-wp__head,.dash-wp:has(.dash-period-picker) .dash-wp__list{display:none !important}"
         					+ ".dash-period-picker{width:300px;padding:10px 12px 12px;box-sizing:border-box;background:#fff}"
         					+ ".dash-period-picker__title{margin:0 0 10px;font:700 13px Montserrat,Segoe UI,sans-serif;color:#122F62}"
@@ -236,10 +263,13 @@ scriptContent:
         					+ ".dash-period-picker__preset:hover,.dash-period-picker__preset:focus-visible{background:#EFF4FF;outline:none}"
         					+ ".dash-period-picker__preset.is-current{background:#EFF4FF;font-weight:600;color:#1A428A}"
         					+ ".dash-period-picker__preset svg{color:#1A428A;flex:0 0 auto}"
-        					+ ".dash-period-picker__custom{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #E6E9EC}"
-        					+ ".dash-period-picker__custom label{display:flex;flex-direction:column;gap:4px;font:600 11px Roboto,Helvetica,Arial,sans-serif;color:#6C757D;text-transform:uppercase;letter-spacing:.03em}"
-        					+ ".dash-period-picker__custom input[type=date]{height:34px;width:100%;box-sizing:border-box;padding:0 8px;border:1px solid #DDE3F0;border-radius:8px;font:500 13px Roboto,Helvetica,Arial,sans-serif;color:#212529;background:#fff}"
-        					+ ".dash-period-picker__custom .btn{grid-column:1 / -1;display:inline-flex;align-items:center;justify-content:center;width:100%;height:32px;padding:0 12px;border:1px solid #1A428A;border-radius:10px;background:#1A428A;color:#fff;font:600 13px Roboto,Helvetica,Arial,sans-serif;cursor:pointer}"
+        					+ ".dash-period-picker__custom{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #E6E9EC;align-items:end}"
+        					+ ".dash-period-picker__custom>div{min-width:0}"
+        					+ ".dash-period-picker__custom label{display:block;margin:0 0 4px;font:600 11px Roboto,Helvetica,Arial,sans-serif;color:#6C757D;text-transform:uppercase;letter-spacing:.03em}"
+        					+ ".dash-period-picker__custom .p-calendar{display:flex!important;width:100%;align-items:stretch}"
+        					+ ".dash-period-picker__custom .p-calendar .p-inputtext{flex:1 1 auto;min-width:0!important;height:34px!important;min-height:34px!important;padding:0 8px!important;border:1px solid #DDE3F0!important;border-right:0!important;border-radius:8px 0 0 8px!important;font:500 12px Roboto,Helvetica,Arial,sans-serif!important;line-height:34px!important}"
+        					+ ".dash-period-picker__custom .p-calendar .p-datepicker-trigger{width:34px!important;min-width:34px!important;height:34px!important;border:1px solid #DDE3F0!important;border-radius:0 8px 8px 0!important;background:#F8F9FA!important;color:#1A428A!important}"
+        					+ ".dash-period-picker__custom .btn{grid-column:1 / -1;display:inline-flex;align-items:center;justify-content:center;width:100%;height:34px;padding:0 12px;border:1px solid #1A428A;border-radius:10px;background:#1A428A;color:#fff;font:600 13px Roboto,Helvetica,Arial,sans-serif;cursor:pointer}"
         					+ ".dash-hero__right{max-width:440px;min-width:0;overflow:hidden}"
         					+ ".dash-cap--scroll{display:flex;align-items:flex-end;gap:6px;max-width:420px;overflow-x:auto;padding-bottom:4px}"
         					+ ".dash-cap--scroll .dash-cap__day{flex:0 0 36px}"
@@ -440,6 +470,30 @@ scriptContent:
         		this.capDays = [];
         		this.insights = [];
         		this.kpis = [];
+        		this.chartPieData = [];
+        		this.chartAreaSeries = [];
+        		this.chartAreaCats = [];
+        		this.chartBarSeries = [];
+        		this.chartBarYcats = [];
+        		this.chartBarHeight = 280;
+        		this.chartHeatData = [];
+        		this.chartHeatXcats = ["Lun", "Mar", "Mer", "Jeu", "Ven"];
+        		this.chartHeatYcats = [];
+        		this.chartHeatMin = 0;
+        		this.chartHeatMax = 100;
+        		this.chartHeatHeight = 280;
+        		this.chartCatPieData = [];
+        		this.chartCatAreaSeries = [];
+        		this.chartCatAreaCats = [];
+        		this.chartCatBarSeries = [];
+        		this.chartCatBarYcats = [];
+        		this.chartCatBarHeight = 280;
+        		this.chartCatHeatData = [];
+        		this.chartCatHeatXcats = [];
+        		this.chartCatHeatYcats = [];
+        		this.chartCatHeatMin = 0;
+        		this.chartCatHeatMax = 100;
+        		this.chartCatHeatHeight = 280;
         		this.semaineSig = "";
         		this.gridRows = [];
         		this.commentaires = [];
@@ -493,6 +547,9 @@ scriptContent:
         		this.showBack = false;
         		this.wpOpen = false;
         		this.wpWeeks = [];
+        		this.periodDraftFrom = "";
+        		this.periodDraftTo = "";
+        		this.periodPresetRows = [];
         		this.collabCount = "0 collaborateur";
         		this.effortEmpty = true;
         		this.dispoEmpty = true;
@@ -526,6 +583,16 @@ scriptContent:
         	}
         	rafraichir() {
         		try { this.ref.detectChanges(); } catch (e) {}
+        	}
+        	toast(message, type = "success") {
+        		var w: any = window;
+        		try { if (w.pfcToast) { w.pfcToast(message, type || "success"); return; } } catch (eT) {}
+        		this.message = message; this.rafraichir();
+        	}
+        	confirmer(opts) {
+        		var w: any = window;
+        		try { if (w.pfcConfirm) return w.pfcConfirm(opts || {}); } catch (eC) {}
+        		return Promise.resolve(window.confirm(((opts && opts.title) ? opts.title + "\n" : "") + ((opts && opts.text) || "Confirmer ?")));
         	}
         	asList(v) {
         		if (v == null) return [];
@@ -1388,43 +1455,41 @@ scriptContent:
         			{ label: "Cette ann\u00e9e", from: new Date(now.getFullYear(), 0, 1), to: new Date(now.getFullYear(), 11, 31) }
         		];
         	}
-        	monterPeriode() {
-        		var pop = document.querySelector(".dash-wp") as HTMLElement;
-        		if (!pop) return;
-        		var old = pop.querySelector(".dash-period-picker");
-        		if (old && old.parentElement) old.parentElement.removeChild(old);
+        	preparerPeriode() {
         		var self = this;
-        		var box = document.createElement("div");
-        		box.className = "dash-period-picker";
-        		var check = this.icoDash("check", 14);
-        		var html = "<p class=\"dash-period-picker__title\">Choisir une p\u00e9riode</p><div class=\"dash-period-picker__presets\">";
-        		this.presetsPeriode().forEach(function (p, i) {
-        			var on = self.iso(p.from) === self.periodFrom && self.iso(p.to) === self.periodTo;
-        			html += "<button type=\"button\" data-preset=\"" + i + "\" class=\"dash-period-picker__preset" + (on ? " is-current" : "") + "\">" + p.label + (on ? check : "") + "</button>";
+        		this.periodDraftFrom = this.periodFrom || "";
+        		this.periodDraftTo = this.periodTo || "";
+        		this.periodPresetRows = this.presetsPeriode().map(function (p, i) {
+        			return {
+        				idx: i,
+        				label: p.label,
+        				current: self.iso(p.from) === self.periodFrom && self.iso(p.to) === self.periodTo
+        			};
         		});
-        		html += "</div><div class=\"dash-period-picker__custom\"><label>Du<input type=\"date\" data-from value=\"" + (self.periodFrom || "") + "\"></label><label>Au<input type=\"date\" data-to value=\"" + (self.periodTo || "") + "\"></label><button type=\"button\" class=\"btn btn--primary btn--sm\" data-apply>Appliquer</button></div>";
-        		box.innerHTML = html;
-        		pop.insertBefore(box, pop.firstChild);
-        		box.addEventListener("click", function (ev) {
-        			var t = ev.target as HTMLElement;
-        			var b = t && t.closest ? t.closest("button") as HTMLElement : null;
-        			if (!b || !box.contains(b)) return;
-        			ev.stopPropagation();
-        			if (b.getAttribute("data-apply") != null) {
-        				var fEl = box.querySelector("[data-from]") as HTMLInputElement;
-        				var tEl = box.querySelector("[data-to]") as HTMLInputElement;
-        				if (!fEl.value || !tEl.value) return;
-        				self.wpOpen = false;
-        				self.setPeriode(self.parseISO(fEl.value), self.parseISO(tEl.value));
-        				return;
-        			}
-        			var idx = b.getAttribute("data-preset");
-        			if (idx == null) return;
-        			var p = self.presetsPeriode()[Number(idx)];
-        			if (!p) return;
-        			self.wpOpen = false;
-        			self.setPeriode(p.from, p.to);
-        		});
+        	}
+        	periodSetFrom(v) {
+        		this.periodDraftFrom = this.affIsoOf(v);
+        		if (this.periodDraftTo && this.periodDraftFrom && this.periodDraftTo < this.periodDraftFrom) this.periodDraftTo = this.periodDraftFrom;
+        		this.rafraichir();
+        	}
+        	periodSetTo(v) {
+        		this.periodDraftTo = this.affIsoOf(v);
+        		if (this.periodDraftFrom && this.periodDraftTo && this.periodDraftTo < this.periodDraftFrom) this.periodDraftFrom = this.periodDraftTo;
+        		this.rafraichir();
+        	}
+        	periodApply() {
+        		if (!this.periodDraftFrom || !this.periodDraftTo) return;
+        		this.wpOpen = false;
+        		this.setPeriode(this.parseISO(this.periodDraftFrom), this.parseISO(this.periodDraftTo));
+        	}
+        	periodPreset(event) {
+        		var n = this.noeud(event);
+        		if (n && n.closest) n = n.closest("[data-preset]") || n;
+        		var idx = Number(n && n.getAttribute ? n.getAttribute("data-preset") : NaN);
+        		var p = this.presetsPeriode()[idx];
+        		if (!p) return;
+        		this.wpOpen = false;
+        		this.setPeriode(p.from, p.to);
         	}
         	evictCache() {
         		var cache = this._winCache || {};
@@ -1799,6 +1864,200 @@ scriptContent:
         		out.taux = out.ouvrees ? Math.round(out.projet / out.ouvrees * 100) : 0;
         		return out;
         	}
+        	peindreCharts(cur, days) {
+        		var self = this;
+        		var projets = Object.keys(cur.projets || {}).map(function (c) {
+        			var pr = cur.projets[c] || {};
+        			var el = self.elementOf(c);
+        			return {
+        				code: c,
+        				label: (el && (el.libelle || el.code)) || pr.label || c,
+        				demi: Number(pr.demi) || 0,
+        				gens: Object.keys(pr.gens || {}).length
+        			};
+        		}).sort(function (a, b) { return b.demi - a.demi; });
+        		var pie = [
+        			{ value: +((cur.projet || 0) / 2).toFixed(1), name: "Projets" },
+        			{ value: +((cur.libre || 0) / 2).toFixed(1), name: "À planifier" },
+        			{ value: +((cur.absence || 0) / 2).toFixed(1), name: "Absence" },
+        			{ value: +((cur.formation || 0) / 2).toFixed(1), name: "Formation" }
+        		].filter(function (d) { return d.value > 0; });
+        		this.chartPieData = pie.length ? pie : [{ value: 1, name: "Aucune donnée" }];
+        		var cats = [];
+        		var sProjet = [];
+        		var sLibre = [];
+        		var totalCap = Math.max(1, (cur.personnes || []).length * 2);
+        		var step = days.length > 28 ? Math.ceil(days.length / 28) : 1;
+        		var i;
+        		for (i = 0; i < days.length; i += step) {
+        			var d = days[i];
+        			var jd = (cur.jours || [])[i] || { projet: 0, libre: 0 };
+        			cats.push(this.nomJourCourt(d).slice(0, 3) + " " + d.getDate());
+        			sProjet.push(Math.round((jd.projet || 0) / totalCap * 100));
+        			sLibre.push(Math.round((jd.libre || 0) / totalCap * 100));
+        		}
+        		this.chartAreaCats = cats;
+        		this.chartAreaSeries = [
+        			{ name: "% projet", data: sProjet, color: "#1456C7" },
+        			{ name: "% à planifier", data: sLibre, color: "#008088" }
+        		];
+        		var topBar = projets.slice(0, 10);
+        		this.chartBarYcats = topBar.map(function (p) { return p.label; });
+        		this.chartBarSeries = [
+        			{ name: "Jours", data: topBar.map(function (p) { return +(p.demi / 2).toFixed(1); }), color: "#1456C7" }
+        		];
+        		this.chartBarHeight = Math.max(240, 56 + Math.max(1, this.chartBarYcats.length) * 34);
+        		var dowLabels = ["Lun", "Mar", "Mer", "Jeu", "Ven"];
+        		var heatKinds = [
+        			{ key: "projet", name: "Projets" },
+        			{ key: "libre", name: "À planifier" },
+        			{ key: "absence", name: "Absence" },
+        			{ key: "formation", name: "Formation" }
+        		];
+        		this.chartHeatXcats = dowLabels;
+        		this.chartHeatYcats = heatKinds.map(function (k) { return k.name; });
+        		var byDow = [
+        			{ projet: 0, libre: 0, absence: 0, formation: 0, cap: 0 },
+        			{ projet: 0, libre: 0, absence: 0, formation: 0, cap: 0 },
+        			{ projet: 0, libre: 0, absence: 0, formation: 0, cap: 0 },
+        			{ projet: 0, libre: 0, absence: 0, formation: 0, cap: 0 },
+        			{ projet: 0, libre: 0, absence: 0, formation: 0, cap: 0 }
+        		];
+        		var nPers = Math.max(1, (cur.personnes || []).length);
+        		for (i = 0; i < days.length; i++) {
+        			var dayH = days[i];
+        			if (!dayH) continue;
+        			var dowH = dayH.getDay();
+        			if (dowH < 1 || dowH > 5) continue;
+        			var jdH = (cur.jours || [])[i] || { projet: 0, libre: 0, absence: 0, formation: 0 };
+        			var slotH = byDow[dowH - 1];
+        			slotH.projet += Number(jdH.projet) || 0;
+        			slotH.libre += Number(jdH.libre) || 0;
+        			slotH.absence += Number(jdH.absence) || 0;
+        			slotH.formation += Number(jdH.formation) || 0;
+        			slotH.cap += nPers * 2;
+        		}
+        		var heatData = [];
+        		heatKinds.forEach(function (kind, yi) {
+        			var x;
+        			for (x = 0; x < 5; x++) {
+        				var slotX = byDow[x];
+        				var capX = Math.max(1, slotX.cap || 1);
+        				var pct = Math.round(((Number(slotX[kind.key]) || 0) / capX) * 100);
+        				heatData.push([x, yi, pct]);
+        			}
+        		});
+        		this.chartHeatData = heatData;
+        		this.chartHeatMin = 0;
+        		this.chartHeatMax = 100;
+        		this.chartHeatHeight = Math.max(260, 100 + Math.max(1, this.chartHeatYcats.length) * 42);
+        		var els = (this.elements || []).filter(function (e) {
+        			return self.onFlag(e.actif == null ? "true" : e.actif);
+        		});
+        		function statutOf(e) {
+        			var s = String(e.statutCatalogue || e.statut || "").trim();
+        			return s || "À définir";
+        		}
+        		function typeOf(e) {
+        			var t = String(e.lcNc || "").trim();
+        			if (t === "NC") return "No Code";
+        			if (t === "AU") return "Autre";
+        			if (t === "LC") return "Low Code";
+        			return "À définir";
+        		}
+        		function hasPart(code) {
+        			return (self.participants || []).some(function (p) { return String(p.codeElement) === String(code); });
+        		}
+        		var statutOrder = ["À définir", "Cadrage", "Dev", "Recette", "Test MOA", "Prod", "Arrêté"];
+        		var byStatut = {};
+        		els.forEach(function (e) {
+        			var s = statutOf(e);
+        			byStatut[s] = (byStatut[s] || 0) + 1;
+        		});
+        		var catPie = [];
+        		statutOrder.forEach(function (s) {
+        			if (byStatut[s]) { catPie.push({ value: byStatut[s], name: s }); delete byStatut[s]; }
+        		});
+        		Object.keys(byStatut).sort(function (a, b) { return a.localeCompare(b, "fr"); }).forEach(function (s) {
+        			catPie.push({ value: byStatut[s], name: s });
+        		});
+        		this.chartCatPieData = catPie.length ? catPie : [{ value: 1, name: "Aucun projet" }];
+        		var topCat = projets.slice(0, 4);
+        		var catColors = ["#1456C7", "#008088", "#C97A1E", "#6B3FA0"];
+        		var catCats = [];
+        		var catSeries = topCat.map(function (p, idx) {
+        			return { name: p.label, code: p.code, data: [], color: catColors[idx % catColors.length] };
+        		});
+        		var stepCat = days.length > 28 ? Math.ceil(days.length / 28) : 1;
+        		for (i = 0; i < days.length; i += stepCat) {
+        			var dCat = days[i];
+        			catCats.push(this.nomJourCourt(dCat).slice(0, 3) + " " + dCat.getDate());
+        			catSeries.forEach(function (ser) {
+        				var n = 0;
+        				(cur.personnes || []).forEach(function (p) {
+        					var s0 = (p.slots || [])[i * 2];
+        					var s1 = (p.slots || [])[i * 2 + 1];
+        					if (s0 && s0.kind === "projet" && String(s0.element || "") === String(ser.code)) n++;
+        					if (s1 && s1.kind === "projet" && String(s1.element || "") === String(ser.code)) n++;
+        				});
+        				ser.data.push(+(n / 2).toFixed(1));
+        			});
+        		}
+        		this.chartCatAreaCats = catCats.length ? catCats : ["—"];
+        		this.chartCatAreaSeries = catSeries.length ? catSeries.map(function (s) {
+        			return { name: s.name, data: s.data, color: s.color };
+        		}) : [{ name: "Aucun effort projet", data: [0], color: "#C9D6EE" }];
+        		var typeOrder = ["Low Code", "No Code", "Autre", "À définir"];
+        		var gov = {};
+        		typeOrder.forEach(function (t) { gov[t] = { complet: 0, sansChef: 0, sansPart: 0 }; });
+        		els.forEach(function (e) {
+        			var t = typeOf(e);
+        			if (!gov[t]) gov[t] = { complet: 0, sansChef: 0, sansPart: 0 };
+        			var chef = !!e.chefProjet;
+        			var part = hasPart(e.code);
+        			if (!chef) gov[t].sansChef++;
+        			else if (!part) gov[t].sansPart++;
+        			else gov[t].complet++;
+        		});
+        		var catY = typeOrder.filter(function (t) {
+        			var g = gov[t];
+        			return g && (g.complet + g.sansChef + g.sansPart) > 0;
+        		});
+        		if (!catY.length) catY = ["Aucun projet"];
+        		this.chartCatBarYcats = catY;
+        		this.chartCatBarSeries = [
+        			{ name: "Complets", data: catY.map(function (t) { return (gov[t] && gov[t].complet) || 0; }), color: "#1E7B4D" },
+        			{ name: "Sans chef", data: catY.map(function (t) { return (gov[t] && gov[t].sansChef) || 0; }), color: "#C97A1E" },
+        			{ name: "Sans participant", data: catY.map(function (t) { return (gov[t] && gov[t].sansPart) || 0; }), color: "#B5392F" }
+        		];
+        		this.chartCatBarHeight = Math.max(240, 56 + Math.max(1, catY.length) * 42);
+        		var heatX = statutOrder.slice();
+        		var heatY = typeOrder.slice();
+        		var matrix = {};
+        		els.forEach(function (e) {
+        			var key = typeOf(e) + "|" + statutOf(e);
+        			matrix[key] = (matrix[key] || 0) + 1;
+        			if (heatX.indexOf(statutOf(e)) < 0) heatX.push(statutOf(e));
+        			if (heatY.indexOf(typeOf(e)) < 0) heatY.push(typeOf(e));
+        		});
+        		var nEl = Math.max(1, els.length);
+        		var catHeat = [];
+        		var catHeatMax = 0;
+        		heatY.forEach(function (ty, yi) {
+        			heatX.forEach(function (st, xi) {
+        				var c = matrix[ty + "|" + st] || 0;
+        				var pct = Math.round((c / nEl) * 100);
+        				catHeat.push([xi, yi, pct]);
+        				if (pct > catHeatMax) catHeatMax = pct;
+        			});
+        		});
+        		this.chartCatHeatXcats = heatX;
+        		this.chartCatHeatYcats = heatY;
+        		this.chartCatHeatData = catHeat.length ? catHeat : [[0, 0, 0]];
+        		this.chartCatHeatMin = 0;
+        		this.chartCatHeatMax = Math.max(1, catHeatMax);
+        		this.chartCatHeatHeight = Math.max(260, 100 + Math.max(1, heatY.length) * 42);
+        	}
         	reconstruire() {
         		var self = this;
         		var LIB = { absence: "Absence", formation: "Formation", libre: "Libre", ferie: "Ferie", repos: "Repos" };
@@ -2143,7 +2402,7 @@ scriptContent:
         			});
         		}
         		this.pills = pills;
-        		this.showPills = !!(this.canAdmin && pills.length);
+        		this.showPills = false;
         		var chips = [{ value: "", label: "Tous" }];
         		(this.profils || []).filter(function (pr) { return actifs.some(function (l) { return l.codeProfil === pr.code; }); }).forEach(function (pr) {
         			chips.push({ value: pr.code, label: pr.libelle || pr.code });
@@ -2159,6 +2418,7 @@ scriptContent:
         		this.focusProjetLabel = this.focusEl ? ("Projet : " + (fel ? fel.libelle : this.focusEl)) : "";
         		this.focusJourOn = this.focusDay != null;
         		this.focusJourLabel = (this.focusDay != null && this._allDays && this._allDays[this.focusDay]) ? (this.nomJourCourt(this._allDays[this.focusDay]) + " " + this._allDays[this.focusDay].getDate()) : "";
+        		this.peindreCharts(cur, allDays);
         		this.ready = true;
         		this.message = "";
         		this.syncChrome();
@@ -2217,17 +2477,16 @@ scriptContent:
         		if (this.wpOpen) { this.wpFermer(); return; }
         		var n = this.noeud(event);
         		var r = n && n.getBoundingClientRect ? n.getBoundingClientRect() : null;
-        		var w = 300;
+        		var w = Math.min(320, Math.max(260, window.innerWidth - 24));
         		this.wpTop = (r ? r.bottom + 6 : 120) + "px";
         		this.wpLeft = (r ? Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) : 24) + "px";
         		var d = this.periodFrom ? this.parseISO(this.periodFrom) : this.monday(0);
         		this.wpY = d.getFullYear();
         		this.wpM = d.getMonth();
         		this.wpConstruire();
+        		this.preparerPeriode();
         		this.wpOpen = true;
         		this.rafraichir();
-        		var selfWp = this;
-        		setTimeout(function () { selfWp.monterPeriode(); }, 40);
         	}
         	wpNav(delta) {
         		var m = this.wpM + delta;
@@ -2568,8 +2827,7 @@ scriptContent:
         	affEnregistrer() {
         		if (this.affBusy) return;
         		if (!this.has("MODIFIER_AFFECTATION")) {
-        			this.message = "Droit MODIFIER_AFFECTATION requis.";
-        			this.rafraichir();
+        			this.toast("Droit MODIFIER_AFFECTATION requis.", "warning");
         			return;
         		}
         		if (!this.affRowId || !this.affStart || !this.affEnd) return;
@@ -2578,16 +2836,14 @@ scriptContent:
         		if (a > b) { var t = a; a = b; b = t; this.affStart = a; this.affEnd = b; }
         		var days = this.affDays(a, b);
         		if (!days.length) {
-        			this.message = "Choisissez au moins un jour ouvré.";
-        			this.rafraichir();
+        			this.toast("Choisissez au moins un jour ouvré.", "warning");
         			return;
         		}
         		var periode = this.affPeriodDb(this.affPeriod);
         		var codeType = (this.affKind && this.affKind !== "PROJET") ? this.affKind : "PROJET";
         		var libelle = codeType === "PROJET" ? String(this.affLabel || "") : "";
         		if (codeType === "PROJET" && !libelle) {
-        			this.message = "Choisissez le projet.";
-        			this.rafraichir();
+        			this.toast("Choisissez le projet.", "warning");
         			return;
         		}
         		var runs = periode === "JOURNEE" ? this.affRuns(days) : days.map(function (d) { return { from: d, to: d }; });
@@ -2636,57 +2892,60 @@ scriptContent:
         		chain.then(function (ok) {
         			self.affBusy = false;
         			if (!ok) {
-        				self.message = "Enregistrement impossible.";
-        				self.rafraichir();
+        				self.toast("Enregistrement impossible.", "error");
         				return;
         			}
         			self.affFermer();
-        			self.message = days.length > 1 ? days.length + " jours affectés." : "Affectation enregistrée.";
+        			self.toast(days.length > 1 ? days.length + " jours affectés" : "Affectation enregistrée");
         			self.ionViewDidEnter();
         		}, function (err) {
         			self.affBusy = false;
-        			self.message = String((err && err.message) || err);
-        			self.rafraichir();
+        			self.toast(String((err && err.message) || err), "error");
         		});
         	}
         	affSupprimer() {
         		if (this.affBusy || this.affMode !== "view") return;
         		if (!this.has("MODIFIER_AFFECTATION")) {
-        			this.message = "Droit MODIFIER_AFFECTATION requis.";
-        			this.rafraichir();
+        			this.toast("Droit MODIFIER_AFFECTATION requis.", "warning");
         			return;
         		}
         		var self = this;
         		var list = this.affOrigItems || [];
         		if (!list.length) return;
-        		this.affBusy = true;
-        		this.rafraichir();
-        		var chain = Promise.resolve(true);
-        		list.forEach(function (it) {
-        			chain = chain.then(function (ok) {
-        				if (!ok) return false;
-        				return self.appel("Jour_Supprimer", {
-        					cleActeur: self.cleActeur,
-        					cleLigne: String(it.rowId),
-        					jour: String(it.start || "").slice(0, 10),
-        					periode: self.affItemPeriode(it)
-        				}).then(function (out) { return self.affOk(out); });
-        			});
-        		});
-        		chain.then(function (ok) {
-        			self.affBusy = false;
-        			if (!ok) {
-        				self.message = "Suppression impossible.";
-        				self.rafraichir();
-        				return;
-        			}
-        			self.affFermer();
-        			self.message = "Affectation supprimée.";
-        			self.ionViewDidEnter();
-        		}, function (err) {
-        			self.affBusy = false;
-        			self.message = String((err && err.message) || err);
+        		this.confirmer({
+        			title: "Supprimer cette affectation ?",
+        			text: list.length > 1 ? (list.length + " créneaux seront libérés.") : "Le créneau sera libéré.",
+        			confirmLabel: "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.affBusy = true;
         			self.rafraichir();
+        			var chain = Promise.resolve(true);
+        			list.forEach(function (it) {
+        				chain = chain.then(function (ok) {
+        					if (!ok) return false;
+        					return self.appel("Jour_Supprimer", {
+        						cleActeur: self.cleActeur,
+        						cleLigne: String(it.rowId),
+        						jour: String(it.start || "").slice(0, 10),
+        						periode: self.affItemPeriode(it)
+        					}).then(function (out) { return self.affOk(out); });
+        				});
+        			});
+        			chain.then(function (ok) {
+        				self.affBusy = false;
+        				if (!ok) {
+        					self.toast("Suppression impossible.", "error");
+        					return;
+        				}
+        				self.affFermer();
+        				self.toast("Affectation supprimée");
+        				self.ionViewDidEnter();
+        			}, function (err) {
+        				self.affBusy = false;
+        				self.toast(String((err && err.message) || err), "error");
+        			});
         		});
         	}
         
@@ -3071,17 +3330,15 @@ scriptContent:
         		if (n && n.closest) n = n.closest("[data-el]") || n;
         		var code = n && n.getAttribute ? (n.getAttribute("data-el") || "") : "";
         		if (!code) return;
-        		this.aller("projets", code);
+        		try {
+        			window.sessionStorage.setItem("pfc:vue", "projets");
+        			window.sessionStorage.setItem("pfc:openProjet", String(code));
+        			window.sessionStorage.removeItem("pfc:preset");
+        		} catch (eF) {}
+        		this.routerProvider.navigateRoot("Projets", false, null);
         	}
         	ouvrirCapaciteJour(event) {
-        		var n = this.noeud(event);
-        		if (n && n.closest) n = n.closest("[data-day]") || n;
-        		var day = Number(n && n.getAttribute ? n.getAttribute("data-day") : -1);
-        		if (isNaN(day) || day < 0) return;
-        		var d = (this._allDays || [])[day];
-        		if (!d) return;
-        		this.écrireQfqDeepLink({ periodFrom: this.periodFrom, periodTo: this.periodTo, focusDay: this.iso(d) });
-        		this.routerProvider.navigateRoot("PlanDeCharge", false, null);
+        		this.focusJour(event);
         	}
         	ouvrirKpiAPlanifier(event) {
         		var n = this.noeud(event);
@@ -5992,6 +6249,424 @@ title: Tableau de bord
                     - xmlizable: 
                       - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                       - MobileSmartSourceType: 'plain: vs période préc.'
+      ↓Charts [ngx.components.UIDynamicElement-1791539000101]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓ChartsC [ngx.components.UIAttribute-1791539000102]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:tdb2-charts
+        ↓ChartPie [ngx.components.UIDynamicElement-1791539000103]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: section
+          ↓ChartPieC [ngx.components.UIAttribute-1791539000104]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:card tdb2-chart
+          ↓ChartPieH [ngx.components.UIDynamicElement-1791539000105]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ChartPieHC [ngx.components.UIAttribute-1791539000106]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:tdb2-sec__head
+            ↓ChartPieHB [ngx.components.UIDynamicElement-1791539000107]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓ChartPieH3 [ngx.components.UIDynamicElement-1791539000108]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: h3
+                ↓ChartPieH3T [ngx.components.UIText-1791539000109]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Mix de capacité
+              ↓ChartPieHP [ngx.components.UIDynamicElement-1791539000110]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: p
+                ↓ChartPieHPC [ngx.components.UIAttribute-1791539000111]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:muted
+                ↓ChartPieHPT [ngx.components.UIText-1791539000112]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Projets, à planifier, absence, formation
+          ↓ChartPieUse [ngx.components.UIUseShared-1791539000113]: 
+            sharedcomponent: PortefeuilleLCNC_fe.Application.NgxApp.echPie
+            ↓data [ngx.components.UIUseVariable-1791539000114]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartPieData
+            ↓height [ngx.components.UIUseVariable-1791539000115]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:300
+            ↓themeMode [ngx.components.UIUseVariable-1791539000116]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'light'
+        ↓ChartArea [ngx.components.UIDynamicElement-1791539000117]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: section
+          ↓ChartAreaC [ngx.components.UIAttribute-1791539000118]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:card tdb2-chart
+          ↓ChartAreaH [ngx.components.UIDynamicElement-1791539000119]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ChartAreaHC [ngx.components.UIAttribute-1791539000120]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:tdb2-sec__head
+            ↓ChartAreaHB [ngx.components.UIDynamicElement-1791539000121]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓ChartAreaH3 [ngx.components.UIDynamicElement-1791539000122]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: h3
+                ↓ChartAreaH3T [ngx.components.UIText-1791539000123]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Capacité au fil des jours
+              ↓ChartAreaHP [ngx.components.UIDynamicElement-1791539000124]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: p
+                ↓ChartAreaHPC [ngx.components.UIAttribute-1791539000125]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:muted
+                ↓ChartAreaHPT [ngx.components.UIText-1791539000126]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Part projet vs à planifier
+          ↓ChartAreaUse [ngx.components.UIUseShared-1791539000127]: 
+            sharedcomponent: PortefeuilleLCNC_fe.Application.NgxApp.echArea
+            ↓series [ngx.components.UIUseVariable-1791539000128]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartAreaSeries
+            ↓categories [ngx.components.UIUseVariable-1791539000129]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartAreaCats
+            ↓height [ngx.components.UIUseVariable-1791539000130]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:300
+            ↓themeMode [ngx.components.UIUseVariable-1791539000131]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'light'
+            ↓grid [ngx.components.UIUseVariable-1791539000132]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:true
+        ↓ChartBar [ngx.components.UIDynamicElement-1791539000133]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: section
+          ↓ChartBarC [ngx.components.UIAttribute-1791539000134]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:card tdb2-chart
+          ↓ChartBarH [ngx.components.UIDynamicElement-1791539000135]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ChartBarHC [ngx.components.UIAttribute-1791539000136]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:tdb2-sec__head
+            ↓ChartBarHB [ngx.components.UIDynamicElement-1791539000137]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓ChartBarH3 [ngx.components.UIDynamicElement-1791539000138]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: h3
+                ↓ChartBarH3T [ngx.components.UIText-1791539000139]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Charge par projet
+              ↓ChartBarHP [ngx.components.UIDynamicElement-1791539000140]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: p
+                ↓ChartBarHPC [ngx.components.UIAttribute-1791539000141]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:muted
+                ↓ChartBarHPT [ngx.components.UIText-1791539000142]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Jours-homme par projet
+          ↓ChartBarUse [ngx.components.UIUseShared-1791539000143]: 
+            sharedcomponent: PortefeuilleLCNC_fe.Application.NgxApp.echBarStack
+            ↓series [ngx.components.UIUseVariable-1791539000144]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartBarSeries
+            ↓ycats [ngx.components.UIUseVariable-1791539000145]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartBarYcats
+            ↓height [ngx.components.UIUseVariable-1791539000146]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartBarHeight
+            ↓themeMode [ngx.components.UIUseVariable-1791539000147]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'light'
+        ↓ChartHeat [ngx.components.UIDynamicElement-1791539000148]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: section
+          ↓ChartHeatC [ngx.components.UIAttribute-1791539000149]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:card tdb2-chart
+          ↓ChartHeatH [ngx.components.UIDynamicElement-1791539000150]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ChartHeatHC [ngx.components.UIAttribute-1791539000151]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:tdb2-sec__head
+            ↓ChartHeatHB [ngx.components.UIDynamicElement-1791539000152]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓ChartHeatH3 [ngx.components.UIDynamicElement-1791539000153]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: h3
+                ↓ChartHeatH3T [ngx.components.UIText-1791539000154]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Mix de capacité par jour
+              ↓ChartHeatHP [ngx.components.UIDynamicElement-1791539000155]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: p
+                ↓ChartHeatHPC [ngx.components.UIAttribute-1791539000156]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:muted
+                ↓ChartHeatHPT [ngx.components.UIText-1791539000157]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:% Projets · À planifier · Absence · Formation
+          ↓ChartHeatUse [ngx.components.UIUseShared-1791539000158]: 
+            sharedcomponent: PortefeuilleLCNC_fe.Application.NgxApp.echHeatmap
+            ↓data [ngx.components.UIUseVariable-1791539000159]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartHeatData
+            ↓xcats [ngx.components.UIUseVariable-1791539000160]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartHeatXcats
+            ↓ycats [ngx.components.UIUseVariable-1791539000161]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartHeatYcats
+            ↓min [ngx.components.UIUseVariable-1791539000162]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartHeatMin
+            ↓max [ngx.components.UIUseVariable-1791539000163]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartHeatMax
+            ↓height [ngx.components.UIUseVariable-1791539000164]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartHeatHeight
+            ↓themeMode [ngx.components.UIUseVariable-1791539000165]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'light'
+      ↓ChartsCat [ngx.components.UIDynamicElement-1791539100201]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓ChartsCatC [ngx.components.UIAttribute-1791539100202]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:tdb2-charts
+        ↓ChartCatPie [ngx.components.UIDynamicElement-1791539100203]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: section
+          ↓ChartCatPieC [ngx.components.UIAttribute-1791539100204]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:card tdb2-chart
+          ↓ChartCatPieH [ngx.components.UIDynamicElement-1791539100205]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ChartCatPieHC [ngx.components.UIAttribute-1791539100206]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:tdb2-sec__head
+            ↓ChartCatPieHB [ngx.components.UIDynamicElement-1791539100207]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓ChartCatPieH3 [ngx.components.UIDynamicElement-1791539100208]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: h3
+                ↓ChartCatPieH3T [ngx.components.UIText-1791539100209]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Catalogue par statut
+              ↓ChartCatPieHP [ngx.components.UIDynamicElement-1791539100210]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: p
+                ↓ChartCatPieHPC [ngx.components.UIAttribute-1791539100211]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:muted
+                ↓ChartCatPieHPT [ngx.components.UIText-1791539100212]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Nombre de projets actifs
+          ↓ChartCatPieUse [ngx.components.UIUseShared-1791539100213]: 
+            sharedcomponent: PortefeuilleLCNC_fe.Application.NgxApp.echPie
+            ↓data [ngx.components.UIUseVariable-1791539100214]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartCatPieData
+            ↓height [ngx.components.UIUseVariable-1791539100215]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:300
+            ↓themeMode [ngx.components.UIUseVariable-1791539100216]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'light'
+        ↓ChartCatBar [ngx.components.UIDynamicElement-1791539100233]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: section
+          ↓ChartCatBarC [ngx.components.UIAttribute-1791539100234]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:card tdb2-chart
+          ↓ChartCatBarH [ngx.components.UIDynamicElement-1791539100235]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓ChartCatBarHC [ngx.components.UIAttribute-1791539100236]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:tdb2-sec__head
+            ↓ChartCatBarHB [ngx.components.UIDynamicElement-1791539100237]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓ChartCatBarH3 [ngx.components.UIDynamicElement-1791539100238]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: h3
+                ↓ChartCatBarH3T [ngx.components.UIText-1791539100239]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Gouvernance par type
+              ↓ChartCatBarHP [ngx.components.UIDynamicElement-1791539100240]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: p
+                ↓ChartCatBarHPC [ngx.components.UIAttribute-1791539100241]: 
+                  attrName: class
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:muted
+                ↓ChartCatBarHPT [ngx.components.UIText-1791539100242]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Complets · sans chef · sans participant
+          ↓ChartCatBarUse [ngx.components.UIUseShared-1791539100243]: 
+            sharedcomponent: PortefeuilleLCNC_fe.Application.NgxApp.echBarStack
+            ↓series [ngx.components.UIUseVariable-1791539100244]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartCatBarSeries
+            ↓ycats [ngx.components.UIUseVariable-1791539100245]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartCatBarYcats
+            ↓height [ngx.components.UIUseVariable-1791539100246]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.chartCatBarHeight
+            ↓themeMode [ngx.components.UIUseVariable-1791539100247]: 
+              varValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:'light'
       ↓PillsIf [ngx.components.UIControlDirective-1795702100485]: 
         directiveName: If
         directiveSource: 
@@ -6600,6 +7275,217 @@ title: Tableau de bord
             - xmlizable: 
               - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
               - MobileSmartSourceType: script:this.wpLeft
+        ↓PeriodPick [ngx.components.UIDynamicElement-1791539200101]: 
+          beanData: '{"ionBean":"DivTag"}'
+          tagName: div
+          ↓PeriodPickC [ngx.components.UIAttribute-1791539200102]: 
+            attrName: class
+            attrValue: 
+              - xmlizable: 
+                - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                - MobileSmartSourceType: plain:dash-period-picker
+          ↓PeriodPickTitle [ngx.components.UIDynamicElement-1791539200103]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: p
+            ↓PeriodPickTitleC [ngx.components.UIAttribute-1791539200104]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-period-picker__title
+            ↓PeriodPickTitleT [ngx.components.UIText-1791539200105]: 
+              textValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:Choisir une période
+          ↓PeriodPresets [ngx.components.UIDynamicElement-1791539200106]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓PeriodPresetsC [ngx.components.UIAttribute-1791539200107]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-period-picker__presets
+            ↓PeriodPresetLoop [ngx.components.UIControlDirective-1791539200108]: 
+              directiveItemName: pp
+              directiveSource: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: script:this.periodPresetRows
+              ↓PeriodPresetBtn [ngx.components.UIDynamicElement-1791539200109]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: button
+                ↓PeriodPresetBtnC [ngx.components.UIAttribute-1791539200110]: 
+                  attrName: '[class]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: 'script:''dash-period-picker__preset'' + (pp.current ? '' is-current'' : '''')'
+                ↓PeriodPresetBtnType [ngx.components.UIAttribute-1791539200111]: 
+                  attrName: type
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:button
+                ↓PeriodPresetBtnIdx [ngx.components.UIAttribute-1791539200112]: 
+                  attrName: '[attr.data-preset]'
+                  attrValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:pp.idx
+                ↓PeriodPresetBtnClick [ngx.components.UIControlEvent-1791539200113]: 
+                  ↓PeriodPresetBtnClickDo [ngx.components.UICustomAction-1791539200114]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            page.periodPreset(event);
+                            resolve(true);
+                ↓PeriodPresetBtnT [ngx.components.UIText-1791539200115]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:pp.label
+          ↓PeriodCustom [ngx.components.UIDynamicElement-1791539200116]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓PeriodCustomC [ngx.components.UIAttribute-1791539200117]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:dash-period-picker__custom
+            ↓PeriodDu [ngx.components.UIDynamicElement-1791539200118]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓PeriodDuL [ngx.components.UIDynamicElement-1791539200119]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: label
+                ↓PeriodDuLT [ngx.components.UIText-1791539200120]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Du
+              ↓PeriodDuPick [ngx.components.UIUseShared-1791539200121]: 
+                sharedcomponent: lib_components_ui.Application.NgxApp.p_datepicker
+                ↓value [ngx.components.UIUseVariable-1791539200122]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.periodDraftFrom
+                ↓placeholder [ngx.components.UIUseVariable-1791539200123]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:'jj/mm/aaaa'
+                ↓baseZIndex [ngx.components.UIUseVariable-1791539200124]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:6000
+                ↓OnChange [ngx.components.UIControlEvent-1791539200125]: 
+                  attrName: (onSelect)
+                  eventName: onSelect
+                  ↓OnChangeDo [ngx.components.UICustomAction-1791539200126]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            'try {
+                              var src = event;
+                              var v = src;
+                              if (src && typeof src === "object") {
+                                if (src.event && typeof src.event.getFullYear === "function") v = src.event;
+                                else if (src.event && src.event.value !== undefined) v = src.event.value;
+                                else if (typeof src.getFullYear === "function") v = src;
+                                else if (src.value !== undefined) v = src.value;
+                              }
+                              setTimeout(function () { page.periodSetFrom(v); }, 0);
+                            } catch (e) { console.error(e); }
+                            resolve(true);
+                            '
+            ↓PeriodAu [ngx.components.UIDynamicElement-1791539200127]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: div
+              ↓PeriodAuL [ngx.components.UIDynamicElement-1791539200128]: 
+                beanData: '{"ionBean":"DivTag"}'
+                tagName: label
+                ↓PeriodAuLT [ngx.components.UIText-1791539200129]: 
+                  textValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: plain:Au
+              ↓PeriodAuPick [ngx.components.UIUseShared-1791539200130]: 
+                sharedcomponent: lib_components_ui.Application.NgxApp.p_datepicker
+                ↓value [ngx.components.UIUseVariable-1791539200131]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:this.periodDraftTo
+                ↓placeholder [ngx.components.UIUseVariable-1791539200132]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:'jj/mm/aaaa'
+                ↓baseZIndex [ngx.components.UIUseVariable-1791539200133]: 
+                  varValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                      - MobileSmartSourceType: script:6000
+                ↓OnChange [ngx.components.UIControlEvent-1791539200134]: 
+                  attrName: (onSelect)
+                  eventName: onSelect
+                  ↓OnChangeDo [ngx.components.UICustomAction-1791539200135]: 
+                    actionValue: 
+                      - xmlizable: 
+                        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                          →: |
+                            'try {
+                              var src = event;
+                              var v = src;
+                              if (src && typeof src === "object") {
+                                if (src.event && typeof src.event.getFullYear === "function") v = src.event;
+                                else if (src.event && src.event.value !== undefined) v = src.event.value;
+                                else if (typeof src.getFullYear === "function") v = src;
+                                else if (src.value !== undefined) v = src.value;
+                              }
+                              setTimeout(function () { page.periodSetTo(v); }, 0);
+                            } catch (e) { console.error(e); }
+                            resolve(true);
+                            '
+            ↓PeriodApply [ngx.components.UIDynamicElement-1791539200136]: 
+              beanData: '{"ionBean":"DivTag"}'
+              tagName: button
+              ↓PeriodApplyC [ngx.components.UIAttribute-1791539200137]: 
+                attrName: class
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:btn btn--primary btn--sm
+              ↓PeriodApplyType [ngx.components.UIAttribute-1791539200138]: 
+                attrName: type
+                attrValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:button
+              ↓PeriodApplyClick [ngx.components.UIControlEvent-1791539200139]: 
+                ↓PeriodApplyClickDo [ngx.components.UICustomAction-1791539200140]: 
+                  actionValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                        →: |
+                          page.periodApply();
+                          resolve(true);
+              ↓PeriodApplyT [ngx.components.UIText-1791539200141]: 
+                textValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: plain:Appliquer
         ↓WpHead [ngx.components.UIDynamicElement-1791331068413]: 
           beanData: '{"ionBean":"DivTag"}'
           tagName: div
@@ -7218,7 +8104,7 @@ title: Tableau de bord
           .tdb .dash-wp{
             position: fixed;
             z-index: 150;
-            width: 300px;
+            width: min(320px, calc(100vw - 24px));
             padding: 0;
             border: 1px solid var(--c-border-soft);
             border-radius: var(--r-md);
@@ -7427,6 +8313,42 @@ title: Tableau de bord
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: var(--s-4);
             margin-bottom: var(--s-4);
+          }
+          
+          .tdb .tdb2-charts{
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+            gap: 16px;
+            margin-bottom: var(--s-4);
+          }
+          .tdb .tdb2-chart{
+            padding: 18px 20px 16px;
+            min-width: 0;
+          }
+          .tdb .tdb2-chart .tdb2-sec__head{
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+          .tdb .tdb2-sec__head h3{
+            margin: 0;
+            font-family: var(--font-title);
+            font-size: 16px;
+            color: var(--c-primary);
+          }
+          .tdb .tdb2-sec__head .muted,
+          .tdb .tdb2-sec__head p.muted{
+            margin: 4px 0 0;
+            font-size: 13px;
+          }
+          .tdb .tdb2-chart .ech-host{
+            width: 100%;
+            min-height: 220px;
+          }
+          @media (max-width: 1100px){
+            .tdb .tdb2-charts{ grid-template-columns: 1fr; }
           }
           
           .tdb .dash-kpi{
@@ -8574,16 +9496,17 @@ title: Tableau de bord
           .tdb .dash-week__btn:disabled{ opacity: 0.45; cursor: not-allowed; }
           
           .tdb .dash-wp{
-            width: 300px;
+            width: min(320px, calc(100vw - 24px));
             padding: 0;
           }
           .tdb .dash-wp:has(.dash-period-picker) .dash-wp__head,
           .tdb .dash-wp:has(.dash-period-picker) .dash-wp__list{ display: none !important; }
           .tdb .dash-period-picker{
-            width: 300px;
+            width: min(320px, calc(100vw - 24px));
             padding: 10px 12px 12px;
             display: block;
             border-bottom: 0;
+            box-sizing: border-box;
           }
           .tdb .dash-period-picker__title{
             margin: 0 0 10px;
@@ -8629,31 +9552,62 @@ title: Tableau de bord
             gap: 8px;
             padding-top: 10px;
             border-top: 1px solid var(--c-grey-2);
-            align-items: stretch;
+            align-items: end;
             flex-wrap: nowrap;
           }
-          .tdb .dash-period-picker__custom label{
+          .tdb .dash-period-picker__custom > div{
+            min-width: 0;
+          }
+          .tdb .dash-period-picker__custom label,
+          .tdb .dash-period-picker__custom .pfm-label{
             display: flex;
             flex-direction: column;
             gap: 4px;
+            margin: 0 0 4px;
             font: 600 11px var(--font-body);
             color: var(--c-muted);
             text-transform: uppercase;
             letter-spacing: 0.03em;
           }
-          .tdb .dash-period-picker__custom input[type="date"]{
-            height: 34px;
-            padding: 0 8px;
-            border: 1px solid var(--c-border-soft);
-            border-radius: var(--r-sm);
-            font: 500 13px var(--font-body);
-            color: var(--c-text);
-            background: var(--c-white);
+          .tdb .dash-period-picker__custom lib_components_ui-datefield,
+          .tdb .dash-period-picker__custom .p-calendar{
+            width: 100%;
+            max-width: 100%;
+          }
+          .tdb .dash-period-picker__custom .p-calendar{
+            display: flex !important;
+            align-items: stretch;
+          }
+          .tdb .dash-period-picker__custom .p-calendar .p-inputtext{
+            flex: 1 1 auto;
+            width: auto !important;
+            min-width: 0 !important;
+            height: 34px !important;
+            min-height: 34px !important;
+            padding: 0 8px !important;
+            border: 1px solid var(--c-border-soft) !important;
+            border-right: 0 !important;
+            border-radius: 8px 0 0 8px !important;
+            font: 500 12px var(--font-body) !important;
+            line-height: 34px !important;
+            color: var(--c-text) !important;
+            background: var(--c-white) !important;
+          }
+          .tdb .dash-period-picker__custom .p-calendar .p-datepicker-trigger{
+            width: 34px !important;
+            min-width: 34px !important;
+            height: 34px !important;
+            border: 1px solid var(--c-border-soft) !important;
+            border-radius: 0 8px 8px 0 !important;
+            background: #F8F9FA !important;
+            color: var(--c-primary) !important;
           }
           .tdb .dash-period-picker__custom .btn{
             grid-column: 1 / -1;
             justify-self: stretch;
             width: 100%;
+            height: 34px;
+            margin-top: 2px;
           }
           
           @media (max-width: 1360px){

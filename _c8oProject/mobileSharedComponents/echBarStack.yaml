@@ -1,0 +1,130 @@
+comment: Barres empilées horizontales ECharts (jours consommés vs restants) — portefeuille LCNC
+scriptContent: 
+  - xmlizable: 
+    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+      →: |
+        '/*Begin_c8o_CompImport*/
+        import * as echarts from ''echarts'';
+        /*End_c8o_CompImport*/
+        /*Begin_c8o_CompDeclaration*/
+        	_chart:any=null;
+        	_ro:any=null;
+        	/*End_c8o_CompDeclaration*/
+        /*Begin_c8o_CompConstructor*/
+        		/*End_c8o_CompConstructor*/
+        /*Begin_c8o_CompInitialization*/
+        		/*End_c8o_CompInitialization*/
+        /*Begin_c8o_CompFinalization*/
+        		try { if (this._ro) { this._ro.disconnect(); this._ro = null; } if (this._chart) { this._chart.dispose(); this._chart = null; } } catch(e){}
+        		/*End_c8o_CompFinalization*/
+        /*Begin_c8o_CompChanges*/
+        		try { if (this._chart) { this._chart.setOption(this.buildOption(), true); } } catch(e){}
+        		/*End_c8o_CompChanges*/
+        /*Begin_c8o_CompDoCheck*/
+        		/*End_c8o_CompDoCheck*/
+        /*Begin_c8o_CompAfterContentInit*/
+        		/*End_c8o_CompAfterContentInit*/
+        /*Begin_c8o_CompAfterContentChecked*/
+        		/*End_c8o_CompAfterContentChecked*/
+        /*Begin_c8o_CompAfterViewInit*/
+        		try {
+        			const host = (this.elRef && this.elRef.nativeElement) ? this.elRef.nativeElement.querySelector(''.ech-host'') : null;
+        			if (host) {
+        				this._chart = echarts.init(host);
+        				this._chart.setOption(this.buildOption(), true);
+        				this._ro = new ResizeObserver(() => { if (this._chart) this._chart.resize(); });
+        				this._ro.observe(host);
+        				setTimeout(() => { try { if (this._chart) this._chart.resize(); } catch(e){} }, 80);
+        			}
+        		} catch (e) { console.error(''[echBarStack]'', e); }
+        		/*End_c8o_CompAfterViewInit*/
+        /*Begin_c8o_CompAfterViewChecked*/
+        		/*End_c8o_CompAfterViewChecked*/
+        /*Begin_c8o_CompFunction*/
+        	buildOption() {
+        		const dark = this.themeMode === ''dark'';
+        		const txt = dark ? ''#9aa7bd'' : ''#5b6680'';
+        		const grid = dark ? ''#243049'' : ''#EEF1F8'';
+        		const palette = [''#1456C7'',''#C9D6EE'',''#1E7B4D'',''#C97A1E''];
+        		let series = []; let ycats = [];
+        		try { series = (typeof this.series === ''string'') ? JSON.parse(this.series) : (this.series || []); } catch(e){ series = []; }
+        		try { ycats = (typeof this.ycats === ''string'') ? JSON.parse(this.ycats) : (this.ycats || []); } catch(e){ ycats = []; }
+        		const n = series.length;
+        		const sers = series.map((sv, i) => { const c = sv.color || palette[i % palette.length];
+        			const isFirst = i === 0, isLast = i === n - 1;
+        			const br = (n === 1) ? [6,6,6,6] : (isFirst ? [6,0,0,6] : (isLast ? [0,6,6,0] : [0,0,0,0]));
+        			return { name: sv.name, type: ''bar'', stack: ''total'', barWidth: ''62%'', itemStyle: { color: c, borderRadius: br }, emphasis: { focus: ''series'' }, label: { show: true, position: ''inside'', color: ''#ffffff'', fontSize: 11, fontWeight: 600, formatter: (p) => (p.value > 0 ? String(p.value) : '''') }, data: sv.data };
+        		});
+        		return {
+        			color: palette,
+        			grid: { left: 8, right: 16, top: 30, bottom: 8, containLabel: true },
+        			tooltip: { trigger: ''axis'', axisPointer: { type: ''shadow'' }, backgroundColor: dark ? ''#121c33'' : ''#ffffff'', borderColor: grid, textStyle: { color: dark ? ''#e6eaf3'' : ''#1a2540'' } },
+        			legend: { top: 0, right: 0, icon: ''roundRect'', itemWidth: 10, itemHeight: 10, textStyle: { color: txt } },
+        			xAxis: { type: ''value'', splitLine: { lineStyle: { color: grid, type: ''dashed'' } }, axisLabel: { color: txt }, axisLine: { show: false }, axisTick: { show: false } },
+        			yAxis: { type: ''category'', inverse: true, data: ycats, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: txt } },
+        			series: sers
+        		};
+        	}
+        	/*End_c8o_CompFunction*/
+        '
+↓Deps [ngx.components.UISharedComponentEvent-1791471141594]: 
+  comment: Déclare la dépendance npm echarts pour le build
+  ↓InstallDependencies [ngx.components.UICustomAsyncAction-1791471141597]: 
+    actionValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+          →: |
+            		try {
+            		} catch (e) {
+            		} finally {
+            			return;
+            		}
+    comment: Ajoute echarts aux dépendances du projet
+    package_dependencies: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+        - com.twinsoft.convertigo.beans.common.XMLVector: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+            - com.twinsoft.convertigo.beans.common.XMLVector: 
+              - java.lang.String: 
+                - ↑value: echarts
+              - java.lang.String: 
+                - ↑value: 5.5.1
+↓series [ngx.components.UICompVariable-1791471141600]: 
+  comment: Séries empilées (tableau {name,data,color?})
+  value: '[{"name":"Consommé","data":[39,32,12],"color":"#1456C7"},{"name":"Restant","data":[21,8,36],"color":"#C9D6EE"}]'
+↓ycats [ngx.components.UICompVariable-1791471141603]: 
+  comment: Catégories axe Y (projets)
+  value: '["A","B","C"]'
+↓height [ngx.components.UICompVariable-1791471141606]: 
+  comment: Hauteur du graphe en pixels
+  value: 520
+↓themeMode [ngx.components.UICompVariable-1791471141609]: 
+  comment: Mode de thème (light/dark)
+  value: '''light'''
+↓host [ngx.components.UIDynamicElement-1791471141612]: 
+  beanData: '{"ionBean":"DivTag"}'
+  comment: Conteneur DOM où ECharts est monté
+  identifier: echBarStack
+  tagName: div
+  ↓hc [ngx.components.UIAttribute-1791471141615]: 
+    attrName: class
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:ech-host
+  ↓hw [ngx.components.UIAttribute-1791471141618]: 
+    attrName: style
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:width:100%;
+  ↓hh [ngx.components.UIAttribute-1791471141621]: 
+    attrName: '[style.height.px]'
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:height || 520

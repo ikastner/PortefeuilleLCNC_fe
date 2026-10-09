@@ -66,6 +66,7 @@ scriptContent:
         	badgeProjets: number;
         	badgeLignes: number;
         	ready: boolean;
+        	_openProjet: string;
         /*End_c8o_PageDeclaration*/
         /*Begin_c8o_PageConstructor*/
         /*End_c8o_PageConstructor*/
@@ -77,6 +78,7 @@ scriptContent:
         		this.view = "projets";
         		this.loading = true;
         		this.message = "";
+        		this._openProjet = "";
         		this.cleActeur = this.acteurSession();
         		this.canAdmin = false;
         		try { this.canAdmin = window.sessionStorage.getItem("pfc:canAdmin") === "1"; } catch (eA) {}
@@ -142,14 +144,30 @@ scriptContent:
         		this.badgeLignes = 0;
         		try {
         			var preset = window.sessionStorage.getItem("pfc:preset") || "";
+        			var openProjet = window.sessionStorage.getItem("pfc:openProjet") || "";
         			if (preset) {
         				window.sessionStorage.removeItem("pfc:preset");
         				if (preset === "chef" || preset === "participant") { this.tab = "projets"; this.manque = preset; }
+        				else if (!openProjet) openProjet = preset;
+        			}
+        			if (openProjet) {
+        				window.sessionStorage.removeItem("pfc:openProjet");
+        				this._openProjet = String(openProjet);
         			}
         		} catch (e) {}
         		this.rafraichir();
         	}
         	rafraichir() { try { this.ref.detectChanges(); } catch (e) {} }
+        	toast(message, type = "success") {
+        		var w: any = window;
+        		try { if (w.pfcToast) { w.pfcToast(message, type || "success"); return; } } catch (eT) {}
+        		this.message = message; this.rafraichir();
+        	}
+        	confirmer(opts) {
+        		var w: any = window;
+        		try { if (w.pfcConfirm) return w.pfcConfirm(opts || {}); } catch (eC) {}
+        		return Promise.resolve(window.confirm(((opts && opts.title) ? opts.title + "\n" : "") + ((opts && opts.text) || "Confirmer ?")));
+        	}
         	asList(v) {
         		if (v == null) return [];
         		if (Object.prototype.toString.call(v) === "[object Array]") return v;
@@ -159,7 +177,26 @@ scriptContent:
         	doc(out) {
         		if (!out) return {};
         		if (out.document) return out.document;
+        		if (out.sql_output || out.error || out.elements) return out;
+        		if (out.transaction) {
+        			var list = this.asList(out.transaction);
+        			var i;
+        			for (i = 0; i < list.length; i++) {
+        				var d = list[i].document || list[i];
+        				if (d && (d.sql_output || d.error || d.elements)) return d;
+        			}
+        		}
         		return out;
+        	}
+        	resultatSuppression(out) {
+        		var d = this.doc(out);
+        		if (d && d.error) return false;
+        		var bag = (d && d.sql_output) ? d.sql_output : d;
+        		var row = this.asList(bag && (bag.row != null ? bag.row : bag))[0] || {};
+        		var autorise = String(row.autorise == null ? "true" : row.autorise).toLowerCase();
+        		if (autorise === "false" || autorise === "f" || autorise === "0") return false;
+        		if (String(row.nb == null ? "0" : row.nb) === "0") return false;
+        		return true;
         	}
         	onFlag(v) { var s = String(v == null ? "" : v).toLowerCase(); return s === "true" || s === "t" || s === "1"; }
         	norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
@@ -266,6 +303,11 @@ scriptContent:
         		this.loading = false;
         		this.syncChrome();
         		this.reconstruire();
+        		if (this._openProjet) {
+        			var code = String(this._openProjet || "");
+        			this._openProjet = "";
+        			if (code) this.ouvrirProjet(code);
+        		}
         	}
         	syncChrome() {
         		this.pfaUserName = this.nomBarre();
@@ -324,8 +366,8 @@ scriptContent:
         				code: e.code,
         				libelle: e.libelle || "",
         				couleur: e.couleur || "#1A428A",
-        				lc: e.lcNc === "NC" ? "No Code" : (e.lcNc === "AU" ? "Autre" : (e.lcNc === "LC" ? "Low Code" : "—")),
-        				lcCls: e.lcNc === "NC" ? "chip chip--secondary" : (e.lcNc === "AU" ? "chip chip--outline" : "chip chip--primary"),
+        				lc: e.lcNc === "NC" ? "No Code" : (e.lcNc === "AU" ? "Autre" : (e.lcNc === "LC" ? "Low Code" : "À définir")),
+        				lcCls: e.lcNc === "NC" ? "chip chip--secondary" : (e.lcNc === "AU" ? "chip chip--outline" : (e.lcNc === "LC" ? "chip chip--primary" : "chip chip--outline")),
         				statut: self.normaliserStatut(e.statutCatalogue),
         				statutCls: self.statutCls(e.statutCatalogue),
         				chefNom: chef ? (chef.libelle || chef.cle) : "",
@@ -436,7 +478,9 @@ scriptContent:
         		this.draftIsNew = !found;
         		this.draftCode = found ? found.code : "";
         		this.draftLibelle = found ? (found.libelle || "") : "";
-        		this.draftLc = found && (found.lcNc === "NC" || found.lcNc === "AU") ? found.lcNc : "LC";
+        		this.draftLc = found
+        			? (found.lcNc === "LC" || found.lcNc === "NC" || found.lcNc === "AU" ? found.lcNc : "")
+        			: "LC";
         		this.draftStatut = found ? this.normaliserStatut(found.statutCatalogue) : "À définir";
         		this.draftCouleur = found ? (found.couleur || "#1A428A") : "#1A428A";
         		this.draftActif = found ? this.onFlag(found.actif == null ? "true" : found.actif) : true;
@@ -515,8 +559,7 @@ scriptContent:
         			var res = (raw && raw.resultat) || {};
         			if ((raw && raw.error) || String(res.ok) !== "true") {
         				var e = raw && raw.error ? raw.error : null;
-        				self.message = "Projet enregistré, mais pas ses participants" + (e && e.message ? " : " + e.message : (res.message ? " : " + res.message : "."));
-        				self.rafraichir();
+        				self.toast("Projet enregistré, mais pas ses participants" + (e && e.message ? " : " + e.message : (res.message ? " : " + res.message : ".")), "warning");
         				return false;
         			}
         			return true;
@@ -535,8 +578,9 @@ scriptContent:
         	}
         	sauverProjet() {
         		var self = this;
-        		if (!String(this.draftLibelle || "").trim()) { this.message = "Le libellé est obligatoire."; this.rafraichir(); return; }
+        		if (!String(this.draftLibelle || "").trim()) { this.toast("Le libellé est obligatoire.", "warning"); return; }
         		var libelle = String(this.draftLibelle).trim();
+        		var isNew = !!this.draftIsNew;
         		this.appel("Element_Enregistrer", {
         			cleActeur: this.cleActeur,
         			code: this.draftCode || "",
@@ -547,9 +591,10 @@ scriptContent:
         			statutCatalogue: this.normaliserStatut(this.draftStatut),
         			chefProjet: this.draftChef || ""
         		}).then(function (out) {
-        			if (!self.okOf(out)) { self.message = "Enregistrement impossible."; self.rafraichir(); return; }
+        			if (!self.okOf(out)) { self.toast("Enregistrement impossible.", "error"); return; }
         			var code = self.draftCode ? Promise.resolve(String(self.draftCode)) : self.codeParLibelle(libelle);
         			return code.then(function (c) { return self.sauverParticipants(c); }).then(function () {
+        				self.toast(isNew ? ("Projet « " + libelle + " » créé") : ("Projet « " + libelle + " » enregistré"));
         				self.fermer();
         				self.ionViewDidEnter();
         			});
@@ -557,45 +602,77 @@ scriptContent:
         	}
         	sauverNature() {
         		var self = this;
-        		if (!String(this.draftLibelle || "").trim()) { this.message = "Le libellé est obligatoire."; this.rafraichir(); return; }
+        		if (!String(this.draftLibelle || "").trim()) { this.toast("Le libellé est obligatoire.", "warning"); return; }
+        		var libelle = String(this.draftLibelle).trim();
+        		var isNew = !!this.draftIsNew;
         		var code = this.draftCode || ("NATURE_" + Date.now().toString(36).toUpperCase());
         		this.appel("Nature_Enregistrer", {
         			cleActeur: this.cleActeur,
         			code: code,
-        			libelle: String(this.draftLibelle).trim(),
+        			libelle: libelle,
         			aide: this.draftAide || "",
         			couleur: this.draftCouleur || "",
         			actif: this.draftActif ? "true" : "false"
         		}).then(function (out) {
-        			if (!self.okOf(out)) { self.message = "Enregistrement impossible."; self.rafraichir(); return; }
+        			if (!self.okOf(out)) { self.toast("Enregistrement impossible.", "error"); return; }
+        			self.toast(isNew ? ("Nature « " + libelle + " » créée") : ("Nature « " + libelle + " » enregistrée"));
         			self.fermer();
         			self.ionViewDidEnter();
         		});
         	}
         	supprimerNature() {
         		if (this.draftIsNew || !this.draftCode) return;
-        		if (!window.confirm("Supprimer ?")) return;
         		var self = this;
-        		this.appel("Nature_Supprimer", { cleActeur: this.cleActeur, code: this.draftCode }).then(function (out) {
-        			var d = self.doc(out);
-        			var bag = d.sql_output || d;
-        			var row = self.asList(bag.row || bag)[0] || {};
-        			if (String(row.nb || "0") === "0") { self.message = "Suppression impossible."; self.rafraichir(); return; }
-        			self.fermer();
-        			self.ionViewDidEnter();
+        		var libelle = String(this.draftLibelle || this.draftCode);
+        		this.confirmer({
+        			title: "Supprimer « " + libelle + " » ?",
+        			text: "Elle ne sera plus proposée à l''affectation. Les journées déjà saisies restent dans le plan.",
+        			confirmLabel: "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.appel("Nature_Supprimer", { cleActeur: self.cleActeur, code: self.draftCode }).then(function (out) {
+        				if (!self.resultatSuppression(out)) { self.toast("Suppression impossible.", "error"); return; }
+        				self.fermer();
+        				self.toast("Nature « " + libelle + " » supprimée");
+        				self.ionViewDidEnter();
+        			});
         		});
         	}
         	supprimerProjet() {
         		if (this.draftIsNew || !this.draftCode) return;
-        		if (!window.confirm("Supprimer ?")) return;
         		var self = this;
-        		this.appel("Element_Supprimer", { cleActeur: this.cleActeur, code: this.draftCode }).then(function (out) {
-        			var d = self.doc(out);
-        			var bag = d.sql_output || d;
-        			var row = self.asList(bag.row || bag)[0] || {};
-        			if (String(row.nb || "0") === "0") { self.message = "Suppression impossible."; self.rafraichir(); return; }
-        			self.fermer();
-        			self.ionViewDidEnter();
+        		var libelle = String(this.draftLibelle || this.draftCode);
+        		var collabs = this.draftAuto || [];
+        		var nbCollab = collabs.length;
+        		var nbJh = 0;
+        		var i;
+        		for (i = 0; i < collabs.length; i++) nbJh += Number(collabs[i].n || 0);
+        		nbJh = Math.round(nbJh * 100) / 100;
+        		var jhTxt = String(nbJh).replace(".", ",");
+        		var aAffectations = nbCollab > 0 || nbJh > 0;
+        		var text = aAffectations
+        			? ("Ce projet est affecté à " + nbCollab + " collaborateur" + (nbCollab > 1 ? "s" : "") + " · " + jhTxt + " jh.\nToutes ces affectations seront également supprimées.")
+        			: "Cette action est définitive.";
+        		this.confirmer({
+        			title: "Supprimer « " + libelle + " » ?",
+        			text: text,
+        			confirmLabel: aAffectations ? "Supprimer projet et affectations" : "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.appel("Element_Supprimer", {
+        				cleActeur: self.cleActeur,
+        				code: self.draftCode,
+        				cascade: "true"
+        			}).then(function (out) {
+        				if (!self.resultatSuppression(out)) { self.toast("Suppression impossible.", "error"); return; }
+        				self.fermer();
+        				self.toast(aAffectations
+        					? ("Projet « " + libelle + " » et " + jhTxt + " jh supprimés")
+        					: ("Projet « " + libelle + " » supprimé"));
+        				self.ionViewDidEnter();
+        			});
         		});
         	}
         	navSidebar(event) {

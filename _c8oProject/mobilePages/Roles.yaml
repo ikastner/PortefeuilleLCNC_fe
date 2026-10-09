@@ -36,6 +36,10 @@ scriptContent:
         	initDroits: string;
         	checks: any[];
         	draftMembres: any[];
+        	membresPending: any[];
+        	membresRetires: any[];
+        	membreOpts: any[];
+        	membrePick: any;
         	codeHint: string;
         	warnTexte: string;
         	warnCls: string;
@@ -85,6 +89,10 @@ scriptContent:
         		this.initDroits = "";
         		this.checks = [];
         		this.draftMembres = [];
+        		this.membresPending = [];
+        		this.membresRetires = [];
+        		this.membreOpts = [];
+        		this.membrePick = null;
         		this.codeHint = "";
         		this.warnTexte = "";
         		this.warnCls = "";
@@ -97,6 +105,16 @@ scriptContent:
         		this.badgeLignes = 0;
         	}
         	rafraichir() { try { this.ref.detectChanges(); } catch (e) {} }
+        	toast(message, type = "success") {
+        		var w: any = window;
+        		try { if (w.pfcToast) { w.pfcToast(message, type || "success"); return; } } catch (eT) {}
+        		this.message = message; this.rafraichir();
+        	}
+        	confirmer(opts) {
+        		var w: any = window;
+        		try { if (w.pfcConfirm) return w.pfcConfirm(opts || {}); } catch (eC) {}
+        		return Promise.resolve(window.confirm(((opts && opts.title) ? opts.title + "\n" : "") + ((opts && opts.text) || "Confirmer ?")));
+        	}
         	asList(v) {
         		if (v == null) return [];
         		if (Object.prototype.toString.call(v) === "[object Array]") return v;
@@ -191,11 +209,57 @@ scriptContent:
         	membresDe(code) {
         		var self = this;
         		return (this.lignes || []).filter(function (l) {
-        			return self.onFlag(l.actif == null ? "true" : l.actif) && String(l.codeRole || "") === String(code);
+        			return String(l.codeRole || "") === String(code);
         		}).map(function (l) {
         			var nom = l.libelle || l.cle;
-        			return { nom: nom, ini: self.initiales(nom), couleur: l.couleur || "#1A428A", profil: l.profil || "" };
+        			var actif = self.onFlag(l.actif == null ? "true" : l.actif);
+        			var profil = l.profil || "";
+        			return {
+        				cle: String(l.cle || ""),
+        				nom: nom,
+        				ini: self.initiales(nom),
+        				couleur: l.couleur || "#1A428A",
+        				profil: actif ? profil : (profil ? profil + " · hors plan" : "Hors plan"),
+        				actif: actif,
+        				cls: "person" + (actif ? "" : " is-inactive")
+        			};
+        		}).sort(function (a, b) {
+        			if (a.actif !== b.actif) return a.actif ? -1 : 1;
+        			return String(a.nom).localeCompare(String(b.nom), "fr");
         		});
+        	}
+        	estDernierAdminReferentiel() {
+        		var self = this;
+        		var code = String(this.draftCode || "");
+        		return !(this.roles || []).some(function (r) {
+        			if (String(r.code) === code) return false;
+        			return self.droitsDe(r.code).indexOf("GERER_REFERENTIEL") >= 0;
+        		});
+        	}
+        	rafraichirMembreOpts() {
+        		var self = this;
+        		var deja = {};
+        		(this.draftMembres || []).forEach(function (m) { deja[String(m.cle)] = 1; });
+        		this.membreOpts = (this.lignes || []).filter(function (l) {
+        			return !deja[String(l.cle)];
+        		}).map(function (l) {
+        			var nom = l.libelle || l.cle;
+        			var actif = self.onFlag(l.actif == null ? "true" : l.actif);
+        			var role = "";
+        			var i;
+        			for (i = 0; i < (self.roles || []).length; i++) {
+        				if (String(self.roles[i].code) === String(l.codeRole || "")) { role = self.roles[i].libelle || self.roles[i].code; break; }
+        			}
+        			var suffix = [];
+        			if (!actif) suffix.push("hors plan");
+        			if (role) suffix.push(role);
+        			else if (!l.codeRole) suffix.push("sans rôle");
+        			return {
+        				value: String(l.cle),
+        				display: nom + (suffix.length ? " (" + suffix.join(" · ") + ")" : ""),
+        				search: nom + " " + String(l.cle || "") + " " + String(l.cleExterne || "") + " " + role
+        			};
+        		}).sort(function (a, b) { return String(a.display).localeCompare(String(b.display), "fr"); });
         	}
         	chipCls(code) {
         		if (code === "GESTIONNAIRE") return "chip chip--violet mono";
@@ -260,6 +324,10 @@ scriptContent:
         		this.draftDroits = {};
         		droits.forEach(function (c) { self.draftDroits[c] = true; });
         		this.draftMembres = r ? this.membresDe(r.code) : [];
+        		this.membresPending = [];
+        		this.membresRetires = [];
+        		this.membrePick = null;
+        		this.rafraichirMembreOpts();
         		this.drawerEyebrow = r ? "Rôle" : "Nouveau rôle";
         		this.drawerTitle = r ? (r.libelle || r.code) : "Créer un rôle";
         		this.drawerSub = r ? (this.draftMembres.length + " collaborateur(s) · " + droits.length + " droit(s)") : "Choisissez les droits accordés aux collaborateurs qui auront ce rôle.";
@@ -285,7 +353,10 @@ scriptContent:
         		var coches = this.droitsCoches();
         		this.warnTexte = "";
         		this.warnCls = "";
-        		if (this.estMonRole() && coches.indexOf("GERER_REFERENTIEL") < 0) {
+        		if (coches.indexOf("GERER_REFERENTIEL") >= 0 && this.estDernierAdminReferentiel()) {
+        			this.warnTexte = "Seul rôle avec « Gérer le référentiel » : ce droit ne peut pas être retiré.";
+        			this.warnCls = "callout callout--warning";
+        		} else if (this.estMonRole() && coches.indexOf("GERER_REFERENTIEL") < 0) {
         			this.warnTexte = "C''est votre rôle : sans « Gérer le référentiel », vous perdrez l''accès à cette administration.";
         			this.warnCls = "callout callout--danger";
         		} else if (!this.draftIsNew && this.draftMembres.length && coches.slice().sort().join(",") !== this.initDroits) {
@@ -294,9 +365,107 @@ scriptContent:
         		}
         	}
         	basculerDroit(code) {
+        		if (code === "GERER_REFERENTIEL" && this.draftDroits[code] && this.estDernierAdminReferentiel()) {
+        			this.drawerMsg = "Impossible : au moins un rôle doit conserver « Gérer le référentiel ».";
+        			this.rafraichir();
+        			return;
+        		}
+        		this.drawerMsg = "";
         		this.draftDroits[code] = !this.draftDroits[code];
         		this.majChecks();
         		this.rafraichir();
+        	}
+        	ajouterMembre(event) {
+        		if (this.draftIsNew || !this.draftCode) return;
+        		var raw = event && event.value !== undefined ? event.value : (event && event.item ? event.item : event);
+        		var cle = "";
+        		if (raw && typeof raw === "object") cle = String(raw.value != null ? raw.value : "");
+        		else cle = String(raw || "");
+        		if (!cle && this.membrePick && typeof this.membrePick === "object") cle = String(this.membrePick.value || "");
+        		if (!cle) return;
+        		if ((this.draftMembres || []).some(function (m) { return String(m.cle) === cle; })) {
+        			this.membrePick = null;
+        			this.rafraichir();
+        			return;
+        		}
+        		var ligne = null;
+        		(this.lignes || []).forEach(function (l) { if (String(l.cle) === cle) ligne = l; });
+        		if (!ligne) return;
+        		var nom = ligne.libelle || ligne.cle;
+        		var actif = this.onFlag(ligne.actif == null ? "true" : ligne.actif);
+        		var profil = ligne.profil || "";
+        		this.drawerMsg = "";
+        		this.membresRetires = (this.membresRetires || []).filter(function (c) { return String(c) !== cle; });
+        		var codeRole = String(this.draftCode || "");
+        		var etaitDeja = (this.lignes || []).some(function (l) {
+        			return String(l.cle) === cle && String(l.codeRole || "") === codeRole;
+        		});
+        		if (!etaitDeja) {
+        			if (!this.membresPending) this.membresPending = [];
+        			if (this.membresPending.indexOf(cle) < 0) this.membresPending.push(cle);
+        		}
+        		var profilBase = actif ? profil : (profil ? profil + " · hors plan" : "Hors plan");
+        		this.draftMembres = (this.draftMembres || []).concat([{
+        			cle: cle,
+        			nom: nom,
+        			ini: this.initiales(nom),
+        			couleur: ligne.couleur || "#1A428A",
+        			profil: etaitDeja ? profilBase : (profilBase + " · à enregistrer"),
+        			actif: actif,
+        			pending: !etaitDeja,
+        			cls: "person" + (etaitDeja ? "" : " is-pending") + (actif ? "" : " is-inactive")
+        		}]);
+        		this.membrePick = null;
+        		this.rafraichirMembreOpts();
+        		this.drawerSub = this.draftMembres.length + " collaborateur(s) · " + this.droitsCoches().length + " droit(s)";
+        		this.majChecks();
+        		this.rafraichir();
+        	}
+        	retirerMembre(cle) {
+        		cle = String(cle || "");
+        		if (!cle) return;
+        		var found = null;
+        		(this.draftMembres || []).forEach(function (m) { if (String(m.cle) === cle) found = m; });
+        		if (!found) return;
+        		this.drawerMsg = "";
+        		this.membresPending = (this.membresPending || []).filter(function (c) { return String(c) !== cle; });
+        		if (!found.pending) {
+        			if (!this.membresRetires) this.membresRetires = [];
+        			if (this.membresRetires.indexOf(cle) < 0) this.membresRetires.push(cle);
+        		}
+        		this.draftMembres = (this.draftMembres || []).filter(function (m) { return String(m.cle) !== cle; });
+        		this.rafraichirMembreOpts();
+        		this.drawerSub = this.draftMembres.length + " collaborateur(s) · " + this.droitsCoches().length + " droit(s)";
+        		this.majChecks();
+        		this.rafraichir();
+        	}
+        	sauverMembresPending(code) {
+        		var self = this;
+        		var retires = (this.membresRetires || []).slice();
+        		var pending = (this.membresPending || []).slice();
+        		if (!retires.length && !pending.length) return Promise.resolve(true);
+        		var chain = Promise.resolve(true);
+        		var appliquer = function (cle, codeRole) {
+        			chain = chain.then(function (ok) {
+        				if (!ok) return false;
+        				return self.appel("LigneRole_Affecter", { cleActeur: self.cleActeur, cleLigne: cle, codeRole: codeRole }).then(function (out) {
+        					var d = self.doc(out);
+        					var raw: any = out;
+        					var res = (raw && raw.resultat) || (d && d.resultat) || {};
+        					var e = (raw && raw.error) || (d && d.error) || null;
+        					if (e || String(res.ok) !== "true") {
+        						var em = e ? (typeof e === "string" ? e : (e.message || e.text || "")) : (res.message || "");
+        						self.drawerMsg = "Rôle enregistré, mais pas les collaborateurs" + (em ? " : " + em : ".");
+        						self.rafraichir();
+        						return false;
+        					}
+        					return true;
+        			});
+        			});
+        		};
+        		retires.forEach(function (cle) { appliquer(cle, "__CLEAR__"); });
+        		pending.forEach(function (cle) { appliquer(cle, code); });
+        		return chain;
         	}
         	setLibelle(event) {
         		var t = event && event.target ? event.target : null;
@@ -329,27 +498,53 @@ scriptContent:
         		if (!code) { this.drawerMsg = "Le libellé doit contenir au moins une lettre ou un chiffre."; this.rafraichir(); return; }
         		if (this.draftIsNew && (this.roles || []).some(function (r) { return String(r.code) === code; })) { this.drawerMsg = "Un rôle avec ce libellé existe déjà."; this.rafraichir(); return; }
         		var coches = this.droitsCoches();
-        		if (this.estMonRole() && coches.indexOf("GERER_REFERENTIEL") < 0) {
-        			if (!window.confirm("Retirer votre accès à l''administration ? Après l''enregistrement, vous ne pourrez plus revenir sur cet écran.")) return;
+        		if (coches.indexOf("GERER_REFERENTIEL") < 0 && this.estDernierAdminReferentiel()) {
+        			this.drawerMsg = "Impossible : au moins un rôle doit conserver « Gérer le référentiel ».";
+        			this.rafraichir();
+        			return;
         		}
-        		this.appel("Role_Enregistrer", { cleActeur: this.cleActeur, code: code, libelle: libelle, droits: coches.join(",") }).then(function (out) {
-        			var d = self.doc(out);
-        			var raw: any = out;
-        			var res = (raw && raw.resultat) || (d && d.resultat) || {};
-        			var e = (raw && raw.error) || (d && d.error) || null;
-        			if (e || String(res.ok) !== "true") {
-        				var em = e ? (typeof e === "string" ? e : (e.message || e.text || "")) : (res.message || "");
-        				self.drawerMsg = "Enregistrement impossible" + (em ? " : " + em : ".");
-        				self.rafraichir();
+        		var doSave = function () {
+        			self.appel("Role_Enregistrer", { cleActeur: self.cleActeur, code: code, libelle: libelle, droits: coches.join(",") }).then(function (out) {
+        				var d = self.doc(out);
+        				var raw: any = out;
+        				var res = (raw && raw.resultat) || (d && d.resultat) || {};
+        				var e = (raw && raw.error) || (d && d.error) || null;
+        				if (e || String(res.ok) !== "true") {
+        					var em = e ? (typeof e === "string" ? e : (e.message || e.text || "")) : (res.message || "");
+        					self.drawerMsg = "Enregistrement impossible" + (em ? " : " + em : ".");
+        					self.rafraichir();
         				return;
-        			}
-        			self.message = "Rôle « " + libelle + " » enregistré.";
-        			self.fermer();
-        			self.charger();
-        		}, function () {
-        			self.drawerMsg = "Enregistrement impossible.";
-        			self.rafraichir();
-        		});
+        				}
+        				return self.sauverMembresPending(code).then(function (okM) {
+        					if (!okM) return;
+        					var nPend = (self.membresPending || []).length;
+        					var nRet = (self.membresRetires || []).length;
+        					var parts = [];
+        					if (nPend) parts.push(nPend + " ajout" + (nPend > 1 ? "s" : ""));
+        					if (nRet) parts.push(nRet + " retrait" + (nRet > 1 ? "s" : ""));
+        					self.toast(parts.length
+        						? ("Rôle « " + libelle + " » enregistré (" + parts.join(", ") + ")")
+        						: ("Rôle « " + libelle + " » enregistré"));
+        					self.membresPending = [];
+        					self.membresRetires = [];
+        					self.fermer();
+        					self.charger();
+        			});
+        			}, function () {
+        				self.drawerMsg = "Enregistrement impossible.";
+        				self.rafraichir();
+        			});
+        		};
+        		if (this.estMonRole() && coches.indexOf("GERER_REFERENTIEL") < 0) {
+        			this.confirmer({
+        				title: "Retirer votre accès à l''administration ?",
+        				text: "Après l''enregistrement, vous ne pourrez plus revenir sur cet écran.",
+        				confirmLabel: "Retirer l''accès",
+        				danger: true
+        			}).then(function (yes) { if (yes) doSave(); });
+        			return;
+        		}
+        		doSave();
         	}
         	supprimer() {
         		var self = this;
@@ -363,23 +558,30 @@ scriptContent:
         			this.rafraichir();
         			return;
         		}
-        		if (!window.confirm("Supprimer le rôle « " + libelle + " » ? Cette action est définitive.")) return;
-        		this.appel("Role_Supprimer", { cleActeur: this.cleActeur, code: code }).then(function (out) {
-        			var raw: any = out;
-        			var res = (raw && raw.resultat) || {};
-        			var e = (raw && raw.error) || null;
-        			if (e || String(res.ok) !== "true") {
-        				var em = e ? (typeof e === "string" ? e : (e.message || e.text || "")) : (res.message || "");
-        				self.drawerMsg = "Suppression impossible" + (em ? " : " + em : ".");
+        		this.confirmer({
+        			title: "Supprimer « " + libelle + " » ?",
+        			text: "Cette action est définitive.",
+        			confirmLabel: "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.appel("Role_Supprimer", { cleActeur: self.cleActeur, code: code }).then(function (out) {
+        				var raw: any = out;
+        				var res = (raw && raw.resultat) || {};
+        				var e = (raw && raw.error) || null;
+        				if (e || String(res.ok) !== "true") {
+        					var em = e ? (typeof e === "string" ? e : (e.message || e.text || "")) : (res.message || "");
+        					self.drawerMsg = "Suppression impossible" + (em ? " : " + em : ".");
+        					self.rafraichir();
+        					return;
+        				}
+        				self.toast("Rôle « " + libelle + " » supprimé");
+        				self.fermer();
+        				self.charger();
+        			}, function () {
+        				self.drawerMsg = "Suppression impossible.";
         				self.rafraichir();
-        				return;
-        			}
-        			self.message = "Rôle « " + libelle + " » supprimé.";
-        			self.fermer();
-        			self.charger();
-        		}, function () {
-        			self.drawerMsg = "Suppression impossible.";
-        			self.rafraichir();
+        			});
         		});
         	}
         	voirSansRole() {
@@ -803,20 +1005,78 @@ title: Rôles et droits
       - xmlizable: 
         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
         - MobileSmartSourceType: script:this.loading
-    ↓E168 [ngx.components.UIDynamicElement-1791305020977]: 
+    ↓LoadBox [ngx.components.UIDynamicElement-1791535000101]: 
       beanData: '{"ionBean":"DivTag"}'
-      tagName: p
-      ↓A166 [ngx.components.UIAttribute-1791305020979]: 
+      tagName: div
+      ↓LoadBoxC [ngx.components.UIAttribute-1791535000102]: 
         attrName: class
         attrValue: 
           - xmlizable: 
             - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-            - MobileSmartSourceType: plain:muted
-      ↓T167 [ngx.components.UIText-1791305020981]: 
-        textValue: 
-          - xmlizable: 
-            - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-            - MobileSmartSourceType: plain:Chargement…
+            - MobileSmartSourceType: plain:skel-wrap roles-skel
+      ↓Sk0 [ngx.components.UIDynamicElement-1791535000103]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓Sk0C [ngx.components.UIAttribute-1791535000104]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--card
+      ↓Sk1 [ngx.components.UIDynamicElement-1791535000105]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓Sk1C [ngx.components.UIAttribute-1791535000106]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--card
+      ↓Sk2 [ngx.components.UIDynamicElement-1791535000107]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓Sk2C [ngx.components.UIAttribute-1791535000108]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--card
+      ↓Sk3 [ngx.components.UIDynamicElement-1791535000109]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓Sk3C [ngx.components.UIAttribute-1791535000110]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--card
+      ↓Sk4 [ngx.components.UIDynamicElement-1791535000111]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓Sk4C [ngx.components.UIAttribute-1791535000112]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--card
+      ↓Sk5 [ngx.components.UIDynamicElement-1791535000113]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓Sk5C [ngx.components.UIAttribute-1791535000114]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--card
+      ↓SkTable [ngx.components.UIDynamicElement-1791535000115]: 
+        beanData: '{"ionBean":"DivTag"}'
+        tagName: div
+        ↓SkTableC [ngx.components.UIAttribute-1791535000116]: 
+          attrName: class
+          attrValue: 
+            - xmlizable: 
+              - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+              - MobileSmartSourceType: plain:skel skel--table
   ↓If170 [ngx.components.UIControlDirective-1791305020983]: 
     directiveName: If
     directiveSource: 
@@ -2053,11 +2313,11 @@ title: Rôles et droits
                   beanData: '{"ionBean":"DivTag"}'
                   tagName: li
                   ↓A233 [ngx.components.UIAttribute-1791305021613]: 
-                    attrName: class
+                    attrName: '[class]'
                     attrValue: 
                       - xmlizable: 
                         - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                        - MobileSmartSourceType: plain:person
+                        - MobileSmartSourceType: script:m.cls
                   ↓E226 [ngx.components.UIDynamicElement-1791305021615]: 
                     beanData: '{"ionBean":"DivTag"}'
                     tagName: span
@@ -2106,6 +2366,50 @@ title: Rôles et droits
                         - xmlizable: 
                           - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                           - MobileSmartSourceType: script:m.profil
+                  ↓Rm [ngx.components.UIDynamicElement-1791534000301]: 
+                    beanData: '{"ionBean":"DivTag"}'
+                    tagName: button
+                    ↓RmC [ngx.components.UIAttribute-1791534000302]: 
+                      attrName: class
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:member-remove
+                    ↓RmTy [ngx.components.UIAttribute-1791534000303]: 
+                      attrName: type
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:button
+                    ↓RmA [ngx.components.UIAttribute-1791534000304]: 
+                      attrName: aria-label
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:Retirer du rôle
+                    ↓RmTi [ngx.components.UIAttribute-1791534000305]: 
+                      attrName: title
+                      attrValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:Retirer du rôle
+                    ↓RmK [ngx.components.UIControlEvent-1791534000306]: 
+                      eventName: (click)
+                      ↓RmDo [ngx.components.UICustomAction-1791534000307]: 
+                        actionValue: 
+                          - xmlizable: 
+                            - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                            - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                              →: |
+                                var m = props.stack['root'].scope.m;
+                                page.retirerMembre(m && m.cle);
+                                resolve(true);
+                                
+                    ↓RmT [ngx.components.UIText-1791534000308]: 
+                      textValue: 
+                        - xmlizable: 
+                          - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                          - MobileSmartSourceType: plain:×
           ↓If242 [ngx.components.UIControlDirective-1791305021635]: 
             directiveName: If
             directiveSource: 
@@ -2126,6 +2430,70 @@ title: Rôles et droits
                   - xmlizable: 
                     - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
                     - MobileSmartSourceType: plain:Personne n'a encore ce rôle.
+          ↓AddRow [ngx.components.UIDynamicElement-1791534000101]: 
+            beanData: '{"ionBean":"DivTag"}'
+            tagName: div
+            ↓AddRowC [ngx.components.UIAttribute-1791534000102]: 
+              attrName: class
+              attrValue: 
+                - xmlizable: 
+                  - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                  - MobileSmartSourceType: plain:member-add
+            ↓AddPick [ngx.components.UIUseShared-1791534000103]: 
+              sharedcomponent: lib_components_ui.Application.NgxApp.p_autocomplete
+              ↓options [ngx.components.UIUseVariable-1791534000104]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:this.membreOpts
+              ↓optionLabel [ngx.components.UIUseVariable-1791534000105]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:'display'
+              ↓value [ngx.components.UIUseVariable-1791534000106]: 
+                binding: twoWayBinding
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:this.membrePick
+              ↓multiple [ngx.components.UIUseVariable-1791534000107]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:false
+              ↓forceSelection [ngx.components.UIUseVariable-1791534000108]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:true
+              ↓minLength [ngx.components.UIUseVariable-1791534000109]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:0
+              ↓placeholder [ngx.components.UIUseVariable-1791534000110]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:'Rechercher un collaborateur…'
+              ↓scrollHeight [ngx.components.UIUseVariable-1791534000111]: 
+                varValue: 
+                  - xmlizable: 
+                    - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+                    - MobileSmartSourceType: script:'240px'
+              ↓onSelect [ngx.components.UIControlEvent-1791534000112]: 
+                attrName: (onSelect)
+                eventName: onSelect
+                ↓DoAdd [ngx.components.UICustomAction-1791534000113]: 
+                  actionValue: 
+                    - xmlizable: 
+                      - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+                      - com.twinsoft.convertigo.beans.common.FormatedContent: 
+                        →: |
+                          try { page.ajouterMembre(event); } catch (e) { console.error(e); }
+                          resolve(true);
+                          
           ↓E245 [ngx.components.UIDynamicElement-1791305021643]: 
             beanData: '{"ionBean":"DivTag"}'
             tagName: p
@@ -2139,7 +2507,7 @@ title: Rôles et droits
               textValue: 
                 - xmlizable: 
                   - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
-                  - MobileSmartSourceType: plain:L'affectation d'un rôle se fait depuis la fiche du collaborateur.
+                  - MobileSmartSourceType: plain:Les ajouts et retraits sont enregistrés seulement quand vous cliquez sur Enregistrer.
     ↓DFoot [ngx.components.UIDynamicElement-1791305021649]: 
       beanData: '{"ionBean":"DivTag"}'
       tagName: div
@@ -2644,10 +3012,27 @@ title: Rôles et droits
           
           .skel-wrap{display:flex;flex-direction:column;gap:8px}
           .skel{height:52px;border-radius:12px;background:linear-gradient(90deg,#eef2f7 25%,#f8fafc 37%,#eef2f7 63%);background-size:400% 100%;animation:colsh 1.2s ease infinite}
+          .roles-skel{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:var(--s-4);margin-bottom:var(--s-5)}
+          .skel--card{height:118px}
+          .skel--table{grid-column:1/-1;height:220px;margin-top:4px}
           @keyframes colsh{0%{background-position:100% 0}100%{background-position:0 0}}
           
           .form-grid > .span-2 { grid-column: 1 / -1; }
           .member-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+          .member-list .person.is-inactive { opacity: 0.72; }
+          .member-list .person.is-inactive .person__name { color: var(--c-muted); }
+          .member-list .person.is-pending .person__sub { color: var(--c-primary); font-weight: 500; }
+          .member-list .person { width: 100%; }
+          .member-remove { margin-left: auto; flex: 0 0 auto; width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--c-muted); font-size: 18px; line-height: 1; cursor: pointer; }
+          .member-remove:hover { background: var(--c-danger-1, #FDE8EA); color: var(--c-danger, #D10310); }
+          .member-add {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+          }
+          .member-add lib_components_ui-p_autocomplete { flex: 1 1 auto; min-width: 0; }
+          .member-add .btn--icon { width: 40px; flex: 0 0 auto; }
           .field__error { margin: 0 0 12px; color: #D10310; font-size: 13px; }
           
           .avatar-stack { display: inline-flex; align-items: center; }

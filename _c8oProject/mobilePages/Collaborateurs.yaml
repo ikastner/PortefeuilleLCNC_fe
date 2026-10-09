@@ -170,6 +170,16 @@ scriptContent:
         		});
         	}
         	rafraichir() { this.majDroits(); try { this.ref.detectChanges(); } catch (e) {} this.alignerSelects(); }
+        	toast(message, type = "success") {
+        		var w: any = window;
+        		try { if (w.pfcToast) { w.pfcToast(message, type || "success"); return; } } catch (eT) {}
+        		this.message = message; this.rafraichir();
+        	}
+        	confirmer(opts) {
+        		var w: any = window;
+        		try { if (w.pfcConfirm) return w.pfcConfirm(opts || {}); } catch (eC) {}
+        		return Promise.resolve(window.confirm(((opts && opts.title) ? opts.title + "\n" : "") + ((opts && opts.text) || "Confirmer ?")));
+        	}
         	alignerSelects() {
         		var self = this;
         		setTimeout(function () {
@@ -588,24 +598,25 @@ scriptContent:
         	sauverProfil() {
         		var self = this;
         		this.message = "";
-        		if (!this.draftCle) { this.message = "Le code est obligatoire."; this.rafraichir(); return; }
-        		if (!String(this.draftLibelle || "").trim()) { this.message = "Le libellé est obligatoire."; this.rafraichir(); return; }
+        		if (!this.draftCle) { this.toast("Le code est obligatoire.", "warning"); return; }
+        		if (!String(this.draftLibelle || "").trim()) { this.toast("Le libellé est obligatoire.", "warning"); return; }
         		if (this.draftIsNew) {
         			var i;
         			for (i = 0; i < (this.profils || []).length; i++) {
-        				if (String(this.profils[i].code) === String(this.draftCle)) { this.message = "Ce code existe déjà."; this.rafraichir(); return; }
+        				if (String(this.profils[i].code) === String(this.draftCle)) { this.toast("Ce code existe déjà.", "warning"); return; }
         			}
         		}
+        		var libelle = String(this.draftLibelle).trim();
         		this.appel("Profil_Enregistrer", {
         			cleActeur: this.cleActeur,
         			code: this.draftCle,
-        			libelle: String(this.draftLibelle).trim(),
+        			libelle: libelle,
         			ordre: this.draftOrdre || "0",
         			couleur: this.draftCouleur || ""
         		}).then(function (out) {
-        			if (!self.okOf(out)) { self.message = "Enregistrement impossible."; self.rafraichir(); return; }
+        			if (!self.okOf(out)) { self.toast("Enregistrement impossible.", "error"); return; }
         			self.fermer();
-        			self.message = "Profil enregistré.";
+        			self.toast("Profil « " + libelle + " » enregistré");
         			self.ionViewDidEnter();
         		});
         	}
@@ -624,24 +635,40 @@ scriptContent:
         	}
         	supprimerLigne() {
         		if (this.draftIsNew || !this.draftCle) return;
-        		if (!window.confirm("Supprimer ce collaborateur du plan de charge ?")) return;
         		var self = this;
-        		this.appel("Ligne_Supprimer", { cle: this.draftCle }).then(function (out) {
-        			if (!self.resultatSuppression(out)) { self.message = "Suppression impossible."; self.rafraichir(); return; }
-        			self.fermer();
-        			self.message = "Collaborateur supprimé.";
-        			self.ionViewDidEnter();
+        		var nom = String(this.draftPrenom || this.draftCle);
+        		this.confirmer({
+        			title: "Supprimer « " + nom + " » ?",
+        			text: "Ce collaborateur sera retiré du plan de charge. Cette action est définitive.",
+        			confirmLabel: "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.appel("Ligne_Supprimer", { cle: self.draftCle }).then(function (out) {
+        				if (!self.resultatSuppression(out)) { self.toast("Suppression impossible.", "error"); return; }
+        				self.fermer();
+        				self.toast("Collaborateur « " + nom + " » supprimé");
+        				self.ionViewDidEnter();
+        			});
         		});
         	}
         	supprimerProfil() {
         		if (this.draftIsNew || !this.draftCle) return;
-        		if (!window.confirm("Supprimer ce profil ? Les collaborateurs qui l''utilisent n''auront plus de profil.")) return;
         		var self = this;
-        		this.appel("Profil_Supprimer", { code: this.draftCle }).then(function (out) {
-        			if (!self.resultatSuppression(out)) { self.message = "Suppression impossible."; self.rafraichir(); return; }
-        			self.fermer();
-        			self.message = "Profil supprimé.";
-        			self.ionViewDidEnter();
+        		var libelle = String(this.draftLibelle || this.draftCle);
+        		this.confirmer({
+        			title: "Supprimer « " + libelle + " » ?",
+        			text: "Les collaborateurs qui l''utilisent n''auront plus de profil.",
+        			confirmLabel: "Supprimer",
+        			danger: true
+        		}).then(function (yes) {
+        			if (!yes) return;
+        			self.appel("Profil_Supprimer", { code: self.draftCle }).then(function (out) {
+        				if (!self.resultatSuppression(out)) { self.toast("Suppression impossible.", "error"); return; }
+        				self.fermer();
+        				self.toast("Profil « " + libelle + " » supprimé");
+        				self.ionViewDidEnter();
+        			});
         		});
         	}
         	sauver() {
@@ -649,14 +676,14 @@ scriptContent:
         		var self = this;
         		var agent = String(this.draftAgent || "").trim();
         		var prenom = String(this.draftPrenom || "").trim();
-        		if (!prenom) { this.message = "Le prénom est obligatoire."; this.rafraichir(); return; }
-        		if (!agent) { this.message = "Le code agent est obligatoire."; this.rafraichir(); return; }
+        		if (!prenom) { this.toast("Le prénom est obligatoire.", "warning"); return; }
+        		if (!agent) { this.toast("Le code agent est obligatoire.", "warning"); return; }
         		var cleLigne = this.draftIsNew ? agent : this.draftCle;
         		if (this.draftIsNew) {
         			var i;
         			for (i = 0; i < (this.lignes || []).length; i++) {
         				var deja = String(this.lignes[i].cleExterne || this.lignes[i].cle || "").toLowerCase();
-        				if (deja && deja === agent.toLowerCase()) { this.message = "Ce code agent existe déjà."; this.rafraichir(); return; }
+        				if (deja && deja === agent.toLowerCase()) { this.toast("Ce code agent existe déjà.", "warning"); return; }
         			}
         		}
         		this.draftCle = cleLigne;
@@ -671,11 +698,11 @@ scriptContent:
         			actif: this.draftActif ? "true" : "false",
         			referent: this.draftReferent || ""
         		}).then(function (out) {
-        			if (!self.okOf(out)) { self.message = "Enregistrement impossible."; self.rafraichir(); return; }
+        			if (!self.okOf(out)) { self.toast("Enregistrement impossible.", "error"); return; }
         			return self.appel("LigneRole_Affecter", { cleActeur: self.cleActeur, cleLigne: self.draftCle, codeRole: self.draftRole || "" });
         		}).then(function () {
         			self.fermer();
-        			self.message = "Collaborateur enregistré.";
+        			self.toast(prenom + " enregistré");
         			self.ionViewDidEnter();
         		});
         	}

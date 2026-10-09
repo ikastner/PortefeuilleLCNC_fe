@@ -1,0 +1,134 @@
+comment: 'Aire ECharts (style "interactive" : dégradé + grille douce) — portefeuille LCNC'
+scriptContent: 
+  - xmlizable: 
+    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+      →: |
+        '/*Begin_c8o_CompImport*/
+        import * as echarts from ''echarts'';
+        /*End_c8o_CompImport*/
+        /*Begin_c8o_CompDeclaration*/
+        	_chart:any=null;
+        	_ro:any=null;
+        	/*End_c8o_CompDeclaration*/
+        /*Begin_c8o_CompConstructor*/
+        		/*End_c8o_CompConstructor*/
+        /*Begin_c8o_CompInitialization*/
+        		/*End_c8o_CompInitialization*/
+        /*Begin_c8o_CompFinalization*/
+        		try { if (this._ro) { this._ro.disconnect(); this._ro = null; } if (this._chart) { this._chart.dispose(); this._chart = null; } } catch(e){}
+        		/*End_c8o_CompFinalization*/
+        /*Begin_c8o_CompChanges*/
+        		try { if (this._chart) { this._chart.setOption(this.buildOption(), true); } } catch(e){}
+        		/*End_c8o_CompChanges*/
+        /*Begin_c8o_CompDoCheck*/
+        		/*End_c8o_CompDoCheck*/
+        /*Begin_c8o_CompAfterContentInit*/
+        		/*End_c8o_CompAfterContentInit*/
+        /*Begin_c8o_CompAfterContentChecked*/
+        		/*End_c8o_CompAfterContentChecked*/
+        /*Begin_c8o_CompAfterViewInit*/
+        		try {
+        			const host = (this.elRef && this.elRef.nativeElement) ? this.elRef.nativeElement.querySelector(''.ech-host'') : null;
+        			if (host) {
+        				this._chart = echarts.init(host);
+        				this._chart.setOption(this.buildOption(), true);
+        				this._ro = new ResizeObserver(() => { if (this._chart) this._chart.resize(); });
+        				this._ro.observe(host);
+        				setTimeout(() => { try { if (this._chart) this._chart.resize(); } catch(e){} }, 80);
+        			}
+        		} catch (e) { console.error(''[echArea]'', e); }
+        		/*End_c8o_CompAfterViewInit*/
+        /*Begin_c8o_CompAfterViewChecked*/
+        		/*End_c8o_CompAfterViewChecked*/
+        /*Begin_c8o_CompFunction*/
+        	buildOption() {
+        		const dark = this.themeMode === ''dark'';
+        		const txt = dark ? ''#9aa7bd'' : ''#5b6680'';
+        		const grid = dark ? ''#243049'' : ''#EEF1F8'';
+        		const palette = [''#1456C7'',''#1E7B4D'',''#C97A1E'',''#B5392F'',''#6B3FA0''];
+        		const hexA = (h, a) => { const m = (h||''#1456C7'').replace(''#'',''''); const r=parseInt(m.substring(0,2),16), g=parseInt(m.substring(2,4),16), bl=parseInt(m.substring(4,6),16); return ''rgba(''+r+'',''+g+'',''+bl+'',''+a+'')''; };
+        		const showGrid = !(this.grid === false || this.grid === ''false'');
+        		let series = []; let cats = [];
+        		try { series = (typeof this.series === ''string'') ? JSON.parse(this.series) : (this.series || []); } catch(e){ series = []; }
+        		try { cats = (typeof this.categories === ''string'') ? JSON.parse(this.categories) : (this.categories || []); } catch(e){ cats = []; }
+        		const sers = series.map((sv, i) => { const c = sv.color || palette[i % palette.length]; return {
+        			name: sv.name, type: ''line'', smooth: true, showSymbol: false, lineStyle: { width: 2, color: c }, itemStyle: { color: c },
+        			areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: hexA(c, 0.35) }, { offset: 1, color: hexA(c, 0.02) }]) },
+        			emphasis: { focus: ''series'' }, data: sv.data };
+        		});
+        		return {
+        			color: palette,
+        			grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
+        			tooltip: { trigger: ''axis'', axisPointer: { type: ''line'', lineStyle: { color: grid, width: 1 } }, backgroundColor: dark ? ''#121c33'' : ''#ffffff'', borderColor: grid, textStyle: { color: dark ? ''#e6eaf3'' : ''#1a2540'' } },
+        			legend: { top: 0, right: 0, icon: ''roundRect'', itemWidth: 10, itemHeight: 10, textStyle: { color: txt } },
+        			xAxis: { type: ''category'', boundaryGap: false, data: cats, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: txt } },
+        			yAxis: { type: ''value'', show: showGrid, splitLine: { show: showGrid, lineStyle: { color: grid, type: ''dashed'' } }, axisLabel: { show: showGrid, color: txt } },
+        			series: sers
+        		};
+        	}
+        	/*End_c8o_CompFunction*/
+        '
+↓Deps [ngx.components.UISharedComponentEvent-1791471141516]: 
+  comment: Déclare la dépendance npm echarts pour le build
+  ↓InstallDependencies [ngx.components.UICustomAsyncAction-1791471141519]: 
+    actionValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+          →: |
+            		try {
+            		} catch (e) {
+            		} finally {
+            			return;
+            		}
+    comment: Ajoute echarts aux dépendances du projet
+    package_dependencies: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+        - com.twinsoft.convertigo.beans.common.XMLVector: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+            - com.twinsoft.convertigo.beans.common.XMLVector: 
+              - java.lang.String: 
+                - ↑value: echarts
+              - java.lang.String: 
+                - ↑value: 5.5.1
+↓series [ngx.components.UICompVariable-1791471141522]: 
+  comment: Séries (tableau d'objets {name,data,color?})
+  value: '[{"name":"Jours non affectés","data":[6,4,5,3,7,5,4,6,3,2]}]'
+↓categories [ngx.components.UICompVariable-1791471141525]: 
+  comment: Libellés de l'axe X
+  value: '["S26","S27","S28","S29","S30","S31","S32","S33","S34","S35"]'
+↓height [ngx.components.UICompVariable-1791471141528]: 
+  comment: Hauteur du graphe en pixels
+  value: 300
+↓themeMode [ngx.components.UICompVariable-1791471141531]: 
+  comment: Mode de thème (light/dark)
+  value: '''light'''
+↓grid [ngx.components.UICompVariable-1791471141534]: 
+  comment: Afficher les graduations / grille (true par défaut)
+  value: true
+↓host [ngx.components.UIDynamicElement-1791471141537]: 
+  beanData: '{"ionBean":"DivTag"}'
+  comment: Conteneur DOM où ECharts est monté
+  identifier: echArea
+  tagName: div
+  ↓hc [ngx.components.UIAttribute-1791471141540]: 
+    attrName: class
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:ech-host
+  ↓hw [ngx.components.UIAttribute-1791471141543]: 
+    attrName: style
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:width:100%;
+  ↓hh [ngx.components.UIAttribute-1791471141546]: 
+    attrName: '[style.height.px]'
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:height || 300

@@ -1,0 +1,125 @@
+comment: 'Camembert ECharts (pie-padAngle : coins arrondis + espacement) — portefeuille LCNC'
+scriptContent: 
+  - xmlizable: 
+    - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+    - com.twinsoft.convertigo.beans.common.FormatedContent: 
+      →: |
+        '/*Begin_c8o_CompImport*/
+        import * as echarts from ''echarts'';
+        /*End_c8o_CompImport*/
+        /*Begin_c8o_CompDeclaration*/
+        	_chart:any=null;
+        	_ro:any=null;
+        	/*End_c8o_CompDeclaration*/
+        /*Begin_c8o_CompConstructor*/
+        		/*End_c8o_CompConstructor*/
+        /*Begin_c8o_CompInitialization*/
+        		/*End_c8o_CompInitialization*/
+        /*Begin_c8o_CompFinalization*/
+        		try { if (this._ro) { this._ro.disconnect(); this._ro = null; } if (this._chart) { this._chart.dispose(); this._chart = null; } } catch(e){}
+        		/*End_c8o_CompFinalization*/
+        /*Begin_c8o_CompChanges*/
+        		try { if (this._chart) { this._chart.setOption(this.buildOption(), true); } } catch(e){}
+        		/*End_c8o_CompChanges*/
+        /*Begin_c8o_CompDoCheck*/
+        		/*End_c8o_CompDoCheck*/
+        /*Begin_c8o_CompAfterContentInit*/
+        		/*End_c8o_CompAfterContentInit*/
+        /*Begin_c8o_CompAfterContentChecked*/
+        		/*End_c8o_CompAfterContentChecked*/
+        /*Begin_c8o_CompAfterViewInit*/
+        		try {
+        			const host = (this.elRef && this.elRef.nativeElement) ? this.elRef.nativeElement.querySelector(''.ech-host'') : null;
+        			if (host) {
+        				this._chart = echarts.init(host);
+        				this._chart.setOption(this.buildOption(), true);
+        				this._ro = new ResizeObserver(() => { if (this._chart) this._chart.resize(); });
+        				this._ro.observe(host);
+        				setTimeout(() => { try { if (this._chart) this._chart.resize(); } catch(e){} }, 80);
+        			}
+        		} catch (e) { console.error(''[echPie]'', e); }
+        		/*End_c8o_CompAfterViewInit*/
+        /*Begin_c8o_CompAfterViewChecked*/
+        		/*End_c8o_CompAfterViewChecked*/
+        /*Begin_c8o_CompFunction*/
+        	buildOption() {
+        		const dark = this.themeMode === ''dark'';
+        		const border = dark ? ''#121c33'' : ''#ffffff'';
+        		const txt = dark ? ''#e6eaf3'' : ''#1a2540'';
+        		let data = [];
+        		try { data = (typeof this.data === ''string'') ? JSON.parse(this.data) : (this.data || []); } catch(e){ data = []; }
+        		return {
+        			color: [''#1456C7'',''#1E7B4D'',''#C97A1E'',''#B5392F'',''#6B3FA0'',''#0EA5E9''],
+        			tooltip: { trigger: ''item'' },
+        			legend: { bottom: 0, textStyle: { color: txt } },
+        			series: [{
+        				type: ''pie'',
+        				radius: [''42%'',''70%''],
+        				center: [''50%'',''46%''],
+        				padAngle: 5,
+        				itemStyle: { borderRadius: 10, borderColor: border, borderWidth: 2 },
+        				label: { color: txt, fontSize: 12, formatter: (p) => (p.name + '' ('' + p.value + '')'') },
+        				labelLine: { length: 10, length2: 8 },
+        				data: data
+        			}]
+        		};
+        	}
+        	/*End_c8o_CompFunction*/
+        '
+↓Deps [ngx.components.UISharedComponentEvent-1791471141486]: 
+  comment: Déclare la dépendance npm echarts pour le build
+  ↓InstallDependencies [ngx.components.UICustomAsyncAction-1791471141489]: 
+    actionValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.FormatedContent
+        - com.twinsoft.convertigo.beans.common.FormatedContent: 
+          →: |
+            		try {
+            		} catch (e) {
+            		} finally {
+            			return;
+            		}
+    comment: Ajoute echarts aux dépendances du projet
+    package_dependencies: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+        - com.twinsoft.convertigo.beans.common.XMLVector: 
+          - xmlizable: 
+            - ↑classname: com.twinsoft.convertigo.beans.common.XMLVector
+            - com.twinsoft.convertigo.beans.common.XMLVector: 
+              - java.lang.String: 
+                - ↑value: echarts
+              - java.lang.String: 
+                - ↑value: 5.5.1
+↓data [ngx.components.UICompVariable-1791471141492]: 
+  comment: Données du camembert (tableau d'objets {value,name})
+  value: '[{"value":7,"name":"Low-Code (LC)"},{"value":8,"name":"No-Code (NC)"}]'
+↓height [ngx.components.UICompVariable-1791471141495]: 
+  comment: Hauteur du graphe en pixels
+  value: 320
+↓themeMode [ngx.components.UICompVariable-1791471141498]: 
+  comment: Mode de thème (light/dark)
+  value: '''light'''
+↓host [ngx.components.UIDynamicElement-1791471141501]: 
+  beanData: '{"ionBean":"DivTag"}'
+  comment: Conteneur DOM où ECharts est monté
+  identifier: echPie
+  tagName: div
+  ↓hc [ngx.components.UIAttribute-1791471141504]: 
+    attrName: class
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:ech-host
+  ↓hw [ngx.components.UIAttribute-1791471141507]: 
+    attrName: style
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: plain:width:100%;
+  ↓hh [ngx.components.UIAttribute-1791471141510]: 
+    attrName: '[style.height.px]'
+    attrValue: 
+      - xmlizable: 
+        - ↑classname: com.twinsoft.convertigo.beans.ngx.components.MobileSmartSourceType
+        - MobileSmartSourceType: script:height || 320
